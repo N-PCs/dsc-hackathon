@@ -1,6 +1,6 @@
 # Origin Hackathon Portal
 
-(React, TypeScript, Vite, Tailwind CSS, Neon PostgreSQL, Clerk, Imagekit)
+([![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/) [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/) [![Neon](https://img.shields.io/badge/Neon-00E599?style=flat-square&logo=postgresql&logoColor=white)](https://neon.tech/) [![Clerk](https://img.shields.io/badge/Clerk-6C47FF?style=flat-square&logo=clerk&logoColor=white)](https://clerk.com/) [![ImageKit](https://img.shields.io/badge/ImageKit-1A1A1A?style=flat-square&logo=imagekit&logoColor=white)](https://imagekit.io/) [![ICNS](https://img.shields.io/badge/ICNS-1A1A1A?style=flat-square)](https://en.wikipedia.org/wiki/Icon_(computing)))
 
 ## Intro
 
@@ -89,7 +89,6 @@ flowchart TD
     style U fill:#1f1f23,color:#fff
     style V fill:#1f1f23,color:#fff
     style W fill:#1f1f23,color:#fff
-    style X fill:#1f1f23,color:#fff
 
     %% Legend
     classDef process fill:#1f1f23,color:#fff,stroke:#2d3748,stroke-width:2px;

@@ -2,7 +2,7 @@
   "framework": "vite",
   "functions": {
     "dist/server.cjs": {
-      "runtime": "nodejs20"
+      "runtime": "nodejs@20.x"
     }
   },
   "routes": [
