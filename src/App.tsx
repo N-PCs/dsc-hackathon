@@ -59,19 +59,16 @@ export default function App() {
     (window as any).setActiveTabGlobal = setActiveTab;
     try {
       const savedTeamId = localStorage.getItem('origin_active_team_id');
-      if (savedTeamId) {
+      if (savedTeamId && teams.length > 0) {
         const found = teams.find((t) => t.id === savedTeamId);
         if (found) {
           setActiveTeam(found);
         }
-      } else if (teams.length > 0) {
-        // Default to first team for instant preview capability
-        setActiveTeam(teams[0]);
       }
     } catch (e) {
       // ignore
     }
-  }, []);
+  }, [teams]);
 
   // Fetch teams & announcements from API on mount
   const fetchTeamsAndStats = async () => {

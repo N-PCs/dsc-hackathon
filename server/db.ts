@@ -1,6 +1,5 @@
 import { Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../src/types';
-import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from '../src/data/mockData';
 
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 
@@ -20,8 +19,8 @@ if (connectionString) {
 }
 
 // In-Memory Fallback Store
-let localTeams: Team[] = [...INITIAL_TEAMS];
-let localAnnouncements: Announcement[] = [...INITIAL_ANNOUNCEMENTS];
+let localTeams: Team[] = [];
+let localAnnouncements: Announcement[] = [];
 let localAdmins: AdminUser[] = [
   {
     email: 'neelpandeyofficial@gmail.com',
