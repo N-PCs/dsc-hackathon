@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SignIn } from '@clerk/clerk-react';
 import {
   Shield,
   ShieldCheck,
@@ -490,197 +491,42 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   // ==========================================
-  // UN-AUTHENTICATED: EMAIL-BASED ADMIN LOGIN
+  // UN-AUTHENTICATED: CLERK SIGN-IN FOR ADMINS
   // ==========================================
   if (!currentAdmin) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16">
-        <div className="bg-[#111114] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
-          {/* Top Badge */}
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 mb-3 shadow-lg">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[11px] font-bold border border-emerald-500/20">
-              <Mail className="w-3.5 h-3.5" />
-              <span>EMAIL-BASED AUTHORIZED ACCESS ONLY</span>
-            </div>
-            <h3 className="text-2xl font-serif font-bold text-white tracking-tight">
-              Origin '26 Executive Admin Console
-            </h3>
-            <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-              Administrative permissions are restricted to verified email addresses on the DSC Executive Committee & Jury roster.
-            </p>
+        <div className="bg-[#111114] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden text-center">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 mb-3 shadow-lg">
+            <ShieldCheck className="w-7 h-7" />
           </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[11px] font-bold border border-emerald-500/20">
+            <Shield className="w-3.5 h-3.5" />
+            <span>AUTHENTICATED ORGANIZER & JURY CONSOLE</span>
+          </div>
+          <h3 className="text-2xl font-serif font-bold text-white tracking-tight">
+            Origin '26 Executive Admin Console
+          </h3>
+          <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+            Please sign in with Clerk using your authorized executive or jury email address to access administrative management tools.
+          </p>
 
-          {/* STEP 1: Enter Authorized Email */}
-          {authStep === 'email' ? (
-            <div className="space-y-5">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleRequestEmailAccess();
-                }}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center justify-between">
-                    <span>Authorized Admin / Jury Email</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">Institutional or Registered Email</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      id="admin-input-email"
-                      type="email"
-                      required
-                      placeholder="e.g. neelpandeyofficial@gmail.com"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      className="w-full bg-[#18181b] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono placeholder-zinc-500"
-                    />
-                  </div>
-                </div>
-
-                {authError && (
-                  <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs flex items-start gap-2">
-                    <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>{authError}</span>
-                  </div>
-                )}
-
-                <button
-                  id="admin-btn-request-access"
-                  type="submit"
-                  disabled={isRequestingOtp}
-                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {isRequestingOtp ? (
-                    <span>Verifying Email Authorization...</span>
-                  ) : (
-                    <>
-                      <KeyRound className="w-4 h-4" />
-                      <span>Send Verification Passcode to Email</span>
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Quick Verified Sign-in Panel for Listed Council Members */}
-              <div className="pt-4 border-t border-white/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-zinc-400 font-bold uppercase">
-                    Authorized Executive & Jury Roster
-                  </span>
-                  <span className="text-[10px] text-emerald-400 font-mono">
-                    {adminWhitelist.length} Verified Accounts
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {adminWhitelist.map((admin) => (
-                    <div
-                      key={admin.email}
-                      className="p-3 bg-[#18181b] hover:bg-[#202025] border border-white/10 hover:border-emerald-500/30 rounded-xl flex items-center justify-between gap-3 transition-all"
-                    >
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-mono text-xs font-bold shrink-0">
-                          {admin.name.charAt(0)}
-                        </div>
-                        <div className="truncate">
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span>{admin.name}</span>
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/5 text-zinc-300 font-mono border border-white/10">
-                              {admin.role}
-                            </span>
-                          </div>
-                          <div className="text-[11px] font-mono text-zinc-400 truncate">{admin.email}</div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleQuickVerifiedSignIn(admin)}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-zinc-950 font-mono text-[11px] font-bold border border-emerald-500/20 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
-                      >
-                        <span>Access</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* STEP 2: Enter 6-Digit OTP Dispatched to Email */
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="p-3.5 bg-emerald-950/30 border border-emerald-500/30 rounded-2xl text-xs space-y-1.5">
-                <div className="flex items-center gap-2 text-emerald-300 font-bold">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  <span>Email Authorized</span>
-                </div>
-                <p className="text-zinc-300 text-[11px] leading-relaxed">
-                  {authSuccessNotice}
-                </p>
-                {sentOtp && (
-                  <div className="mt-2 pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-zinc-400">Passcode for testing:</span>
-                    <button
-                      type="button"
-                      onClick={() => setOtpInput(sentOtp)}
-                      className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold hover:bg-emerald-500/30 cursor-pointer"
-                    >
-                      Autofill: {sentOtp}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center justify-between">
-                  <span>Enter 6-Digit Email Verification Code</span>
-                  <span className="text-[10px] text-zinc-500 font-mono">Dispatched to {emailInput}</span>
-                </label>
-                <input
-                  id="admin-input-otp"
-                  type="text"
-                  required
-                  maxLength={6}
-                  placeholder="e.g. 849201"
-                  value={otpInput}
-                  onChange={(e) => setOtpInput(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-3 text-center text-lg text-white focus:outline-none focus:border-emerald-500 font-mono tracking-widest"
-                />
-              </div>
-
-              {authError && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 shrink-0" />
-                  <span>{authError}</span>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthStep('email');
-                    setAuthError('');
-                  }}
-                  className="w-1/3 py-3 rounded-xl bg-[#18181b] border border-white/10 hover:bg-[#222227] text-zinc-300 text-xs font-semibold cursor-pointer"
-                >
-                  Change Email
-                </button>
-                <button
-                  id="admin-btn-verify-otp"
-                  type="submit"
-                  className="w-2/3 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                >
-                  <UserCheck className="w-4 h-4" />
-                  <span>Verify Email & Unlock Console</span>
-                </button>
-              </div>
-            </form>
-          )}
+          <div className="flex justify-center pt-4">
+            <SignIn
+              appearance={{
+                elements: {
+                  rootBox: 'w-full flex justify-center',
+                  card: 'bg-[#18181b] border border-white/10 shadow-2xl text-white rounded-2xl p-6',
+                  headerTitle: 'text-white font-serif font-bold',
+                  headerSubtitle: 'text-zinc-400 text-xs',
+                  socialButtonsBlockButton: 'bg-[#222227] text-white border border-white/10 hover:bg-[#2a2a30]',
+                  formButtonPrimary: 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold',
+                  formFieldInput: 'bg-[#111114] border border-white/10 text-white',
+                  footerActionLink: 'text-emerald-400 hover:text-emerald-300 font-bold',
+                },
+              }}
+            />
+          </div>
         </div>
       </div>
     );

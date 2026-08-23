@@ -57,6 +57,17 @@ let localAdmins: AdminUser[] = [
     department: 'School of Computing Science',
     addedAt: '2026-08-10',
   },
+  { email: 'neel.24bce10303@vitbhopal.ac.in', name: 'Neel', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'aarush.25bcy10047@vitbhopal.ac.in', name: 'Aarush', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'sanskar.24bce11374@vitbhopal.ac.in', name: 'Sanskar', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'nikhil.25bai11440@vitbhopal.ac.in', name: 'Nikhil', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'shresth.24bsa10161@vitbhopal.ac.in', name: 'Shresth', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'tanishka.25bce10056@vitbhopal.ac.in', name: 'Tanishka', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'ritik.24bce11502@vitbhopal.ac.in', name: 'Ritik', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'varun.25bce10360@vitbhopal.ac.in', name: 'Varun', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'rajnarayan.24bec10089@vitbhopal.ac.in', name: 'Rajnarayan', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'anish.25mim10055@vitbhopal.ac.in', name: 'Anish', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
+  { email: 'ananya.24bai10039@vitbhopal.ac.in', name: 'Ananya', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
 ];
 
 export async function initDatabase() {
