@@ -9,7 +9,6 @@
 ![Neon](https://img.shields.io/badge/Neon-Postgres-333333?style=for-the-badge&logo=postgresql&logoColor=white&labelColor=00E599)
 ![Clerk](https://img.shields.io/badge/Clerk-Auth-333333?style=for-the-badge&logo=clerk&logoColor=white&labelColor=6C47FF)
 ![ImageKit](https://img.shields.io/badge/ImageKit-Upload-333333?style=for-the-badge&logo=imagekit&logoColor=white&labelColor=1A1A1A)
-![ICNS](https://img.shields.io/badge/ICNS-Project-333333?style=for-the-badge&logo=github&logoColor=white&labelColor=1F2937)
 ![Vercel](https://img.shields.io/badge/Vercel-Deploy-333333?style=for-the-badge&logo=vercel&logoColor=white&labelColor=000000)
 
 <br />
@@ -129,16 +128,16 @@ Create a `.env` file in the root and add:
 
 ```env
 # Neon PostgreSQL
-DATABASE_URL=postgresql://...
+DATABASE_URL=postgresql://your_user:your_password@ep-your-instance.neon.tech/neondb?sslmode=require
 
 # Clerk Auth
-VITE_CLERK_PUBLISHABLE_KEY=...
-CLERK_SECRET_KEY=...
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key
+CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
 
 # ImageKit
-IMAGEKIT_PUBLIC_KEY=...
-IMAGEKIT_PRIVATE_KEY=...
-IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/...
+IMAGEKIT_PUBLIC_KEY=public_your_imagekit_public_key
+IMAGEKIT_PRIVATE_KEY=private_your_imagekit_private_key
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_url_endpoint
 ```
 
 ### 3. Run the app
