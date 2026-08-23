@@ -36,32 +36,29 @@ A full-stack hackathon portal for managing team registrations, payment verificat
 ## Workflow Diagram
 
 ```mermaid
-flowchart TD
-    A[Team Registration] --> B[Payment Screenshot Upload]
-    B -->|/api/upload→Imagekit| C[URL Stored in DB]
-    C --> D[Status: pending_verification]
-    D --> E[Admin Review]
-    E -->|Verify| F[Payment Status: verified]
-    F --> G[Project Submission Portal Unlocks]
-    E -->|Reject| H[Status: rejected]
+flowchart TD 
+    A[Team Registration] --> B[Payment Screenshot Upload] 
+    B -->|"/api/upload → Imagekit"| C[URL Stored in DB] 
+    C --> D[Status: pending_verification] 
+    D --> E[Admin Review] 
+    E -->|Verify| F[Payment Status: verified] 
+    F --> G[Project Submission Portal Unlocks] 
+    E -->|Reject| H[Status: rejected] 
+    G --> I[Project Details Upload] 
+    I -->|"/api/upload → Imagekit"| J[Presentation URL Stored] 
+    J --> K[Project Submitted] 
+    L[Admin Login Clerk] --> M[Admin Dashboard] 
+    M --> N[Verify Teams] 
+    N --> O[Update Payment Status] 
+    O --> P[Issue Team Pass/Ticket] 
+    P --> Q[Project Scoring] 
+    Q --> R[Export CSV/Excel] 
+    S[Team Login Clerk] --> T[Access Team Portal] 
+    T --> U[View Payment Status] 
+    U -->|verified| V[Submit Project] 
+    U -->|pending| W[Upload Payment Proof] 
 
-    G --> I[Project Details Upload]
-    I -->|/api/upload→Imagekit| J[Presentation URL Stored]
-    J --> K[Project Submitted]
-
-    L[Admin Login (Clerk)] --> M[Admin Dashboard]
-    M --> N[Verify Teams]
-    N --> O[Update Payment Status]
-    O --> P[Issue Team Pass/Ticket]
-    P --> Q[Project Scoring]
-    Q --> R[Export CSV/Excel]
-
-    S[Team Login (Clerk)] --> T[Access Team Portal]
-    T --> U[View Payment Status]
-    U -->|verified| V[Submit Project]
-    U -->|pending| W[Upload Payment Proof]
-
-    classDef dark fill:#1f1f23,color:#fff,stroke:#2d3748,stroke-width:2px;
+    classDef dark fill:#1f1f23,color:#fff,stroke:#2d3748,stroke-width:2px; 
     class A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W dark;
 ```
 
