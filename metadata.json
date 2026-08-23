@@ -1,6 +1,5 @@
 {
   "name": "Origin Overnight Hackathon Portal",
-  "description": "Registration, verification, ID badge ticketing, and 24-hour project submission platform for Data Science Club's Origin Overnight Hackathon.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "Registration, verification, ID badge ticketing, and project submission workflow for a hackathon event.",
+  "requestFramePermissions": []
 }

@@ -384,6 +384,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     localStorage.setItem('origin_admin_whitelist', JSON.stringify(updated));
   };
 
+  const handleExportExcel = () => {
+    window.open('/api/export-excel', '_blank');
+  };
+
   // Export CSV
   const handleExportCsv = () => {
     window.open('/api/export-csv', '_blank');
@@ -689,12 +693,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
         <div className="flex flex-wrap items-center gap-3">
           <button
+            id="admin-btn-export-excel"
+            onClick={handleExportExcel}
+            className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Export Excel (.xlsx)</span>
+          </button>
+
+          <button
             id="admin-btn-export-csv"
             onClick={handleExportCsv}
             className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>Export Teams (CSV)</span>
+            <span>Export CSV</span>
           </button>
 
           <button

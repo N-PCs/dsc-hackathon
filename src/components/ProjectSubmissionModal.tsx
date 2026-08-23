@@ -11,15 +11,13 @@ import {
   AlertCircle,
   Code,
   Layers,
-  Bot,
-  Flame,
-  Award,
-  ExternalLink,
+  Upload,
+  Lock,
   Plus,
   X,
-  HelpCircle,
+  FileCheck,
 } from 'lucide-react';
-import { Team, ProjectSubmission, TrackType } from '../types';
+import { Team, TrackType } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
 
 interface ProjectSubmissionModalProps {
@@ -39,7 +37,6 @@ const COMMON_TECH_STACK = [
   'Next.js',
   'Node.js',
   'Express',
-  'Gemini API',
   'LangChain',
   'OpenCV',
   'Solidity',
@@ -55,7 +52,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
   onProjectSubmitted,
   onSwitchToTeamLogin,
 }) => {
-  // Form fields initialized with existing submission if present
   const existingProject = team?.project;
 
   const [title, setTitle] = useState(existingProject?.title || '');
@@ -64,20 +60,20 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
   const [solutionDescription, setSolutionDescription] = useState(existingProject?.solutionDescription || '');
   const [track, setTrack] = useState<TrackType>(existingProject?.track || team?.track || 'AI & Machine Learning');
   const [techStack, setTechStack] = useState<string[]>(
-    existingProject?.techStack || ['React', 'TypeScript', 'FastAPI', 'Gemini API']
+    existingProject?.techStack || ['React', 'TypeScript', 'FastAPI']
   );
   const [customTagInput, setCustomTagInput] = useState('');
   const [githubUrl, setGithubUrl] = useState(existingProject?.githubUrl || '');
   const [deploymentUrl, setDeploymentUrl] = useState(existingProject?.deploymentUrl || '');
   const [presentationUrl, setPresentationUrl] = useState(existingProject?.presentationUrl || '');
+  const [presentationFileName, setPresentationFileName] = useState('');
   const [videoUrl, setVideoUrl] = useState(existingProject?.videoUrl || '');
 
-  // Submitting state & AI Coach state
+  // Submitting states
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
-  const [aiFeedback, setAiFeedback] = useState<any>(null);
 
   const toggleTechTag = (tag: string) => {
     if (techStack.includes(tag)) {
@@ -99,37 +95,40 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     setTechStack(techStack.filter((t) => t !== tag));
   };
 
-  // Run AI Pitch Coach & Judge Review
-  const handleRunAiEvaluation = async () => {
-    if (!title.trim() || !problemStatement.trim()) {
-      setErrorMsg('Please enter at least a Project Title and Problem Statement to run AI Pitch Coach.');
+  // Upload PPT / PDF File to Imagekit (10MB limit enforcement)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg(`File size exceeds 10MB limit. Selected file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
 
-    setIsAnalyzingAI(true);
+    setPresentationFileName(file.name);
+    setIsUploadingDoc(true);
     setErrorMsg('');
 
     try {
-      const res = await fetch('/api/ai/pitch-assistant', {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          problemStatement,
-          solutionDescription,
-          track,
-          techStack,
-        }),
+        body: formData,
       });
 
       const data = await res.json();
-      if (data.success && data.feedback) {
-        setAiFeedback(data.feedback);
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'File upload failed');
       }
-    } catch (err) {
-      console.error(err);
+
+      setPresentationUrl(data.url);
+      setSuccessMsg(`PPT/PDF document successfully uploaded to Imagekit! (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error uploading PPT/PDF document.');
     } finally {
-      setIsAnalyzingAI(false);
+      setIsUploadingDoc(false);
     }
   };
 
@@ -141,6 +140,11 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
     if (!team) {
       setErrorMsg('Please log in with your Team ID first.');
+      return;
+    }
+
+    if (team.paymentStatus !== 'verified') {
+      setErrorMsg('Project submission is locked! Admin payment verification is required.');
       return;
     }
 
@@ -177,7 +181,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         throw new Error(data.message || 'Failed to submit project.');
       }
 
-      setSuccessMsg('Project details saved successfully! Judges can now review your deliverables.');
+      setSuccessMsg('Project details and 10MB presentation saved! Jury members can now evaluate your project.');
 
       try {
         confetti({
@@ -205,7 +209,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         </div>
         <h3 className="text-xl font-serif font-bold text-white mb-2">Team Authentication Required</h3>
         <p className="text-sm text-zinc-400 mb-6">
-          To submit or edit your 24-hour hackathon project, please select or look up your registered team using your Team ID or Leader Email.
+          To submit or edit your project and upload your presentation slides (up to 10MB limit), please sign in with your Team ID or Leader Email.
         </p>
         <button
           onClick={onSwitchToTeamLogin}
@@ -217,13 +221,50 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     );
   }
 
+  // STRICT LOCK GUARD: Block if Admin hasn't verified team
+  if (team.paymentStatus !== 'verified') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 mx-auto flex items-center justify-center text-amber-400 mb-5 shadow-xl shadow-amber-500/10">
+          <Lock className="w-10 h-10" />
+        </div>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono mb-3">
+          <span>PORTAL STATUS: LOCKED BY ADMIN</span>
+        </div>
+        <h3 className="text-2xl font-serif font-bold text-white mb-2">
+          Project Submission Locked
+        </h3>
+        <p className="text-zinc-400 text-sm mb-6 leading-relaxed max-w-md mx-auto">
+          Team <span className="text-white font-bold">{team.teamName}</span> ({team.id}) is currently <span className="text-amber-400 font-semibold font-mono">pending_verification</span> by the ORIGIN Admin Panel.
+        </p>
+        <div className="bg-[#111114] border border-white/10 rounded-2xl p-5 text-left max-w-md mx-auto space-y-3 mb-6">
+          <div className="flex items-center gap-2 text-xs text-zinc-300 font-semibold">
+            <CheckCircle className="w-4 h-4 text-emerald-400" />
+            <span>Registration details saved to Neon DB</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-zinc-300 font-semibold">
+            <CheckCircle className="w-4 h-4 text-emerald-400" />
+            <span>Payment screenshot uploaded to Imagekit</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-amber-300 font-semibold">
+            <Lock className="w-4 h-4 text-amber-400" />
+            <span>Awaiting Admin Payment Release to unlock Project Portal & Pass</span>
+          </div>
+        </div>
+        <p className="text-xs text-zinc-500">
+          Once an administrator verifies your payment, project submissions and PPT uploads (up to 10MB limit) will unlock automatically.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono mb-3">
           <Code className="w-3.5 h-3.5" />
-          <span>PHASE 2: 24-HOUR PROJECT DELIVERABLES</span>
+          <span>PROJECT SUBMISSION PORTAL • UNLOCKED BY ADMIN</span>
         </div>
         <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight">
           Submit Your Hackathon Project
@@ -252,7 +293,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         <div className="bg-[#111114] border border-white/10 p-5 sm:p-7 rounded-2xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10 text-white font-serif font-bold text-base">
             <Layers className="w-5 h-5 text-emerald-400" />
-            <h3>1. Project Concept & Problem Space</h3>
+            <h3>1. Project Concept & Overview</h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -273,12 +314,12 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                Catchy Tagline (One-Liner)
+                Catchy Tagline
               </label>
               <input
                 id="submit-input-tagline"
                 type="text"
-                placeholder="e.g. Real-time UPI interceptor with heuristic packet checks."
+                placeholder="e.g. Real-time UPI transaction interceptor."
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
                 className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 placeholder-zinc-500"
@@ -294,7 +335,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
               id="submit-input-problem"
               required
               rows={3}
-              placeholder="What real-world pain point or market gap does your project address? (e.g. 3M patients suffer delayed retinopathy diagnoses...)"
+              placeholder="What problem does your project solve?"
               value={problemStatement}
               onChange={(e) => setProblemStatement(e.target.value)}
               className="w-full bg-[#18181b] border border-white/10 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none placeholder-zinc-500"
@@ -303,23 +344,22 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-              Proposed Solution & Innovation <span className="text-emerald-400">*</span>
+              Proposed Solution <span className="text-emerald-400">*</span>
             </label>
             <textarea
               id="submit-input-solution"
               required
               rows={3}
-              placeholder="Describe your technical solution, algorithm/architecture choices, and what makes it unique."
+              placeholder="Describe your technical architecture and solution."
               value={solutionDescription}
               onChange={(e) => setSolutionDescription(e.target.value)}
               className="w-full bg-[#18181b] border border-white/10 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none placeholder-zinc-500"
             />
           </div>
 
-          {/* Track selection override */}
           <div>
             <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-              Target Track / Domain
+              Target Track
             </label>
             <select
               id="submit-select-track"
@@ -341,12 +381,11 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
             <div className="flex items-center gap-2.5 text-white font-serif font-bold text-base">
               <Code className="w-5 h-5 text-emerald-400" />
-              <h3>2. Technologies & Tools Used</h3>
+              <h3>2. Technologies Used</h3>
             </div>
             <span className="text-xs text-zinc-400">{techStack.length} selected</span>
           </div>
 
-          {/* Quick Select common tags */}
           <div className="flex flex-wrap gap-2">
             {COMMON_TECH_STACK.map((tag) => {
               const isSelected = techStack.includes(tag);
@@ -367,11 +406,10 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             })}
           </div>
 
-          {/* Custom tag input */}
           <div className="flex items-center gap-2 pt-2">
             <input
               type="text"
-              placeholder="Add other tools/libraries (e.g. Scikit-learn, WebAssembly)..."
+              placeholder="Add other technologies..."
               value={customTagInput}
               onChange={(e) => setCustomTagInput(e.target.value)}
               onKeyDown={handleAddCustomTag}
@@ -386,34 +424,13 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
               Add
             </button>
           </div>
-
-          {/* Selected tags chip bar */}
-          {techStack.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-2">
-              {techStack.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#18181b] text-emerald-300 border border-emerald-500/20 text-xs font-mono"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="text-zinc-400 hover:text-rose-400 cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Section 3: Links & Deliverables */}
+        {/* Section 3: Links & PPT/PDF Upload (Imagekit 10MB Limit) */}
         <div className="bg-[#111114] border border-white/10 p-5 sm:p-7 rounded-2xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10 text-white font-serif font-bold text-base">
             <Globe className="w-5 h-5 text-emerald-400" />
-            <h3>3. Code & Deliverables Links</h3>
+            <h3>3. Code & Presentation Deliverables (PPT/PDF up to 10MB Limit)</h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -426,126 +443,87 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
                 id="submit-input-github"
                 type="url"
                 required
-                placeholder="https://github.com/your-team/origin-hack-project"
+                placeholder="https://github.com/your-team/origin-hack"
                 value={githubUrl}
                 onChange={(e) => setGithubUrl(e.target.value)}
-                className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono placeholder-zinc-500"
+                className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-zinc-400" />
-                Live Deployment URL (Optional but recommended)
+                Live Demo URL (Optional)
               </label>
               <input
                 id="submit-input-deployment"
                 type="url"
-                placeholder="https://your-project.vercel.app"
+                placeholder="https://your-demo.vercel.app"
                 value={deploymentUrl}
                 onChange={(e) => setDeploymentUrl(e.target.value)}
-                className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono placeholder-zinc-500"
+                className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {/* Imagekit PPT/PDF File Upload Field */}
+          <div className="p-4 bg-[#18181b] border border-white/10 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-emerald-400" />
+                Upload Presentation Slide Deck (PPT / PPTX / PDF)
+              </label>
+              <span className="text-[10px] font-mono text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                MAX SIZE: 10MB
+              </span>
+            </div>
+
+            <div className="relative border border-dashed border-white/20 hover:border-emerald-500/60 rounded-xl p-4 text-center cursor-pointer transition-colors bg-[#111114]">
+              <input
+                type="file"
+                accept=".pdf,.ppt,.pptx"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <Upload className="w-6 h-6 mx-auto text-emerald-400 mb-1.5" />
+              <span className="text-xs text-zinc-300 font-medium block">
+                {isUploadingDoc
+                  ? 'Uploading document to Imagekit...'
+                  : presentationFileName
+                  ? presentationFileName
+                  : 'Click or Drag PDF/PPT Deck (Strict 10MB Limit)'}
+              </span>
+            </div>
+
+            {presentationUrl && (
+              <div className="flex items-center justify-between p-2.5 bg-[#111114] rounded-lg border border-emerald-500/30 text-xs">
+                <span className="text-emerald-400 font-mono flex items-center gap-1.5">
+                  <FileCheck className="w-4 h-4" /> Imagekit Document Attached
+                </span>
+                <a
+                  href={presentationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-emerald-400 hover:underline font-semibold"
+                >
+                  Preview Slide Deck &rarr;
+                </a>
+              </div>
+            )}
+
             <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-zinc-400" />
-                Presentation Deck PPT / PDF Link (Google Slides, Canva, PDF)
+              <label className="block text-[11px] text-zinc-400 mb-1">
+                Or paste direct Google Slides / Canva Presentation link:
               </label>
               <input
-                id="submit-input-presentation"
                 type="url"
                 placeholder="https://docs.google.com/presentation/d/..."
                 value={presentationUrl}
                 onChange={(e) => setPresentationUrl(e.target.value)}
-                className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono placeholder-zinc-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                <Video className="w-3.5 h-3.5 text-zinc-400" />
-                Demo Video Walkthrough URL (YouTube, Loom, Drive)
-              </label>
-              <input
-                id="submit-input-video"
-                type="url"
-                placeholder="https://youtube.com/watch?v=... or Loom"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono placeholder-zinc-500"
+                className="w-full bg-[#111114] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
           </div>
-        </div>
-
-        {/* AI Pitch Coach & Judge Rubric Assistant */}
-        <div className="bg-[#111114] border border-white/10 p-5 sm:p-7 rounded-2xl shadow-xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <Bot className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-base font-serif font-bold text-white">
-                  Gemini AI Project Coach & Jury Simulator
-                </h4>
-                <p className="text-xs text-zinc-400">
-                  Instant AI feedback on your pitch deck clarity, rubric strengths & predicted jury questions.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleRunAiEvaluation}
-              disabled={isAnalyzingAI}
-              className="px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{isAnalyzingAI ? 'Evaluating Pitch...' : 'Run AI Coach Review'}</span>
-            </button>
-          </div>
-
-          {aiFeedback && (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-3 p-3 bg-[#18181b] border border-white/10 rounded-xl">
-                <div className="text-center px-3 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
-                  <span className="text-xs text-emerald-400 font-mono block">EST. SCORE</span>
-                  <span className="text-xl font-extrabold text-emerald-300 font-mono">
-                    {aiFeedback.scoreEstimate}/100
-                  </span>
-                </div>
-                <div className="text-xs text-zinc-300">
-                  <span className="font-bold text-white block mb-0.5">30-Second Elevator Pitch:</span>
-                  <p className="italic text-zinc-300">"{aiFeedback.elevatorPitch}"</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 bg-[#18181b] rounded-xl border border-white/10">
-                  <span className="font-bold text-emerald-400 block mb-2">Key Strengths:</span>
-                  <ul className="list-disc list-inside space-y-1 text-zinc-300">
-                    {aiFeedback.strengths?.map((s: string, idx: number) => (
-                      <li key={idx}>{s}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="p-3 bg-[#18181b] rounded-xl border border-white/10">
-                  <span className="font-bold text-amber-400 block mb-2">Jury Questions to Prepare For:</span>
-                  <ul className="list-disc list-inside space-y-1 text-zinc-300">
-                    {aiFeedback.juryQuestions?.map((q: string, idx: number) => (
-                      <li key={idx}>{q}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Submit button */}
@@ -553,15 +531,15 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           <button
             id="submit-btn-save-project"
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploadingDoc}
             className="w-full sm:w-auto min-w-[280px] px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
-              <span>Saving Project Submission...</span>
+              <span>Saving Deliverables...</span>
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                <span>{existingProject ? 'Update Project Submission' : 'Submit 24-Hour Project'}</span>
+                <span>{existingProject ? 'Update Project Deliverables' : 'Submit 24-Hour Project'}</span>
               </>
             )}
           </button>

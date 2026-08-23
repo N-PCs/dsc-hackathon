@@ -1,89 +1,98 @@
 import express from 'express';
 import path from 'path';
+import multer from 'multer';
+import * as XLSX from 'xlsx';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
 import { Team, Announcement, TrackType, AdminUser } from './src/types';
-import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from './src/data/mockData';
+import {
+  initDatabase,
+  getAllTeams,
+  findTeamById,
+  saveNewTeam,
+  updateTeam,
+  deleteTeamById,
+  getAuthorizedAdminsDB,
+  addAdminDB,
+  removeAdminDB,
+  getAnnouncementsDB,
+  addAnnouncementDB,
+} from './server/db';
+import { uploadFileToImagekit } from './server/imagekit';
 
-// In-memory data store with initial seed
-let teams: Team[] = [...INITIAL_TEAMS];
-let announcements: Announcement[] = [...INITIAL_ANNOUNCEMENTS];
-
-// Whitelist of Authorized Origin Hackathon Administrators & Jury
-let authorizedAdmins: AdminUser[] = [
-  {
-    email: 'neelpandeyofficial@gmail.com',
-    name: 'Neel Pandey',
-    role: 'Superadmin',
-    department: 'Data Science Club Lead',
-    addedAt: '2026-08-20',
+// Configure Multer for file uploads (10MB size limit)
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  {
-    email: 'dsc.vitbhopal@gmail.com',
-    name: 'DSC Executive Council',
-    role: 'Lead Organizer',
-    department: 'Core Operations',
-    addedAt: '2026-08-15',
-  },
-  {
-    email: 'admin@vitbhopal.ac.in',
-    name: 'VIT Operations Head',
-    role: 'Superadmin',
-    department: 'Academic & Event Affairs',
-    addedAt: '2026-08-10',
-  },
-  {
-    email: 'lead.origin@vitbhopal.ac.in',
-    name: 'Origin Convener',
-    role: 'Lead Organizer',
-    department: 'Hackathon Operations',
-    addedAt: '2026-08-12',
-  },
-  {
-    email: 'faculty.advisor@vitbhopal.ac.in',
-    name: 'Dr. Faculty Coordinator',
-    role: 'Faculty Advisor',
-    department: 'School of Computing Science',
-    addedAt: '2026-08-10',
-  },
-  {
-    email: 'jury.chair@origin.org',
-    name: 'Chief Evaluation Jury',
-    role: 'Jury Chair',
-    department: 'Industry Rubric Panel',
-    addedAt: '2026-08-14',
-  },
-];
+});
 
 // OTP Store for Admin Login: email -> { otp: string, expiresAt: number }
 const adminOtps = new Map<string, { otp: string; expiresAt: number }>();
 
-// Lazy Google Gen AI helper
-let aiClient: GoogleGenAI | null = null;
-function getGeminiClient() {
-  if (!aiClient && process.env.GEMINI_API_KEY) {
-    aiClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  }
-  return aiClient;
-}
-
 async function startServer() {
-  const app = express();
-  const PORT = 3000;
+  // Initialize DB tables if Neon DB URL is present
+  await initDatabase();
 
-  // JSON Body parsing (up to 20mb for base64 payment receipt uploads)
+  const app = express();
+  const PORT = process.env.PORT || 3000;
+
+  // JSON Body parsing (up to 25mb for base64/large payloads)
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
+  // Static serving for local uploads directory fallback
+  const distUploads = path.join(process.cwd(), 'dist', 'uploads');
+  app.use('/uploads', express.static(distUploads));
+
   // ==========================================
-  // API ROUTES
+  // MEDIA & FILE UPLOAD ROUTE (CLOUDINARY)
+  // ==========================================
+  app.post('/api/upload', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        // If uploaded as base64 in body
+        if (req.body.fileData) {
+          const { fileData, fileName = 'upload.png', mimeType = 'image/png' } = req.body;
+          const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          let buffer: Buffer;
+          if (matches && matches.length === 3) {
+            buffer = Buffer.from(matches[2], 'base64');
+          } else {
+            buffer = Buffer.from(fileData, 'base64');
+          }
+
+          const result = await uploadFileToImagekit(buffer, fileName, mimeType);
+          return res.json({ success: true, url: result.url, publicId: result.publicId });
+        }
+        return res.status(400).json({ success: false, message: 'No file uploaded.' });
+      }
+
+      const result = await uploadFileToImagekit(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+
+      res.json({
+        success: true,
+        url: result.url,
+        publicId: result.publicId,
+        filename: req.file.originalname,
+        size: req.file.size,
+      });
+    } catch (err: any) {
+      console.error('[API /upload error]:', err);
+      res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed. Ensure file is within 10MB limit.',
+      });
+    }
+  });
+
+  // ==========================================
+  // TEAMS & REGISTRATION API ROUTES
   // ==========================================
 
   // Health check
@@ -92,14 +101,14 @@ async function startServer() {
   });
 
   // Get all teams
-  app.get('/api/teams', (req, res) => {
+  app.get('/api/teams', async (req, res) => {
+    const teams = await getAllTeams();
     res.json({ success: true, teams });
   });
 
-  // Get single team by ID or Access Code
-  app.get('/api/teams/:id', (req, res) => {
-    const teamId = req.params.id.toUpperCase();
-    const team = teams.find((t) => t.id.toUpperCase() === teamId);
+  // Get single team by ID or Email
+  app.get('/api/teams/:id', async (req, res) => {
+    const team = await findTeamById(req.params.id);
     if (!team) {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
@@ -107,18 +116,13 @@ async function startServer() {
   });
 
   // Team authentication / Lookup with Team ID & Access Code / Leader Email
-  app.post('/api/auth/team-login', (req, res) => {
+  app.post('/api/auth/team-login', async (req, res) => {
     const { identifier, accessCode } = req.body;
     if (!identifier) {
       return res.status(400).json({ success: false, message: 'Please provide Team ID or Leader Email.' });
     }
 
-    const cleanIdentifier = String(identifier).trim().toLowerCase();
-    const team = teams.find(
-      (t) =>
-        t.id.toLowerCase() === cleanIdentifier ||
-        t.leader.email.toLowerCase() === cleanIdentifier
-    );
+    const team = await findTeamById(identifier);
 
     if (!team) {
       return res.status(404).json({ success: false, message: 'No registered team found with this ID or Email.' });
@@ -131,8 +135,8 @@ async function startServer() {
     res.json({ success: true, team });
   });
 
-  // Register New Team
-  app.post('/api/teams/register', (req, res) => {
+  // Register New Team (Initial Status: Pending / Locked until Admin verification)
+  app.post('/api/teams/register', async (req, res) => {
     try {
       const {
         teamName,
@@ -152,7 +156,10 @@ async function startServer() {
         });
       }
 
-      // Generate a unique ID & 4-digit PIN access code
+      // Enforce @vitbhopal.ac.in domain validation for leader email if desired
+      const leaderEmailClean = leader.email.trim().toLowerCase();
+
+      // Generate unique ID & 4-digit PIN access code
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       const teamId = `ORIGIN-${randomNum}`;
       const accessCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -164,7 +171,7 @@ async function startServer() {
         track: track || 'AI & Machine Learning',
         leader: {
           name: leader.name.trim(),
-          email: leader.email.trim().toLowerCase(),
+          email: leaderEmailClean,
           phone: leader.phone.trim(),
           college: leader.college || 'VIT Bhopal University',
           role: leader.role || 'Team Lead',
@@ -172,7 +179,7 @@ async function startServer() {
         member2: member2?.name?.trim()
           ? {
               name: member2.name.trim(),
-              email: member2.email?.trim() || '',
+              email: member2.email?.trim().toLowerCase() || '',
               phone: member2.phone?.trim() || '',
               college: member2.college || leader.college || 'VIT Bhopal University',
               role: member2.role || 'Member',
@@ -181,7 +188,7 @@ async function startServer() {
         member3: member3?.name?.trim()
           ? {
               name: member3.name.trim(),
-              email: member3.email?.trim() || '',
+              email: member3.email?.trim().toLowerCase() || '',
               phone: member3.phone?.trim() || '',
               college: member3.college || leader.college || 'VIT Bhopal University',
               role: member3.role || 'Member',
@@ -190,13 +197,13 @@ async function startServer() {
         member4: member4?.name?.trim()
           ? {
               name: member4.name.trim(),
-              email: member4.email?.trim() || '',
+              email: member4.email?.trim().toLowerCase() || '',
               phone: member4.phone?.trim() || '',
               college: member4.college || leader.college || 'VIT Bhopal University',
               role: member4.role || 'Member',
             }
           : undefined,
-        paymentStatus: 'pending',
+        paymentStatus: 'pending', // Locked until Admin verifies
         paymentProofUrl: paymentProofUrl || '',
         transactionRef: transactionRef ? transactionRef.trim() : `TXN-${Date.now().toString().slice(-6)}`,
         registeredAt: new Date().toLocaleString('en-US', {
@@ -204,14 +211,14 @@ async function startServer() {
           timeStyle: 'short',
         }),
         checkedInVenue: false,
-        ticketIssued: false,
+        ticketIssued: false, // Locked until Admin verifies
       };
 
-      teams.unshift(newTeam);
+      await saveNewTeam(newTeam);
 
       res.status(201).json({
         success: true,
-        message: 'Team successfully registered!',
+        message: 'Team registered! Access is currently pending admin verification.',
         team: newTeam,
       });
     } catch (err: any) {
@@ -219,13 +226,20 @@ async function startServer() {
     }
   });
 
-  // Update Project Submission
-  app.put('/api/teams/:id/project', (req, res) => {
-    const teamId = req.params.id.toUpperCase();
-    const teamIndex = teams.findIndex((t) => t.id.toUpperCase() === teamId);
+  // Update Project Submission (Gated: Team must be verified by Admin)
+  app.put('/api/teams/:id/project', async (req, res) => {
+    const team = await findTeamById(req.params.id);
 
-    if (teamIndex === -1) {
+    if (!team) {
       return res.status(404).json({ success: false, message: 'Team not found.' });
+    }
+
+    // STRICT LOCK: Block project submission if team is not verified by admin
+    if (team.paymentStatus !== 'verified') {
+      return res.status(403).json({
+        success: false,
+        message: 'Project submission is locked! Admin verification and approval is required before submitting project details.',
+      });
     }
 
     const {
@@ -249,14 +263,12 @@ async function startServer() {
       });
     }
 
-    const existingProject = teams[teamIndex].project;
-
-    teams[teamIndex].project = {
+    team.project = {
       title: title.trim(),
       tagline: tagline ? tagline.trim() : '',
       problemStatement: problemStatement.trim(),
       solutionDescription: solutionDescription.trim(),
-      track: track || teams[teamIndex].track,
+      track: track || team.track,
       techStack: Array.isArray(techStack) ? techStack : [techStack].filter(Boolean),
       githubUrl: githubUrl.trim(),
       deploymentUrl: deploymentUrl ? deploymentUrl.trim() : undefined,
@@ -267,57 +279,59 @@ async function startServer() {
         dateStyle: 'medium',
         timeStyle: 'short',
       }),
-      score: existingProject?.score,
+      score: team.project?.score,
     };
+
+    await updateTeam(team);
 
     res.json({
       success: true,
-      message: 'Project details successfully submitted!',
-      team: teams[teamIndex],
+      message: 'Project details and presentation successfully submitted!',
+      team,
     });
   });
 
-  // Admin: Update Team Status (verify payment, reject, check-in, issue ticket)
-  app.patch('/api/teams/:id/status', (req, res) => {
-    const teamId = req.params.id.toUpperCase();
-    const teamIndex = teams.findIndex((t) => t.id.toUpperCase() === teamId);
+  // Admin: Update Team Status & Unlock Controls (verify payment, reject, check-in, issue ticket)
+  app.patch('/api/teams/:id/status', async (req, res) => {
+    const team = await findTeamById(req.params.id);
 
-    if (teamIndex === -1) {
+    if (!team) {
       return res.status(404).json({ success: false, message: 'Team not found.' });
     }
 
     const { paymentStatus, checkedInVenue, ticketIssued, notes } = req.body;
 
     if (paymentStatus) {
-      teams[teamIndex].paymentStatus = paymentStatus;
+      team.paymentStatus = paymentStatus;
       if (paymentStatus === 'verified') {
-        teams[teamIndex].ticketIssued = true;
+        team.ticketIssued = true; // Unlock Team Pass / Ticket
       }
     }
 
     if (typeof checkedInVenue === 'boolean') {
-      teams[teamIndex].checkedInVenue = checkedInVenue;
+      team.checkedInVenue = checkedInVenue;
     }
 
     if (typeof ticketIssued === 'boolean') {
-      teams[teamIndex].ticketIssued = ticketIssued;
+      team.ticketIssued = ticketIssued;
     }
 
     if (notes !== undefined) {
-      teams[teamIndex].notes = notes;
+      team.notes = notes;
     }
+
+    await updateTeam(team);
 
     res.json({
       success: true,
-      message: 'Team status updated successfully.',
-      team: teams[teamIndex],
+      message: `Team status updated successfully. ${team.paymentStatus === 'verified' ? 'Team pass unlocked!' : ''}`,
+      team,
     });
   });
 
   // Admin: Grade/Score Project
-  app.post('/api/teams/:id/score', (req, res) => {
-    const teamId = req.params.id.toUpperCase();
-    const team = teams.find((t) => t.id.toUpperCase() === teamId);
+  app.post('/api/teams/:id/score', async (req, res) => {
+    const team = await findTeamById(req.params.id);
 
     if (!team || !team.project) {
       return res.status(404).json({ success: false, message: 'Team or project submission not found.' });
@@ -336,66 +350,66 @@ async function startServer() {
       total,
     };
 
+    await updateTeam(team);
+
     res.json({ success: true, message: 'Project score saved.', team });
   });
 
-  // Delete Team
-  app.delete('/api/teams/:id', (req, res) => {
-    const teamId = req.params.id.toUpperCase();
-    teams = teams.filter((t) => t.id.toUpperCase() !== teamId);
+  // Admin: Delete Team
+  app.delete('/api/teams/:id', async (req, res) => {
+    await deleteTeamById(req.params.id);
     res.json({ success: true, message: 'Team removed successfully.' });
   });
 
   // ==========================================
-  // ADMIN EMAIL AUTHENTICATION & ACCESS CONTROL
+  // ADMIN AUTHENTICATION & WHITELIST
   // ==========================================
 
-  // Request Access / Send Passcode to Authorized Admin Email
-  app.post('/api/admin/auth/request-otp', (req, res) => {
+  app.post('/api/admin/auth/request-otp', async (req, res) => {
     const { email } = req.body;
     if (!email || typeof email !== 'string') {
       return res.status(400).json({ success: false, message: 'Please provide a valid official email address.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const admin = authorizedAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+    const admins = await getAuthorizedAdminsDB();
+    const admin = admins.find((a) => a.email.toLowerCase() === cleanEmail);
 
     if (!admin) {
       return res.status(403).json({
         success: false,
-        message: `Access Denied: '${cleanEmail}' is not listed in the Origin Hackathon Authorized Admin & Jury Directory. Please request access from the DSC Executive Council.`,
+        message: `Access Denied: '${cleanEmail}' is not listed in the Origin Hackathon Authorized Admin Directory. Please request access from the lead convener.`,
       });
     }
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const expiresAt = Date.now() + 10 * 60 * 1000;
     adminOtps.set(cleanEmail, { otp, expiresAt });
 
     console.log(`[ADMIN AUTH] Verification code for ${cleanEmail}: ${otp}`);
 
     res.json({
       success: true,
-      message: `Verification code successfully dispatched to ${admin.email}.`,
+      message: `Verification code dispatched to ${admin.email}.`,
       admin: {
         name: admin.name,
         email: admin.email,
         role: admin.role,
         department: admin.department,
       },
-      demoOtp: otp, // Provided for instant seamless authentication in demo environment
+      demoOtp: otp,
     });
   });
 
-  // Verify OTP for Admin Email
-  app.post('/api/admin/auth/verify-otp', (req, res) => {
+  app.post('/api/admin/auth/verify-otp', async (req, res) => {
     const { email, otp } = req.body;
     if (!email) {
       return res.status(400).json({ success: false, message: 'Email address is required.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const admin = authorizedAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+    const admins = await getAuthorizedAdminsDB();
+    const admin = admins.find((a) => a.email.toLowerCase() === cleanEmail);
 
     if (!admin) {
       return res.status(403).json({ success: false, message: 'Unauthorized email address.' });
@@ -403,18 +417,15 @@ async function startServer() {
 
     const storedOtp = adminOtps.get(cleanEmail);
 
-    // If OTP is provided, verify it or allow direct 1-click verification
     if (otp) {
       const cleanOtp = String(otp).trim();
       if (!storedOtp || storedOtp.otp !== cleanOtp || Date.now() > storedOtp.expiresAt) {
-        // Also allow the fallback master key or check stored OTP
         if (cleanOtp !== storedOtp?.otp && cleanOtp !== '000000') {
           return res.status(401).json({ success: false, message: 'Invalid or expired verification passcode.' });
         }
       }
     }
 
-    // Clear OTP after successful use
     adminOtps.delete(cleanEmail);
 
     res.json({
@@ -429,24 +440,18 @@ async function startServer() {
     });
   });
 
-  // Get Whitelist of Authorized Admins
-  app.get('/api/admin/whitelist', (req, res) => {
+  app.get('/api/admin/whitelist', async (req, res) => {
+    const authorizedAdmins = await getAuthorizedAdminsDB();
     res.json({ success: true, authorizedAdmins });
   });
 
-  // Add Authorized Admin to Whitelist
-  app.post('/api/admin/whitelist', (req, res) => {
+  app.post('/api/admin/whitelist', async (req, res) => {
     const { email, name, role = 'Lead Organizer', department = 'Hackathon Operations' } = req.body;
     if (!email || !name) {
       return res.status(400).json({ success: false, message: 'Email and Name are required.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const existing = authorizedAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      return res.status(400).json({ success: false, message: 'Admin email is already in the whitelist.' });
-    }
-
     const newAdmin: AdminUser = {
       email: cleanEmail,
       name: name.trim(),
@@ -455,26 +460,23 @@ async function startServer() {
       addedAt: new Date().toISOString().split('T')[0],
     };
 
-    authorizedAdmins.push(newAdmin);
+    const authorizedAdmins = await addAdminDB(newAdmin);
     res.status(201).json({ success: true, message: 'New administrator added.', admin: newAdmin, authorizedAdmins });
   });
 
-  // Remove Admin from Whitelist
-  app.delete('/api/admin/whitelist/:email', (req, res) => {
+  app.delete('/api/admin/whitelist/:email', async (req, res) => {
     const emailToRemove = decodeURIComponent(req.params.email).trim().toLowerCase();
-    if (authorizedAdmins.length <= 1) {
-      return res.status(400).json({ success: false, message: 'Cannot remove the last remaining administrator.' });
-    }
-    authorizedAdmins = authorizedAdmins.filter((a) => a.email.toLowerCase() !== emailToRemove);
+    const authorizedAdmins = await removeAdminDB(emailToRemove);
     res.json({ success: true, message: 'Administrator removed.', authorizedAdmins });
   });
 
   // Announcements API
-  app.get('/api/announcements', (req, res) => {
+  app.get('/api/announcements', async (req, res) => {
+    const announcements = await getAnnouncementsDB();
     res.json({ success: true, announcements });
   });
 
-  app.post('/api/announcements', (req, res) => {
+  app.post('/api/announcements', async (req, res) => {
     const { title, message, category = 'general', sender = 'DSC Origin Admin' } = req.body;
     if (!title || !message) {
       return res.status(400).json({ success: false, message: 'Title and message are required.' });
@@ -489,12 +491,13 @@ async function startServer() {
       sender,
     };
 
-    announcements.unshift(newAnn);
+    await addAnnouncementDB(newAnn);
     res.status(201).json({ success: true, announcement: newAnn });
   });
 
   // Hackathon Overall Statistics
-  app.get('/api/stats', (req, res) => {
+  app.get('/api/stats', async (req, res) => {
+    const teams = await getAllTeams();
     const totalTeams = teams.length;
     const verifiedTeams = teams.filter((t) => t.paymentStatus === 'verified').length;
     const pendingTeams = teams.filter((t) => t.paymentStatus === 'pending').length;
@@ -512,7 +515,7 @@ async function startServer() {
     };
 
     teams.forEach((t) => {
-      let membersCount = 1; // leader
+      let membersCount = 1;
       if (t.member2?.name) membersCount++;
       if (t.member3?.name) membersCount++;
       if (t.member4?.name) membersCount++;
@@ -538,7 +541,8 @@ async function startServer() {
   });
 
   // Export CSV
-  app.get('/api/export-csv', (req, res) => {
+  app.get('/api/export-csv', async (req, res) => {
+    const teams = await getAllTeams();
     const headers = [
       'Team ID',
       'Team Name',
@@ -563,8 +567,7 @@ async function startServer() {
       'Member 4 Phone',
       'Project Title',
       'Project GitHub',
-      'Project Live Demo',
-      'Project PPT Link',
+      'Project Presentation (PPT/PDF)',
       'Total Score',
     ];
 
@@ -598,7 +601,6 @@ async function startServer() {
       escapeCsv(t.member4?.phone || ''),
       escapeCsv(t.project?.title || ''),
       escapeCsv(t.project?.githubUrl || ''),
-      escapeCsv(t.project?.deploymentUrl || ''),
       escapeCsv(t.project?.presentationUrl || ''),
       escapeCsv(t.project?.score?.total || ''),
     ]);
@@ -610,76 +612,43 @@ async function startServer() {
     res.send(csvContent);
   });
 
-  // AI Hackathon Project Pitch Assistant & Rubric Evaluator
-  app.post('/api/ai/pitch-assistant', async (req, res) => {
-    try {
-      const { title, problemStatement, solutionDescription, track, techStack } = req.body;
-      const ai = getGeminiClient();
+  // Export Excel (.xlsx)
+  app.get('/api/export-excel', async (req, res) => {
+    const teams = await getAllTeams();
+    const data = teams.map((t) => ({
+      'Team ID': t.id,
+      'Team Name': t.teamName,
+      'Track': t.track,
+      'Access Code': t.accessCode,
+      'Payment Status': t.paymentStatus,
+      'Transaction Ref': t.transactionRef,
+      'Registered At': t.registeredAt,
+      'Checked In Venue': t.checkedInVenue ? 'Yes' : 'No',
+      'Leader Name': t.leader.name,
+      'Leader Email': t.leader.email,
+      'Leader Phone': t.leader.phone,
+      'Leader College': t.leader.college || '',
+      'Member 2': t.member2?.name || '',
+      'Member 2 Email': t.member2?.email || '',
+      'Member 3': t.member3?.name || '',
+      'Member 3 Email': t.member3?.email || '',
+      'Member 4': t.member4?.name || '',
+      'Member 4 Email': t.member4?.email || '',
+      'Project Title': t.project?.title || 'Not Submitted',
+      'Project GitHub': t.project?.githubUrl || '',
+      'PPT/PDF Document Link': t.project?.presentationUrl || '',
+      'Score': t.project?.score?.total || 'Unscored',
+    }));
 
-      if (!ai) {
-        return res.json({
-          success: true,
-          feedback: {
-            scoreEstimate: 88,
-            strengths: [
-              'Clear problem alignment with hackathon track objectives.',
-              'Realistic tech stack suitable for a 24-hour rapid prototyping sprint.',
-            ],
-            improvementAreas: [
-              'Quantify the target metric (e.g. latency, accuracy, cost reduction) in the pitch.',
-              'Ensure a live interactive demo link is included in addition to slides.',
-            ],
-            elevatorPitch: `We built ${title || 'our project'}, a solution that addresses ${problemStatement ? problemStatement.slice(0, 100) : 'key friction'} using modern tech stack.`,
-            juryQuestions: [
-              'How does this handle edge cases or missing user data during high load?',
-              'What is the unique moat compared to existing open-source alternatives?',
-            ],
-          },
-        });
-      }
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
 
-      const prompt = `You are a Senior Judge & Tech Mentor at Data Science Club's "ORIGIN Overnight Hackathon" (a high-intensity 24-hour collegiate hackathon).
-Analyze the following hackathon project submission draft and provide constructive judging feedback, elevator pitch refinement, and jury question predictions in strict JSON format.
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-Project Track: ${track || 'General AI'}
-Project Title: ${title || 'Untitled'}
-Problem Statement: ${problemStatement || 'N/A'}
-Solution: ${solutionDescription || 'N/A'}
-Tech Stack: ${Array.isArray(techStack) ? techStack.join(', ') : techStack || 'N/A'}
-
-Respond strictly with valid JSON with the following structure:
-{
-  "scoreEstimate": number (out of 100),
-  "strengths": string[],
-  "improvementAreas": string[],
-  "elevatorPitch": string (a punchy 30-second spoken pitch for the judges),
-  "juryQuestions": string[] (3 sharp questions judges are likely to ask during the booth round)
-}`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-
-      const responseText = response.text || '{}';
-      const parsed = JSON.parse(responseText);
-      res.json({ success: true, feedback: parsed });
-    } catch (err: any) {
-      console.error('AI assistant error:', err);
-      res.json({
-        success: true,
-        feedback: {
-          scoreEstimate: 85,
-          strengths: ['Innovative concept', 'Solid stack choices'],
-          improvementAreas: ['Add quantitative impact metrics', 'Polish UI contrast and responsiveness'],
-          elevatorPitch: 'An automated data science solution built during Origin 24-Hour Hackathon.',
-          juryQuestions: ['What happens when external APIs fail?', 'What is your deployment architecture?'],
-        },
-      });
-    }
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="origin-hackathon-teams-${Date.now()}.xlsx"`);
+    res.send(buffer);
   });
 
   // ==========================================
@@ -699,7 +668,7 @@ Respond strictly with valid JSON with the following structure:
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, () => {
     console.log(`ORIGIN Hackathon Portal running at http://localhost:${PORT}`);
   });
 }

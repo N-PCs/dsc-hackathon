@@ -153,7 +153,7 @@ export const INITIAL_TEAMS: Team[] = [
       problemStatement: 'Rural clinics lack specialist ophthalmologists, delaying retinopathy diagnoses and causing preventable blindness in over 3 million diabetes patients annually.',
       solutionDescription: 'A lightweight vision transformer model optimized for mobile phones and web browsers that runs inference on retinal fundus scans with 97.4% precision without requiring cloud compute.',
       track: 'AI & Machine Learning',
-      techStack: ['PyTorch', 'TensorFlow.js', 'FastAPI', 'React 19', 'TailwindCSS', 'Gemini API'],
+      techStack: ['PyTorch', 'TensorFlow.js', 'FastAPI', 'React 19', 'TailwindCSS'],
       githubUrl: 'https://github.com/NeuralKnights/neuro-vision-origin',
       deploymentUrl: 'https://neurovision-origin.vercel.app',
       presentationUrl: 'https://docs.google.com/presentation/d/1demo-neurovision-origin',
