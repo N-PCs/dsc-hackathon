@@ -1,5 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { Team, Announcement, TrackType, AdminUser } from '../src/types';
@@ -584,6 +583,6 @@ app.get('/api/export-excel', async (req, res) => {
   res.send(buffer);
 });
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req: Request, res: Response) {
   return app(req, res);
 }
