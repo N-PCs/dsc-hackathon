@@ -1,6 +1,6 @@
 # Origin Hackathon Portal
 
-(🟢 React, 🟢 TypeScript, 🟢 Vite, 🟢 TailwindCSS, 🟢 Neon PostgreSQL, 🟢 Clerk, 🟢 Imagekit)
+(React, TypeScript, Vite, Tailwind CSS, Neon PostgreSQL, Clerk, Imagekit)
 
 ## Intro
 
@@ -38,6 +38,7 @@ DSC-Hackathon/
 
 ```mermaid
 flowchart TD
+    %% === REGISTRATION FLOW ===
     A[Team Registration] --> B[Payment Screenshot Upload]
     B -->|/api/upload→Imagekit| C[URL Stored in DB]
     C --> D[Status: pending_verification]
@@ -45,20 +46,54 @@ flowchart TD
     E -->|Verify| F[Payment Status: verified]
     F --> G[Project Submission Portal Unlocks]
     E -->|Reject| H[Status: rejected]
+
+    %% === PROJECT SUBMISSION FLOW ===
     G --> I[Project Details Upload]
     I -->|/api/upload→Imagekit| J[Presentation URL Stored]
     J --> K[Project Submitted]
+
+    %% === ADMIN ACTIONS FLOW ===
+    L[Admin Login (Clerk OTP)] --> M[Admin Dashboard]
+    M --> N[Verify Teams]
+    N --> O[Update Payment Status]
+    O --> P[Issue Team Pass/Ticket]
+    P --> Q[Project Scoring]
+    Q --> R[Export CSV/Excel]
+
+    %% === USER FLOWS ===
+    S[Team Login (Clerk)] --> T[Access Team Portal]
+    T --> U[View Payment Status]
+    U -->|verified| V[Submit Project]
+    U -->|pending| W[Upload Payment Proof]
+
     style A fill:#1f1f23,color:#fff
-    style B fill:#2d3748,color:#fff
-    style C fill:#2d3748,color:#fff
-    style D fill:#2d3748,color:#fff
-    style E fill:#2d3748,color:#fff
-    style F fill:#2d3748,color:#fff
-    style G fill:#2d3748,color:#fff
-    style H fill:#2d3748,color:#fff
-    style I fill:#2d3748,color:#fff
-    style J fill:#2d3748,color:#fff
-    style K fill:#2d3748,color:#fff
+    style B fill:#1f1f23,color:#fff
+    style C fill:#1f1f23,color:#fff
+    style D fill:#1f1f23,color:#fff
+    style E fill:#1f1f23,color:#fff
+    style F fill:#1f1f23,color:#fff
+    style G fill:#1f1f23,color:#fff
+    style H fill:#1f1f23,color:#fff
+    style I fill:#1f1f23,color:#fff
+    style J fill:#1f1f23,color:#fff
+    style K fill:#1f1f23,color:#fff
+    style L fill:#1f1f23,color:#fff
+    style M fill:#1f1f23,color:#fff
+    style N fill:#1f1f23,color:#fff
+    style O fill:#1f1f23,color:#fff
+    style P fill:#1f1f23,color:#fff
+    style Q fill:#1f1f23,color:#fff
+    style R fill:#1f1f23,color:#fff
+    style S fill:#1f1f23,color:#fff
+    style T fill:#1f1f23,color:#fff
+    style U fill:#1f1f23,color:#fff
+    style V fill:#1f1f23,color:#fff
+    style W fill:#1f1f23,color:#fff
+    style X fill:#1f1f23,color:#fff
+
+    %% Legend
+    classDef process fill:#1f1f23,color:#fff,stroke:#2d3748,stroke-width:2px;
+    classDef decision fill:#2d3748,color:#fff,stroke:#ed8936,stroke-width:2px;
 ```
 
 ## Installation/Setup
@@ -125,7 +160,7 @@ This project is configured for seamless deployment on Vercel. The platform autom
 5. Deploy - Vercel will run `npm run build` then start the Node.js server
 
 ### Local Development vs Production
-- **Local**: `npm run dev` (uses `tsx server.ts` for hot reloading)
+- **Local**: `npm run dev` (uses `tsx server.ts` for hot reloading, loads `.env` via `dotenv/config`)
 - **Production/Vercel**: Uses `dist/server.cjs` built with esbuild
 
 ### Vercel Configuration
