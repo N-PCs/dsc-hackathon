@@ -17,6 +17,8 @@ import {
   removeAdminDB,
   getAnnouncementsDB,
   addAnnouncementDB,
+  getSubmissionStatusDB,
+  setSubmissionStatusDB,
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
 
@@ -229,6 +231,14 @@ async function startServer() {
 
   // Update Project Submission (Gated: Team must be verified by Admin)
   app.put('/api/teams/:id/project', async (req, res) => {
+    const isSubmissionsOpen = await getSubmissionStatusDB();
+    if (!isSubmissionsOpen) {
+      return res.status(403).json({
+        success: false,
+        message: 'Project submissions are currently closed by the Admin! Submissions will open when enabled by the organizers.',
+      });
+    }
+
     const team = await findTeamById(req.params.id);
 
     if (!team) {
@@ -469,6 +479,25 @@ async function startServer() {
     const emailToRemove = decodeURIComponent(req.params.email).trim().toLowerCase();
     const authorizedAdmins = await removeAdminDB(emailToRemove);
     res.json({ success: true, message: 'Administrator removed.', authorizedAdmins });
+  });
+
+  // SUBMISSIONS TOGGLE API
+  app.get('/api/admin/submissions-status', async (req, res) => {
+    const submissionsOpen = await getSubmissionStatusDB();
+    res.json({ success: true, submissionsOpen });
+  });
+
+  app.post('/api/admin/submissions-toggle', async (req, res) => {
+    const { submissionsOpen } = req.body;
+    if (typeof submissionsOpen !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'submissionsOpen boolean property required.' });
+    }
+    const updated = await setSubmissionStatusDB(submissionsOpen);
+    res.json({
+      success: true,
+      submissionsOpen: updated,
+      message: `Project submissions are now ${updated ? 'OPEN' : 'CLOSED'}.`,
+    });
   });
 
   // Announcements API

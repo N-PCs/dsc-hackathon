@@ -70,10 +70,23 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
   const [videoUrl, setVideoUrl] = useState(existingProject?.videoUrl || '');
 
   // Submitting states
+  const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Check backend submission gate status on load
+  React.useEffect(() => {
+    fetch('/api/admin/submissions-status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setIsSubmissionsOpen(data.submissionsOpen);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const toggleTechTag = (tag: string) => {
     if (techStack.includes(tag)) {
@@ -217,6 +230,31 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         >
           Sign In to Team Workspace
         </button>
+      </div>
+    );
+  }
+
+  // STRICT LOCK GUARD: Block if Admin turned off submissions globally
+  if (!isSubmissionsOpen) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="w-20 h-20 rounded-3xl bg-rose-500/10 border-2 border-rose-500/30 mx-auto flex items-center justify-center text-rose-400 mb-5 shadow-xl shadow-rose-500/10">
+          <Lock className="w-10 h-10" />
+        </div>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono mb-3">
+          <span>PORTAL STATUS: SUBMISSIONS CLOSED BY ORGANIZERS</span>
+        </div>
+        <h3 className="text-2xl font-serif font-bold text-white mb-2">
+          Project Submissions Are Currently Locked
+        </h3>
+        <p className="text-zinc-400 text-sm mb-6 leading-relaxed max-w-md mx-auto">
+          The 24-hour project submission window is currently disabled by the DSC Executive Panel.
+        </p>
+        <div className="bg-[#111114] border border-white/10 rounded-2xl p-5 text-center max-w-md mx-auto space-y-2 mb-6">
+          <p className="text-xs text-zinc-300 font-medium">
+            Submissions will open when enabled by the hackathon conveners. Please stay tuned to live broadcast updates!
+          </p>
+        </div>
       </div>
     );
   }

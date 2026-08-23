@@ -25,8 +25,9 @@ A full-stack hackathon portal for managing team registrations, payment verificat
 
 - **Team Registration** — Create team profiles with lead details, member info, access codes, and payment proof upload.
 - **Payment Verification Workflow** — Admin can review payment screenshots, verify or reject, and unlock access to submission features.
-- **Project Submission Portal** — Verified teams can submit project details, links, and media assets required for final evaluation.
-- **Admin Dashboard** — Manage registration status, issue tickets, assign scores, and export team records for review.
+- **Project Submission Portal** — Verified teams can submit project details, links, and media assets (PPT/PDF up to 10MB) when submissions are unlocked by organizers.
+- **Admin Submissions Gate** — Organizers can globally open or close project submissions directly from the Admin Panel with a single toggle.
+- **Admin Dashboard** — Manage registration status, issue tickets, toggle submission window, assign scores, and export team records.
 - **Secure Auth & Storage** — Clerk handles authentication, while image uploads are stored through ImageKit and DB records keep the project state structured.
 - **Responsive Hackathon UI** — Dark, modern interface built with TailwindCSS v4 to support event operations on desktop and mobile.
 
@@ -108,7 +109,7 @@ DSC-Hackathon/
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - npm or pnpm
 - Neon Postgres database
 - Clerk account
@@ -185,7 +186,7 @@ This project is configured for seamless deployment on Vercel. The platform autom
 
 ### Vercel Configuration
 The `vercel.json` file configures:
-- Node.js 20.x runtime for the server function
+- Node.js 24.x runtime for the server function
 - Route rewriting from `/*` to `dist/server.cjs`
 - Security headers (X-Content-Type-Options, X-Frame-Options)
 

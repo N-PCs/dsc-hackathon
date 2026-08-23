@@ -94,6 +94,10 @@ export async function initDatabase() {
           timestamp VARCHAR(100),
           sender VARCHAR(100)
         );
+        CREATE TABLE IF NOT EXISTS settings (
+          key VARCHAR(100) PRIMARY KEY,
+          value TEXT NOT NULL
+        );
       `);
       console.log('[NeonDB] Database tables initialized successfully.');
     } finally {
@@ -276,6 +280,38 @@ export async function getAnnouncementsDB(): Promise<Announcement[]> {
     }
   }
   return localAnnouncements;
+}
+
+let localSubmissionsOpen = false;
+
+export async function getSubmissionStatusDB(): Promise<boolean> {
+  if (useNeon && pool) {
+    try {
+      const res = await pool.query("SELECT value FROM settings WHERE key = 'submissions_open'");
+      if (res.rows.length > 0) {
+        return res.rows[0].value === 'true';
+      }
+    } catch (err) {
+      console.error('[NeonDB] Error fetching submission status:', err);
+    }
+  }
+  return localSubmissionsOpen;
+}
+
+export async function setSubmissionStatusDB(isOpen: boolean): Promise<boolean> {
+  localSubmissionsOpen = isOpen;
+  if (useNeon && pool) {
+    try {
+      await pool.query(
+        `INSERT INTO settings (key, value) VALUES ('submissions_open', $1)
+         ON CONFLICT (key) DO UPDATE SET value = $1`,
+        [String(isOpen)]
+      );
+    } catch (err) {
+      console.error('[NeonDB] Error updating submission status:', err);
+    }
+  }
+  return localSubmissionsOpen;
 }
 
 export async function addAnnouncementDB(ann: Announcement): Promise<Announcement> {

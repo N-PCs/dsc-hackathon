@@ -165,8 +165,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [annCategory, setAnnCategory] = useState<'urgent' | 'schedule' | 'food' | 'mentorship' | 'general'>('general');
   const [annSuccess, setAnnSuccess] = useState(false);
 
-  // Fetch whitelist from backend if available
+  // Submission Gate state
+  const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(false);
+  const [isTogglingSubmissions, setIsTogglingSubmissions] = useState(false);
+
+  // Fetch submission status and whitelist from backend
   useEffect(() => {
+    fetch('/api/admin/submissions-status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setIsSubmissionsOpen(data.submissionsOpen);
+        }
+      })
+      .catch(() => {});
+
     fetch('/api/admin/whitelist')
       .then((res) => res.json())
       .then((data) => {
@@ -175,10 +188,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           localStorage.setItem('origin_admin_whitelist', JSON.stringify(data.authorizedAdmins));
         }
       })
-      .catch(() => {
-        // Fallback to local state
-      });
+      .catch(() => {});
   }, []);
+
+  const handleToggleSubmissions = async () => {
+    const nextState = !isSubmissionsOpen;
+    setIsTogglingSubmissions(true);
+    try {
+      const res = await fetch('/api/admin/submissions-toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionsOpen: nextState }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsSubmissionsOpen(data.submissionsOpen);
+      }
+    } catch (err) {
+      alert('Failed to toggle submission status.');
+    } finally {
+      setIsTogglingSubmissions(false);
+    }
+  };
 
   // Handle Requesting Access with Email
   const handleRequestEmailAccess = async (targetEmail?: string) => {
@@ -692,6 +723,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            id="admin-btn-toggle-submissions"
+            onClick={handleToggleSubmissions}
+            disabled={isTogglingSubmissions}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer border ${
+              isSubmissionsOpen
+                ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 border-emerald-400/50'
+                : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/40'
+            }`}
+          >
+            <Lock className="w-4 h-4" />
+            <span>
+              {isTogglingSubmissions
+                ? 'Updating...'
+                : isSubmissionsOpen
+                ? 'Submissions: OPEN (Click to Lock)'
+                : 'Submissions: CLOSED (Click to Open)'}
+            </span>
+          </button>
+
           <button
             id="admin-btn-export-excel"
             onClick={handleExportExcel}
