@@ -34,6 +34,24 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
     setIsLoading(true);
 
     try {
+      // 1. Check if the entered identifier is an Admin / Jury Email
+      const adminRes = await fetch('/api/admin/auth/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: identifier.trim() }),
+      });
+      const adminData = await adminRes.json();
+
+      if (adminRes.ok && adminData.success) {
+        // Automatically transition to Admin Console!
+        onClose();
+        if ((window as any).setActiveTabGlobal) {
+          (window as any).setActiveTabGlobal('admin');
+        }
+        return;
+      }
+
+      // 2. Otherwise proceed with regular Team Login
       const res = await fetch('/api/auth/team-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,13 +64,13 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'No registered team found with this ID or Email.');
+        throw new Error(data.message || 'No registered team or authorized admin found with this email or ID.');
       }
 
       onLoginSuccess(data.team);
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to authenticate team.');
+      setErrorMsg(err.message || 'Failed to authenticate.');
     } finally {
       setIsLoading(false);
     }

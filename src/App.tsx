@@ -12,7 +12,11 @@ import { Team, Announcement, HackathonStats, TrackType, PaymentStatus } from './
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from './data/mockData';
 import { Terminal, Heart, Sparkles, Shield, Ticket, Send, Clock, BookOpen } from 'lucide-react';
 
+import { useUser } from '@clerk/clerk-react';
+import { isAdminEmail } from './lib/clerk';
+
 export default function App() {
+  const { user, isSignedIn } = useUser();
   const [activeTab, setActiveTab] = useState<'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin'>('home');
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
@@ -20,8 +24,39 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedTrackForReg, setSelectedTrackForReg] = useState<TrackType>('AI & Machine Learning');
 
+  // Sync Clerk authenticated user
+  useEffect(() => {
+    if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
+      const email = user.primaryEmailAddress.emailAddress.toLowerCase();
+      if (isAdminEmail(email)) {
+        const adminObj = {
+          email,
+          name: user.fullName || user.firstName || 'Authorized Admin',
+          role: 'Superadmin' as const,
+          department: 'Executive Operations',
+          addedAt: new Date().toISOString().split('T')[0],
+        };
+        localStorage.setItem('origin_active_admin', JSON.stringify(adminObj));
+      }
+
+      // Check if user is leader/member of any team
+      const matchedTeam = teams.find(
+        (t) =>
+          t.leader.email.toLowerCase() === email ||
+          t.member2?.email?.toLowerCase() === email ||
+          t.member3?.email?.toLowerCase() === email ||
+          t.member4?.email?.toLowerCase() === email
+      );
+      if (matchedTeam) {
+        setActiveTeam(matchedTeam);
+        localStorage.setItem('origin_active_team_id', matchedTeam.id);
+      }
+    }
+  }, [isSignedIn, user, teams]);
+
   // Load active team from localStorage on initial mount
   useEffect(() => {
+    (window as any).setActiveTabGlobal = setActiveTab;
     try {
       const savedTeamId = localStorage.getItem('origin_active_team_id');
       if (savedTeamId) {
@@ -224,6 +259,7 @@ export default function App() {
         registeredTeamCount={teams.length}
         hasActiveTeam={!!activeTeam}
         isAdmin={activeTab === 'admin'}
+        onOpenLogin={() => setIsLoginModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -341,17 +377,19 @@ export default function App() {
             >
               Submit 24H Project
             </button>
-            <button
-              onClick={() => setActiveTab('admin')}
-              className="hover:text-emerald-400 text-emerald-400/90 transition-colors flex items-center gap-1 font-mono font-bold cursor-pointer"
-            >
-              <Shield className="w-3.5 h-3.5" /> Admin Console
-            </button>
           </div>
 
-          <div className="text-[11px] text-zinc-400 text-center md:text-right font-mono">
+          <div className="text-[11px] text-zinc-400 text-center md:text-right font-mono flex flex-col items-center md:items-end gap-1">
             <span>24-Hour Code Freeze Protocol Active</span>
             <div className="text-zinc-500">All submissions verified by DSC Jury</div>
+            <button
+              onClick={() => setActiveTab('admin')}
+              className="mt-1 text-[10px] text-zinc-600 hover:text-emerald-400/90 transition-colors flex items-center gap-1 cursor-pointer select-none font-sans"
+              title="Organiser & Jury Portal Access"
+            >
+              <Shield className="w-3 h-3 opacity-60" />
+              <span>Organiser Access</span>
+            </button>
           </div>
         </div>
       </footer>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Sparkles, Terminal, Shield, Ticket, Send, Award, Clock } from 'lucide-react';
+import { Sparkles, Terminal, Shield, Ticket, Send, Award, Clock, LogIn } from 'lucide-react';
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 
 interface NavbarProps {
   activeTab: 'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin';
@@ -7,6 +8,7 @@ interface NavbarProps {
   registeredTeamCount: number;
   hasActiveTeam: boolean;
   isAdmin: boolean;
+  onOpenLogin: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -15,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   registeredTeamCount,
   hasActiveTeam,
   isAdmin,
+  onOpenLogin,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#09090b]/90 backdrop-blur-md">
@@ -116,25 +119,35 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </nav>
 
-        {/* Right action & Admin switch */}
+        {/* Right action with Clerk Auth */}
         <div className="flex items-center gap-2.5">
           <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-[#121215] border border-white/10 rounded-lg text-xs font-mono text-zinc-400">
             <span className="text-emerald-400 font-bold">{registeredTeamCount}</span>
             <span>Teams Registered</span>
           </div>
 
-          <button
-            id="nav-btn-admin-portal"
-            onClick={() => setActiveTab('admin')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border ${
-              activeTab === 'admin' || isAdmin
-                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-sm shadow-purple-500/20'
-                : 'bg-[#121215] text-zinc-400 hover:text-purple-300 border-white/10 hover:border-purple-500/30'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5 text-purple-400" />
-            <span>Admin</span>
-          </button>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button
+                id="nav-btn-clerk-sign-in"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-zinc-950 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/10 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In</span>
+              </button>
+            </SignInButton>
+          </SignedOut>
+
+          <SignedIn>
+            <UserButton
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  avatarBox: 'w-9 h-9 rounded-xl border border-emerald-500/30',
+                },
+              }}
+            />
+          </SignedIn>
         </div>
       </div>
 
