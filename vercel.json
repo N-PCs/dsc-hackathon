@@ -2,18 +2,13 @@
   "framework": "vite",
   "functions": {
     "dist/server.cjs": {
-      "runtime": "nodejs20.x"
+      "runtime": "nodejs20"
     }
   },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "dist/server.cjs"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
+      "dest": "dist/server.cjs",
       "headers": [
         {
           "key": "X-Content-Type-Options",
