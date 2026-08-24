@@ -34,6 +34,11 @@ const upload = multer({
 // OTP Store for Admin Login: email -> { otp: string, expiresAt: number }
 const adminOtps = new Map<string, { otp: string; expiresAt: number }>();
 
+// Global unhandled rejection handler to avoid crashes and ensure JSON errors
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Unhandled Rejection]', reason);
+});
+
 async function startServer() {
   // Initialize DB tables if Neon DB URL is present
   await initDatabase();
@@ -697,6 +702,16 @@ async function startServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Global error handler to always return JSON
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error('[Express Error]', err);
+    if (res.headersSent) return next(err);
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || 'Internal Server Error',
+    });
+  });
 
   app.listen(PORT, () => {
     console.log(`ORIGIN Hackathon Portal running at http://localhost:${PORT}`);

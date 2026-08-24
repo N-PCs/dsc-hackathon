@@ -103,6 +103,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       try {
         return JSON.parse(saved);
       } catch (e) {
+        localStorage.removeItem('origin_admin_whitelist');
         return DEFAULT_AUTHORIZED_ADMINS;
       }
     }
@@ -116,6 +117,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       try {
         return JSON.parse(saved);
       } catch (e) {
+        localStorage.removeItem('origin_active_admin');
         return null;
       }
     }

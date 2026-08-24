@@ -95,9 +95,18 @@ export default function App() {
   // Fetch teams & announcements from API
   const fetchTeamsAndStats = async () => {
     try {
+      const safeJson = async (res: Response) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          const txt = await res.text();
+          throw new Error(`Invalid JSON response: ${txt.slice(0,100)}`);
+        }
+        return res.json();
+      };
       const [teamsRes, annRes] = await Promise.all([
-        fetch('/api/teams').then((r) => r.json()),
-        fetch('/api/announcements').then((r) => r.json()),
+        fetch('/api/teams').then(safeJson),
+        fetch('/api/announcements').then(safeJson),
       ]);
 
       if (teamsRes.success && teamsRes.teams) {
