@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { RegistrationForm } from './components/RegistrationForm';
@@ -8,16 +9,20 @@ import { AdminPortal } from './components/AdminPortal';
 import { HackathonScheduleRules } from './components/HackathonScheduleRules';
 import { TeamLoginModal } from './components/TeamLoginModal';
 import { LiveAnnouncementsBanner } from './components/LiveAnnouncementsBanner';
+import { SponsorsSection } from './components/SponsorsSection';
+import { FAQSection } from './components/FAQSection';
 import { Team, Announcement, HackathonStats, TrackType, PaymentStatus } from './types';
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from './data/mockData';
-import { Terminal, Heart, Sparkles, Shield, Ticket, Send, Clock, BookOpen } from 'lucide-react';
+import { Terminal, Shield } from 'lucide-react';
 
 import { useUser } from '@clerk/clerk-react';
 import { isAdminEmail } from './lib/clerk';
 
 export default function App() {
   const { user, isSignedIn } = useUser();
-  const [activeTab, setActiveTab] = useState<'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin'>('home');
+  const [activeTab, setActiveTab] = useState<
+    'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'faq'
+  >('home');
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
   const [activeTeam, setActiveTeam] = useState<Team | null>(null);
@@ -245,7 +250,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white flex flex-col selection:bg-emerald-500/30 selection:text-emerald-300">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600/20 selection:text-blue-900 transition-colors">
       {/* Live Announcement Ticker */}
       <LiveAnnouncementsBanner announcements={announcements} />
 
@@ -259,57 +264,70 @@ export default function App() {
         onOpenLogin={() => setIsLoginModalOpen(true)}
       />
 
-      {/* Main View Router */}
+      {/* Main View Router with Framer Motion Tab Transitions */}
       <main className="flex-1">
-        {activeTab === 'home' && (
-          <>
-            <HeroSection
-              stats={stats}
-              onNavigate={(tab) => setActiveTab(tab)}
-              onSelectTrack={(track) => setSelectedTrackForReg(track)}
-            />
-            <HackathonScheduleRules />
-          </>
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === 'home' && (
+              <>
+                <HeroSection
+                  stats={stats}
+                  onNavigate={(tab) => setActiveTab(tab)}
+                  onSelectTrack={(track) => setSelectedTrackForReg(track)}
+                />
+                <HackathonScheduleRules />
+                <SponsorsSection />
+              </>
+            )}
 
-        {activeTab === 'register' && (
-          <RegistrationForm
-            selectedTrack={selectedTrackForReg}
-            onRegisteredSuccess={handleRegistrationSuccess}
-            onSwitchToLogin={() => setIsLoginModalOpen(true)}
-          />
-        )}
+            {activeTab === 'register' && (
+              <RegistrationForm
+                selectedTrack={selectedTrackForReg}
+                onRegisteredSuccess={handleRegistrationSuccess}
+                onSwitchToLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
 
-        {activeTab === 'team' && (
-          <TeamPassTicket
-            team={activeTeam}
-            onNavigateToSubmit={() => setActiveTab('submit')}
-            onSwitchTeamLogin={() => setIsLoginModalOpen(true)}
-            onRefreshTeamData={fetchTeamsAndStats}
-          />
-        )}
+            {activeTab === 'team' && (
+              <TeamPassTicket
+                team={activeTeam}
+                onNavigateToSubmit={() => setActiveTab('submit')}
+                onSwitchTeamLogin={() => setIsLoginModalOpen(true)}
+                onRefreshTeamData={fetchTeamsAndStats}
+              />
+            )}
 
-        {activeTab === 'submit' && (
-          <ProjectSubmissionModal
-            team={activeTeam}
-            onProjectSubmitted={handleProjectSubmitted}
-            onSwitchToTeamLogin={() => setIsLoginModalOpen(true)}
-          />
-        )}
+            {activeTab === 'submit' && (
+              <ProjectSubmissionModal
+                team={activeTeam}
+                onProjectSubmitted={handleProjectSubmitted}
+                onSwitchToTeamLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
 
-        {activeTab === 'schedule' && <HackathonScheduleRules />}
+            {activeTab === 'schedule' && <HackathonScheduleRules />}
 
-        {activeTab === 'admin' && (
-          <AdminPortal
-            teams={teams}
-            announcements={announcements}
-            onUpdateTeamStatus={handleAdminUpdateTeamStatus}
-            onScoreProject={handleAdminScoreProject}
-            onDeleteTeam={handleAdminDeleteTeam}
-            onSendAnnouncement={handleAdminSendAnnouncement}
-            onRefreshData={fetchTeamsAndStats}
-          />
-        )}
+            {activeTab === 'faq' && <FAQSection />}
+
+            {activeTab === 'admin' && (
+              <AdminPortal
+                teams={teams}
+                announcements={announcements}
+                onUpdateTeamStatus={handleAdminUpdateTeamStatus}
+                onScoreProject={handleAdminScoreProject}
+                onDeleteTeam={handleAdminDeleteTeam}
+                onSendAnnouncement={handleAdminSendAnnouncement}
+                onRefreshData={fetchTeamsAndStats}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Team Login / Look Up Modal */}
@@ -327,64 +345,70 @@ export default function App() {
       />
 
       {/* Global Footer */}
-      <footer className="border-t border-white/10 bg-[#0c0c0e] py-10 mt-16 text-xs text-zinc-400">
+      <footer className="border-t border-slate-200 bg-white py-10 mt-16 text-xs text-slate-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
               <Terminal className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-serif font-bold text-white tracking-wider">
+              <span className="font-serif font-bold text-slate-900 tracking-wider">
                 ORIGIN '26 OVERNIGHT HACKATHON
               </span>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-slate-500 font-medium">
                 Organized by Data Science Club • VIT Bhopal University
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 font-medium text-zinc-400">
+          <div className="flex flex-wrap items-center justify-center gap-6 font-semibold text-slate-600">
             <button
               onClick={() => setActiveTab('home')}
-              className="hover:text-emerald-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
               Overview
             </button>
             <button
               onClick={() => setActiveTab('schedule')}
-              className="hover:text-emerald-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
               Timeline & Rules
             </button>
             <button
               onClick={() => setActiveTab('register')}
-              className="hover:text-emerald-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
               Register Team
             </button>
             <button
               onClick={() => setActiveTab('team')}
-              className="hover:text-emerald-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
               Digital ID Pass
             </button>
             <button
               onClick={() => setActiveTab('submit')}
-              className="hover:text-emerald-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
               Submit 24H Project
             </button>
+            <button
+              onClick={() => setActiveTab('faq')}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              FAQ
+            </button>
           </div>
 
-          <div className="text-[11px] text-zinc-400 text-center md:text-right font-mono flex flex-col items-center md:items-end gap-1">
+          <div className="text-[11px] text-slate-500 text-center md:text-right font-mono flex flex-col items-center md:items-end gap-1">
             <span>24-Hour Code Freeze Protocol Active</span>
-            <div className="text-zinc-500">All submissions verified by DSC Jury</div>
+            <div className="text-slate-400">All submissions verified by DSC Jury</div>
             <button
               onClick={() => setActiveTab('admin')}
-              className="mt-1 text-[10px] text-zinc-600 hover:text-emerald-400/90 transition-colors flex items-center gap-1 cursor-pointer select-none font-sans"
+              className="mt-1 text-[10px] text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1 cursor-pointer select-none font-sans font-semibold"
               title="Organiser & Jury Portal Access"
             >
-              <Shield className="w-3 h-3 opacity-60" />
+              <Shield className="w-3 h-3 opacity-70" />
               <span>Organiser Access</span>
             </button>
           </div>
