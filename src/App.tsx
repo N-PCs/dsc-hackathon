@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Lenis from 'lenis';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { RegistrationForm } from './components/RegistrationForm';
@@ -11,9 +12,10 @@ import { TeamLoginModal } from './components/TeamLoginModal';
 import { LiveAnnouncementsBanner } from './components/LiveAnnouncementsBanner';
 import { SponsorsSection } from './components/SponsorsSection';
 import { FAQSection } from './components/FAQSection';
+import { BackgroundVeins } from './components/BackgroundVeins';
 import { Team, Announcement, HackathonStats, TrackType, PaymentStatus } from './types';
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from './data/mockData';
-import { Terminal, Shield } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 import { useUser } from '@clerk/clerk-react';
 import { isAdminEmail } from './lib/clerk';
@@ -28,6 +30,22 @@ export default function App() {
   const [activeTeam, setActiveTeam] = useState<Team | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedTrackForReg, setSelectedTrackForReg] = useState<TrackType>('AI & Machine Learning');
+
+  // Lenis smooth scrolling
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    return () => lenis.destroy();
+  }, []);
 
   // Sync Clerk authenticated user
   useEffect(() => {
@@ -44,7 +62,6 @@ export default function App() {
         localStorage.setItem('origin_active_admin', JSON.stringify(adminObj));
       }
 
-      // Check if user is leader/member of any team
       const matchedTeam = teams.find(
         (t) =>
           t.leader.email.toLowerCase() === email ||
@@ -59,7 +76,7 @@ export default function App() {
     }
   }, [isSignedIn, user, teams]);
 
-  // Load active team from localStorage on initial mount
+  // Load active team from localStorage
   useEffect(() => {
     (window as any).setActiveTabGlobal = setActiveTab;
     try {
@@ -75,7 +92,7 @@ export default function App() {
     }
   }, [teams]);
 
-  // Fetch teams & announcements from API on mount
+  // Fetch teams & announcements from API
   const fetchTeamsAndStats = async () => {
     try {
       const [teamsRes, annRes] = await Promise.all([
@@ -144,7 +161,6 @@ export default function App() {
     };
   }, [teams]);
 
-  // Handler: When a new team registers successfully
   const handleRegistrationSuccess = (newTeam: Team) => {
     setTeams((prev) => [newTeam, ...prev.filter((t) => t.id !== newTeam.id)]);
     setActiveTeam(newTeam);
@@ -152,13 +168,11 @@ export default function App() {
     setActiveTab('team');
   };
 
-  // Handler: When user submits or edits their 24-hour project
   const handleProjectSubmitted = (updatedTeam: Team) => {
     setTeams((prev) => prev.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
     setActiveTeam(updatedTeam);
   };
 
-  // Handler: Admin updates a team status (payment, verification, checkin)
   const handleAdminUpdateTeamStatus = async (
     teamId: string,
     statusUpdate: {
@@ -168,7 +182,6 @@ export default function App() {
       notes?: string;
     }
   ) => {
-    // Optimistic local update
     setTeams((prev) =>
       prev.map((t) => (t.id === teamId ? { ...t, ...statusUpdate } : t))
     );
@@ -187,7 +200,6 @@ export default function App() {
     }
   };
 
-  // Handler: Admin scores a project
   const handleAdminScoreProject = async (
     teamId: string,
     scoreData: {
@@ -214,7 +226,6 @@ export default function App() {
     }
   };
 
-  // Handler: Admin deletes a team
   const handleAdminDeleteTeam = async (teamId: string) => {
     setTeams((prev) => prev.filter((t) => t.id !== teamId));
     if (activeTeam?.id === teamId) {
@@ -228,7 +239,6 @@ export default function App() {
     }
   };
 
-  // Handler: Admin sends broadcast announcement
   const handleAdminSendAnnouncement = async (
     title: string,
     message: string,
@@ -249,12 +259,22 @@ export default function App() {
     }
   };
 
+  // Scroll to top on tab change for dedicated sub-views
+  useEffect(() => {
+    if (activeTab !== 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeTab]);
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600/20 selection:text-blue-900 transition-colors">
-      {/* Live Announcement Ticker */}
+    <div className="relative min-h-screen bg-black text-white flex flex-col">
+      {/* Background Veins Canvas */}
+      <BackgroundVeins />
+
+      {/* Announcements */}
       <LiveAnnouncementsBanner announcements={announcements} />
 
-      {/* Main Navbar */}
+      {/* Navbar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -264,14 +284,14 @@ export default function App() {
         onOpenLogin={() => setIsLoginModalOpen(true)}
       />
 
-      {/* Main View Router with Framer Motion Tab Transitions */}
+      {/* Main content */}
       <main className="flex-1">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
             {activeTab === 'home' && (
@@ -283,6 +303,7 @@ export default function App() {
                 />
                 <HackathonScheduleRules />
                 <SponsorsSection />
+                <FAQSection />
               </>
             )}
 
@@ -311,9 +332,20 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'schedule' && <HackathonScheduleRules />}
+            {activeTab === 'schedule' && (
+              <>
+                <div className="pt-16" />
+                <HackathonScheduleRules />
+                <SponsorsSection />
+              </>
+            )}
 
-            {activeTab === 'faq' && <FAQSection />}
+            {activeTab === 'faq' && (
+              <>
+                <div className="pt-16" />
+                <FAQSection />
+              </>
+            )}
 
             {activeTab === 'admin' && (
               <AdminPortal
@@ -330,7 +362,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Team Login / Look Up Modal */}
+      {/* Team Login Modal */}
       <TeamLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
@@ -344,73 +376,100 @@ export default function App() {
         }}
       />
 
-      {/* Global Footer */}
-      <footer className="border-t border-slate-200 bg-white py-10 mt-16 text-xs text-slate-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-              <Terminal className="w-4 h-4" />
+      {/* Footer */}
+      <footer className="border-t border-neutral-800 py-16 mt-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
+            {/* Brand */}
+            <div className="md:col-span-4">
+              <div className="flex items-center gap-0.5 mb-4">
+                <span
+                  className="text-lg font-bold tracking-tight"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  ORIGIN
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5" />
+              </div>
+              <p className="text-[13px] text-neutral-500 leading-relaxed max-w-xs">
+                The flagship 24-hour overnight hackathon organized by the 
+                Data Science Club at VIT Bhopal University.
+              </p>
             </div>
-            <div>
-              <span className="font-serif font-bold text-slate-900 tracking-wider">
-                ORIGIN '26 OVERNIGHT HACKATHON
+
+            {/* Quick links */}
+            <div className="md:col-span-2">
+              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+                Event
               </span>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Organized by Data Science Club • VIT Bhopal University
+              <div className="space-y-2.5">
+                {[
+                  { label: 'Overview', tab: 'home' as const },
+                  { label: 'Schedule', tab: 'schedule' as const },
+                  { label: 'FAQ', tab: 'faq' as const },
+                ].map((link) => (
+                  <button
+                    key={link.tab}
+                    onClick={() => setActiveTab(link.tab)}
+                    className="block text-[13px] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+                Participate
+              </span>
+              <div className="space-y-2.5">
+                {[
+                  { label: 'Register Team', tab: 'register' as const },
+                  { label: 'Digital ID Pass', tab: 'team' as const },
+                  { label: 'Submit Project', tab: 'submit' as const },
+                ].map((link) => (
+                  <button
+                    key={link.tab}
+                    onClick={() => setActiveTab(link.tab)}
+                    className="block text-[13px] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="md:col-span-4">
+              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+                Ready to build?
+              </span>
+              <button
+                onClick={() => setActiveTab('register')}
+                className="btn-primary text-[13px] mb-6"
+              >
+                Register Now
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <p className="text-[12px] text-neutral-600">
+                <button
+                  onClick={() => setActiveTab('admin')}
+                  className="hover:text-neutral-400 cursor-pointer transition-colors"
+                >
+                  Organiser Access →
+                </button>
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 font-semibold text-slate-600">
-            <button
-              onClick={() => setActiveTab('home')}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('schedule')}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              Timeline & Rules
-            </button>
-            <button
-              onClick={() => setActiveTab('register')}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              Register Team
-            </button>
-            <button
-              onClick={() => setActiveTab('team')}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              Digital ID Pass
-            </button>
-            <button
-              onClick={() => setActiveTab('submit')}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              Submit 24H Project
-            </button>
-            <button
-              onClick={() => setActiveTab('faq')}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              FAQ
-            </button>
-          </div>
-
-          <div className="text-[11px] text-slate-500 text-center md:text-right font-mono flex flex-col items-center md:items-end gap-1">
-            <span>24-Hour Code Freeze Protocol Active</span>
-            <div className="text-slate-400">All submissions verified by DSC Jury</div>
-            <button
-              onClick={() => setActiveTab('admin')}
-              className="mt-1 text-[10px] text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1 cursor-pointer select-none font-sans font-semibold"
-              title="Organiser & Jury Portal Access"
-            >
-              <Shield className="w-3 h-3 opacity-70" />
-              <span>Organiser Access</span>
-            </button>
+          <div className="mt-16 pt-6 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-[12px] text-neutral-600">
+              © 2026 Data Science Club, VIT Bhopal University
+            </span>
+            <span className="text-[12px] text-neutral-700 font-mono">
+              24H Code Freeze Protocol
+            </span>
           </div>
         </div>
       </footer>

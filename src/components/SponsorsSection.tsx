@@ -1,156 +1,195 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { Sparkles, Cpu, Cloud, Globe, Shield, Terminal, Zap, ExternalLink } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import { ArrowRight } from 'lucide-react';
 
 interface Sponsor {
   name: string;
-  category: 'title' | 'gold' | 'silver' | 'community';
+  category: 'title' | 'gold' | 'community';
   tagline: string;
-  icon: React.ReactNode;
 }
 
 const SPONSORS: Sponsor[] = [
   {
     name: 'ApexCloud AI',
     category: 'title',
-    tagline: 'Official Cloud Computing Partner ($25,000 Credits)',
-    icon: <Cloud className="w-6 h-6 text-blue-600" />,
+    tagline: 'Official Cloud Partner — $25,000 GPU Credits',
   },
   {
     name: 'Nexus ML',
     category: 'title',
-    tagline: 'Deep Learning Infrastructure & GPUs',
-    icon: <Cpu className="w-6 h-6 text-blue-600" />,
+    tagline: 'Deep Learning Infrastructure & Compute',
   },
   {
     name: 'DevForge Systems',
     category: 'gold',
-    tagline: 'Developer API & Database Platform',
-    icon: <Terminal className="w-5 h-5 text-blue-500" />,
+    tagline: 'Developer API & DB Platform',
   },
   {
     name: 'CyberShield Sec',
     category: 'gold',
     tagline: 'Security & Identity Operations',
-    icon: <Shield className="w-5 h-5 text-blue-500" />,
   },
   {
     name: 'QuantVenture Capital',
     category: 'gold',
     tagline: 'Incubation & Seed Investment Fund',
-    icon: <Zap className="w-5 h-5 text-blue-500" />,
   },
   {
     name: 'GlobalTech DAO',
     category: 'community',
     tagline: 'Open Source Community Partner',
-    icon: <Globe className="w-4 h-4 text-slate-500" />,
   },
 ];
 
 export const SponsorsSection: React.FC = () => {
-  return (
-    <section className="py-16 bg-slate-50 border-t border-b border-slate-200/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-3xl mx-auto mb-12"
-        >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-mono font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>POWERED BY INDUSTRY LEADERS</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-slate-900 tracking-tight">
-            Sponsors & Innovation Partners
-          </h2>
-          <p className="text-slate-600 text-sm mt-2">
-            Backed by visionary organizations providing cloud infrastructure, GPU credits, cash prizes, and fast-track hiring opportunities.
-          </p>
-        </motion.div>
+  const containerRef = useRef<HTMLDivElement>(null);
 
-        {/* Title Sponsors Tier */}
-        <div className="mb-10">
-          <div className="text-xs font-mono font-bold uppercase tracking-wider text-blue-600 mb-4 text-center">
-            Title & Infrastructure Sponsors
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {SPONSORS.filter((s) => s.category === 'title').map((sponsor, idx) => (
-              <motion.div
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.gsap-sponsor',
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          stagger: 0.08,
+          ease: 'power2.out',
+        }
+      );
+    }, containerRef);
+    return () => ctx.revert();
+  }, []);
+
+  const titleSponsors = SPONSORS.filter((s) => s.category === 'title');
+  const goldSponsors = SPONSORS.filter((s) => s.category === 'gold');
+  const communitySponsors = SPONSORS.filter((s) => s.category === 'community');
+
+  return (
+    <section id="sponsors" ref={containerRef} className="py-24 border-t border-neutral-800">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-16">
+          <span className="text-[13px] font-mono text-neutral-500 uppercase tracking-wider block mb-3">
+            Partners & Sponsors
+          </span>
+          <h2
+            className="text-3xl md:text-5xl font-bold tracking-tight max-w-lg"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            Backed by industry leaders.
+          </h2>
+        </div>
+
+        {/* Title Sponsors — Large cards */}
+        <div className="mb-2">
+          <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+            Title Sponsors
+          </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-neutral-800">
+            {titleSponsors.map((sponsor, idx) => (
+              <div
                 key={idx}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                whileHover={{ y: -3 }}
-                className="bg-white p-6 rounded-2xl border border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all flex items-center gap-5 group"
+                className="gsap-sponsor bg-black p-10 md:p-14 flex flex-col justify-between min-h-[220px] group cursor-pointer hover:bg-neutral-950 transition-colors"
               >
-                <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  {sponsor.icon}
-                </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                      {sponsor.name}
-                    </h3>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200/60">
-                      TITLE
+                  {/* Placeholder logo area */}
+                  <div className="w-16 h-16 border border-neutral-700 flex items-center justify-center mb-6">
+                    <span
+                      className="text-lg font-bold text-neutral-600 group-hover:text-blue-500 transition-colors"
+                      style={{ fontFamily: 'var(--font-heading)' }}
+                    >
+                      {sponsor.name.split(' ').map(w => w[0]).join('')}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 mt-1 font-medium">{sponsor.tagline}</p>
+                  <h3
+                    className="text-2xl font-bold text-white mb-2 group-hover:text-blue-500 transition-colors"
+                    style={{ fontFamily: 'var(--font-heading)' }}
+                  >
+                    {sponsor.name}
+                  </h3>
+                  <p className="text-[14px] text-neutral-500">{sponsor.tagline}</p>
                 </div>
-              </motion.div>
+                <div className="mt-4 text-[11px] font-mono text-neutral-600 uppercase">
+                  Title Partner
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Gold & Community Sponsors Grid */}
-        <div className="max-w-5xl mx-auto">
-          <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 mb-4 text-center">
-            Gold & Ecosystem Partners
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {SPONSORS.filter((s) => s.category !== 'title').map((sponsor, idx) => (
-              <motion.div
+        {/* Gold Partners */}
+        <div className="mb-2">
+          <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4 mt-12">
+            Gold Partners
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-neutral-800">
+            {goldSponsors.map((sponsor, idx) => (
+              <div
                 key={idx}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: idx * 0.08 }}
-                whileHover={{ y: -2 }}
-                className="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-blue-300 shadow-sm hover:shadow transition-all text-center flex flex-col items-center justify-center group"
+                className="gsap-sponsor bg-black p-8 group cursor-pointer hover:bg-neutral-950 transition-colors"
               >
-                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-2 group-hover:bg-blue-50 transition-colors">
-                  {sponsor.icon}
+                {/* Placeholder logo */}
+                <div className="w-12 h-12 border border-neutral-800 flex items-center justify-center mb-4">
+                  <span className="text-sm font-bold text-neutral-600" style={{ fontFamily: 'var(--font-heading)' }}>
+                    {sponsor.name.split(' ').map(w => w[0]).join('')}
+                  </span>
                 </div>
-                <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                <h4
+                  className="text-[15px] font-bold text-white mb-1 group-hover:text-blue-500 transition-colors"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
                   {sponsor.name}
                 </h4>
-                <span className="text-[10px] text-slate-500 mt-0.5 truncate max-w-full px-1">
-                  {sponsor.tagline}
-                </span>
-              </motion.div>
+                <p className="text-[12px] text-neutral-500">{sponsor.tagline}</p>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Call to sponsor */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="mt-12 text-center text-xs text-slate-500"
-        >
-          Interested in sponsoring ORIGIN '26?{' '}
+        {/* Community Partners — compact strip */}
+        {communitySponsors.length > 0 && (
+          <div className="mt-12">
+            <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+              Community Partners
+            </span>
+            <div className="flex flex-wrap gap-6">
+              {communitySponsors.map((sponsor, idx) => (
+                <div key={idx} className="gsap-sponsor flex items-center gap-3">
+                  <div className="w-8 h-8 border border-neutral-800 flex items-center justify-center">
+                    <span className="text-[11px] font-bold text-neutral-600" style={{ fontFamily: 'var(--font-heading)' }}>
+                      {sponsor.name.split(' ').map(w => w[0]).join('')}
+                    </span>
+                  </div>
+                  <span className="text-[13px] text-neutral-400 font-medium">{sponsor.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Become a sponsor CTA */}
+        <div className="mt-16 pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h4
+              className="text-lg font-bold text-white"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Interested in sponsoring ORIGIN '26?
+            </h4>
+            <p className="text-[13px] text-neutral-500 mt-1">
+              Get your brand in front of 200+ student innovators, data scientists, and builders.
+            </p>
+          </div>
           <a
             href="mailto:dsc.origin@vitbhopal.ac.in"
-            className="text-blue-600 font-semibold hover:underline inline-flex items-center gap-1"
+            className="btn-outline text-[13px] whitespace-nowrap"
           >
-            Request Sponsorship Prospectus <ExternalLink className="w-3 h-3" />
+            Request Prospectus
+            <ArrowRight className="w-3.5 h-3.5" />
           </a>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
