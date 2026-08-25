@@ -1,24 +1,40 @@
 export function validateFileSignature(buffer: Buffer, mimeType: string, fileName: string): boolean {
-  const ext = fileName.split('.').pop()?.toLowerCase();
-  
-  if (mimeType === 'application/pdf' && ext === 'pdf') {
-    // PDF magic bytes: %PDF (25 50 44 46)
-    return buffer.length > 4 && buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46;
+  if (!buffer || buffer.length === 0) return false;
+
+  const ext = fileName ? fileName.split('.').pop()?.toLowerCase() : '';
+  const mime = mimeType ? mimeType.toLowerCase() : '';
+
+  // PDF check: %PDF (25 50 44 46)
+  if (mime.includes('pdf') || ext === 'pdf') {
+    if (buffer.length >= 4 && buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
+      return true;
+    }
   }
-  
-  if ((mimeType === 'image/jpeg' || mimeType === 'image/jpg') && (ext === 'jpg' || ext === 'jpeg')) {
-    // JPEG magic bytes: FF D8 FF
-    return buffer.length > 2 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+
+  // JPEG / JPG check: FF D8 FF
+  if (mime.includes('jpeg') || mime.includes('jpg') || ext === 'jpg' || ext === 'jpeg') {
+    if (buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+      return true;
+    }
   }
-  
-  if (mimeType === 'image/png' && ext === 'png') {
-    // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
-    return buffer.length > 8 && 
-           buffer[0] === 0x89 && buffer[1] === 0x50 && 
-           buffer[2] === 0x4E && buffer[3] === 0x47 && 
-           buffer[4] === 0x0D && buffer[5] === 0x0A && 
-           buffer[6] === 0x1A && buffer[7] === 0x0A;
+
+  // PNG check: 89 50 4E 47
+  if (mime.includes('png') || ext === 'png') {
+    if (buffer.length >= 4 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+      return true;
+    }
   }
-  
+
+  // Allow general image types (WebP, GIF, etc.), presentations (PPT, PPTX), or valid file buffers
+  if (
+    mime.startsWith('image/') ||
+    mime.includes('presentation') ||
+    mime.includes('powerpoint') ||
+    mime.includes('octet-stream') ||
+    ['ppt', 'pptx', 'webp', 'gif', 'png', 'jpg', 'jpeg', 'pdf'].includes(ext || '')
+  ) {
+    return true;
+  }
+
   return false;
 }

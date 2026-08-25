@@ -227,7 +227,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     setAuthError('');
   };
 
-<<<<<<< HEAD
   // Handle Verify OTP
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,8 +279,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   };
 
-=======
->>>>>>> eb20f68ab0f19049e17587b20de210281d6fa28e
   // Admin Sign Out
   const handleSignOut = () => {
     setCurrentAdmin(null);

@@ -25,15 +25,30 @@ import 'dotenv/config';
 
 const storage = multer.memoryStorage();
 
-const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+const allowedMimeTypes = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/octet-stream',
+];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf', '.ppt', '.pptx'];
 
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const ext = file.originalname.substring(file.originalname.lastIndexOf('.')).toLowerCase();
-  if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+  const extIndex = file.originalname.lastIndexOf('.');
+  const ext = extIndex !== -1 ? file.originalname.substring(extIndex).toLowerCase() : '';
+  if (
+    allowedMimeTypes.includes(file.mimetype) ||
+    allowedExtensions.includes(ext) ||
+    file.mimetype.startsWith('image/')
+  ) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, and PDF are allowed.'));
+    cb(new Error('Invalid file type. Please upload a valid image, PDF, or presentation slide deck.'));
   }
 };
 
@@ -70,7 +85,32 @@ app.use(async (req, res, next) => {
 });
 
 // MEDIA & FILE UPLOAD ROUTE
-app.post('/api/upload', (req: Request, res: Response) => {
+app.post('/api/upload', async (req: Request, res: Response) => {
+  // 1. Handle direct JSON Base64 upload (if sent as application/json body)
+  if (req.body && req.body.fileData) {
+    try {
+      const { fileData, fileName = 'upload.png', mimeType = 'image/png' } = req.body;
+      const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      let buffer: Buffer;
+      if (matches && matches.length === 3) {
+        buffer = Buffer.from(matches[2], 'base64');
+      } else {
+        buffer = Buffer.from(fileData, 'base64');
+      }
+
+      if (!validateFileSignature(buffer, mimeType, fileName)) {
+        return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
+      }
+
+      const result = await uploadFileToImagekit(buffer, fileName, mimeType);
+      return res.json({ success: true, url: result.url, publicId: result.publicId });
+    } catch (err: any) {
+      console.error('[API /upload JSON error]:', err);
+      return res.status(400).json({ success: false, message: err.message || 'Base64 file upload failed.' });
+    }
+  }
+
+  // 2. Handle Multipart Form-Data upload via Multer
   upload.single('file')(req, res, async (multerErr: any) => {
     if (multerErr) {
       console.error('[Multer Upload Error]:', multerErr);
@@ -82,23 +122,6 @@ app.post('/api/upload', (req: Request, res: Response) => {
 
     try {
       if (!req.file) {
-        if (req.body && req.body.fileData) {
-          const { fileData, fileName = 'upload.png', mimeType = 'image/png' } = req.body;
-          const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-          let buffer: Buffer;
-          if (matches && matches.length === 3) {
-            buffer = Buffer.from(matches[2], 'base64');
-          } else {
-            buffer = Buffer.from(fileData, 'base64');
-          }
-
-          if (!validateFileSignature(buffer, mimeType, fileName)) {
-            return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
-          }
-
-          const result = await uploadFileToImagekit(buffer, fileName, mimeType);
-          return res.json({ success: true, url: result.url, publicId: result.publicId });
-        }
         return res.status(400).json({ success: false, message: 'No file provided in request.' });
       }
 

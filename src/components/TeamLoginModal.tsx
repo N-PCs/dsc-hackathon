@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ticket, Lock, ArrowRight, AlertCircle, Sparkles, CheckCircle2, User } from 'lucide-react';
+import { Ticket, AlertCircle, Sparkles } from 'lucide-react';
 import { Team } from '../types';
 
 interface TeamLoginModalProps {
@@ -16,7 +16,6 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
   onNavigateToRegister,
 }) => {
   const [identifier, setIdentifier] = useState('');
-  const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -34,34 +33,11 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
     setIsLoading(true);
 
     try {
-      // 1. Check if the entered identifier is an Admin / Jury Email
-      const adminRes = await fetch('/api/admin/auth/request-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: identifier.trim() }),
-      });
-      let adminData: any = {};
-      const adminContentType = adminRes.headers.get('content-type') || '';
-      if (adminContentType.includes('application/json')) {
-        adminData = await adminRes.json();
-      }
-
-      if (adminRes.ok && adminData.success) {
-        // Automatically transition to Admin Console!
-        onClose();
-        if ((window as any).setActiveTabGlobal) {
-          (window as any).setActiveTabGlobal('admin');
-        }
-        return;
-      }
-
-      // 2. Otherwise proceed with regular Team Login
       const res = await fetch('/api/auth/team-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           identifier: identifier.trim(),
-          accessCode: accessCode.trim() || undefined,
         }),
       });
 
@@ -101,7 +77,7 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
           <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 mb-3">
             <Ticket className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-serif font-bold text-white">Access Your Team Workspace</h3>
+          <h3 className="text-xl font-serif font-bold text-white">Team Login</h3>
           <p className="text-xs text-zinc-400 mt-1">
             Retrieve your Digital ID Pass, check verification status, or submit 24h project deliverables.
           </p>
@@ -126,20 +102,6 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1 flex items-center justify-between">
-              <span>Team Access Code / PIN (Optional)</span>
-              <span className="text-[10px] text-zinc-500">4-digit PIN</span>
-            </label>
-            <input
-              type="password"
-              placeholder="e.g. 7821"
-              value={accessCode}
-              onChange={(e) => setAccessCode(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono tracking-widest"
             />
           </div>
 

@@ -319,7 +319,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           onClick={onSwitchToTeamLogin}
           className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-sm shadow-md cursor-pointer"
         >
-          Sign In to Team Workspace
+          Sign In to Team Login
         </button>
       </div>
     );
