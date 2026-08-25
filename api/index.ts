@@ -16,8 +16,8 @@ import {
   addAnnouncementDB,
   getSubmissionStatusDB,
   setSubmissionStatusDB,
-} from '../server/db';
-import { uploadFileToImagekit } from '../server/imagekit';
+} from './server/db';
+import { uploadFileToImagekit } from './server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from '../src/lib/deadline';
 
 

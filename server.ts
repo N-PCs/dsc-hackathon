@@ -20,8 +20,8 @@ import {
   getSubmissionStatusDB,
   setSubmissionStatusDB,
   isTransactionRefUsed,
-} from './server/db';
-import { uploadFileToImagekit } from './server/imagekit';
+} from './api/server/db';
+import { uploadFileToImagekit } from './api/server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from './src/lib/deadline';
 
 
