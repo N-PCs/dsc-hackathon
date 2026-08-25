@@ -19,7 +19,7 @@ import {
 } from '../server/db';
 import { uploadFileToImagekit } from '../server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from '../src/lib/deadline';
-
+import 'dotenv/config';
 
 const storage = multer.memoryStorage();
 const upload = multer({

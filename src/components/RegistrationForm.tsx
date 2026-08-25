@@ -105,6 +105,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     setDomainNotice(isVITBhopalEmail(val));
   };
 
+
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -145,6 +147,25 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       setErrorMsg('Team Leader must register with an official @vitbhopal.ac.in email address.');
       return;
     }
+    const activeMembers = [
+  { label: 'Member 02', data: member2, active: memberCount >= 2 },
+  { label: 'Member 03', data: member3, active: memberCount >= 3 },
+  { label: 'Member 04', data: member4, active: memberCount >= 4 },
+  { label: 'Member 05', data: member5, active: memberCount >= 5 },
+];
+
+for (const m of activeMembers) {
+  if (m.active && m.data.name.trim()) {
+    if (!m.data.email.trim()) {
+      setErrorMsg(`Please provide an email for ${m.label}.`);
+      return;
+    }
+    if (!isVITBhopalEmail(m.data.email)) {
+      setErrorMsg(`${m.label} must use an official @vitbhopal.ac.in email address.`);
+      return;
+    }
+  }
+}
 
     if (!transactionRef.trim()) {
       setErrorMsg('Please enter your UPI / Payment Transaction Reference (UTR Number).');

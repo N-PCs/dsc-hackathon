@@ -1,7 +1,9 @@
 import { Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../src/types';
 
+
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+console.log('[DEBUG] DATABASE_URL loaded:', connectionString ? `${connectionString.slice(0, 20)}...` : 'UNDEFINED');
 
 let pool: Pool | null = null;
 let useNeon = false;
