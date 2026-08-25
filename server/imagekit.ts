@@ -37,26 +37,25 @@ export async function uploadFileToImagekit(
     }
   }
 
-  // Imagekit REST API upload using Basic Auth + data URI for 100% reliable Node/Serverless compatibility
   const endpoint = `https://upload.imagekit.io/api/v1/files/upload`;
   const authHeader = 'Basic ' + Buffer.from(privateKey + ':').toString('base64');
 
   const base64Str = fileBuffer.toString('base64');
   const dataUri = `data:${mimeType || 'application/octet-stream'};base64,${base64Str}`;
 
-  const formData = new FormData();
-  formData.append('file', dataUri);
-  formData.append('fileName', originalFilename);
-  formData.append('folder', folder);
-  formData.append('useUniqueFileName', 'true');
-
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: authHeader,
       },
-      body: formData,
+      body: JSON.stringify({
+        file: dataUri,
+        fileName: originalFilename,
+        folder: folder,
+        useUniqueFileName: true,
+      }),
     });
 
     if (!response.ok) {

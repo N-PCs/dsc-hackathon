@@ -54,45 +54,55 @@ app.use(async (req, res, next) => {
 });
 
 // MEDIA & FILE UPLOAD ROUTE
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      if (req.body.fileData) {
-        const { fileData, fileName = 'upload.png', mimeType = 'image/png' } = req.body;
-        const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        let buffer: Buffer;
-        if (matches && matches.length === 3) {
-          buffer = Buffer.from(matches[2], 'base64');
-        } else {
-          buffer = Buffer.from(fileData, 'base64');
-        }
-
-        const result = await uploadFileToImagekit(buffer, fileName, mimeType);
-        return res.json({ success: true, url: result.url, publicId: result.publicId });
-      }
-      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+app.post('/api/upload', (req: Request, res: Response) => {
+  upload.single('file')(req, res, async (multerErr: any) => {
+    if (multerErr) {
+      console.error('[Multer Upload Error]:', multerErr);
+      return res.status(400).json({
+        success: false,
+        message: multerErr.message || 'File upload error.',
+      });
     }
 
-    const result = await uploadFileToImagekit(
-      req.file.buffer,
-      req.file.originalname,
-      req.file.mimetype
-    );
+    try {
+      if (!req.file) {
+        if (req.body && req.body.fileData) {
+          const { fileData, fileName = 'upload.png', mimeType = 'image/png' } = req.body;
+          const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          let buffer: Buffer;
+          if (matches && matches.length === 3) {
+            buffer = Buffer.from(matches[2], 'base64');
+          } else {
+            buffer = Buffer.from(fileData, 'base64');
+          }
 
-    res.json({
-      success: true,
-      url: result.url,
-      publicId: result.publicId,
-      filename: req.file.originalname,
-      size: req.file.size,
-    });
-  } catch (err: any) {
-    console.error('[API /upload error]:', err);
-    res.status(400).json({
-      success: false,
-      message: err.message || 'File upload failed. Ensure file is within 10MB limit.',
-    });
-  }
+          const result = await uploadFileToImagekit(buffer, fileName, mimeType);
+          return res.json({ success: true, url: result.url, publicId: result.publicId });
+        }
+        return res.status(400).json({ success: false, message: 'No file provided in request.' });
+      }
+
+      const result = await uploadFileToImagekit(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+
+      return res.json({
+        success: true,
+        url: result.url,
+        publicId: result.publicId,
+        filename: req.file.originalname,
+        size: req.file.size,
+      });
+    } catch (err: any) {
+      console.error('[API /upload error]:', err);
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed.',
+      });
+    }
+  });
 });
 
 // TEAMS & REGISTRATION API ROUTES
@@ -183,39 +193,39 @@ app.post('/api/teams/register', async (req, res) => {
       },
       member2: member2?.name?.trim()
         ? {
-            name: member2.name.trim(),
-            email: member2.email?.trim().toLowerCase() || '',
-            phone: member2.phone?.trim() || '',
-            college: member2.college || leader.college || 'VIT Bhopal University',
-            role: member2.role || 'Member',
-          }
+          name: member2.name.trim(),
+          email: member2.email?.trim().toLowerCase() || '',
+          phone: member2.phone?.trim() || '',
+          college: member2.college || leader.college || 'VIT Bhopal University',
+          role: member2.role || 'Member',
+        }
         : undefined,
       member3: member3?.name?.trim()
         ? {
-            name: member3.name.trim(),
-            email: member3.email?.trim().toLowerCase() || '',
-            phone: member3.phone?.trim() || '',
-            college: member3.college || leader.college || 'VIT Bhopal University',
-            role: member3.role || 'Member',
-          }
+          name: member3.name.trim(),
+          email: member3.email?.trim().toLowerCase() || '',
+          phone: member3.phone?.trim() || '',
+          college: member3.college || leader.college || 'VIT Bhopal University',
+          role: member3.role || 'Member',
+        }
         : undefined,
       member4: member4?.name?.trim()
         ? {
-            name: member4.name.trim(),
-            email: member4.email?.trim().toLowerCase() || '',
-            phone: member4.phone?.trim() || '',
-            college: member4.college || leader.college || 'VIT Bhopal University',
-            role: member4.role || 'Member',
-          }
+          name: member4.name.trim(),
+          email: member4.email?.trim().toLowerCase() || '',
+          phone: member4.phone?.trim() || '',
+          college: member4.college || leader.college || 'VIT Bhopal University',
+          role: member4.role || 'Member',
+        }
         : undefined,
       member5: member5?.name?.trim()
         ? {
-            name: member5.name.trim(),
-            email: member5.email?.trim().toLowerCase() || '',
-            phone: member5.phone?.trim() || '',
-            college: member5.college || leader.college || 'VIT Bhopal University',
-            role: member5.role || 'Member',
-          }
+          name: member5.name.trim(),
+          email: member5.email?.trim().toLowerCase() || '',
+          phone: member5.phone?.trim() || '',
+          college: member5.college || leader.college || 'VIT Bhopal University',
+          role: member5.role || 'Member',
+        }
         : undefined,
       paymentStatus: 'pending',
       paymentProofUrl: paymentProofUrl || '',
@@ -492,33 +502,33 @@ app.delete('/api/admin/whitelist/:email', async (req, res) => {
   res.json({ success: true, message: 'Administrator removed.', authorizedAdmins });
 });
 
-  // SUBMISSIONS TOGGLE API
-  app.get('/api/admin/submissions-status', async (req, res) => {
-    const submissionsOpen = await getSubmissionStatusDB();
-    const deadline = getSubmissionDeadline();
-    const deadlinePassed = isDeadlinePassed(deadline);
-    res.json({
-      success: true,
-      submissionsOpen,
-      deadline,
-      isDeadlinePassed: deadlinePassed,
-      serverTime: new Date().toISOString(),
-    });
+// SUBMISSIONS TOGGLE API
+app.get('/api/admin/submissions-status', async (req, res) => {
+  const submissionsOpen = await getSubmissionStatusDB();
+  const deadline = getSubmissionDeadline();
+  const deadlinePassed = isDeadlinePassed(deadline);
+  res.json({
+    success: true,
+    submissionsOpen,
+    deadline,
+    isDeadlinePassed: deadlinePassed,
+    serverTime: new Date().toISOString(),
   });
+});
 
 
-  app.post('/api/admin/submissions-toggle', async (req, res) => {
-    const { submissionsOpen } = req.body;
-    if (typeof submissionsOpen !== 'boolean') {
-      return res.status(400).json({ success: false, message: 'submissionsOpen boolean property required.' });
-    }
-    const updated = await setSubmissionStatusDB(submissionsOpen);
-    res.json({
-      success: true,
-      submissionsOpen: updated,
-      message: `Project submissions are now ${updated ? 'OPEN' : 'CLOSED'}.`,
-    });
+app.post('/api/admin/submissions-toggle', async (req, res) => {
+  const { submissionsOpen } = req.body;
+  if (typeof submissionsOpen !== 'boolean') {
+    return res.status(400).json({ success: false, message: 'submissionsOpen boolean property required.' });
+  }
+  const updated = await setSubmissionStatusDB(submissionsOpen);
+  res.json({
+    success: true,
+    submissionsOpen: updated,
+    message: `Project submissions are now ${updated ? 'OPEN' : 'CLOSED'}.`,
   });
+});
 
 // ANNOUNCEMENTS & STATS
 app.get('/api/announcements', async (req, res) => {
@@ -665,6 +675,8 @@ app.get('/api/export-excel', async (req, res) => {
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="origin-hackathon-teams-${Date.now()}.xlsx"`);
   res.send(buffer);
+});
+
 // Catch-all for unhandled API routes
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
@@ -681,4 +693,3 @@ app.use((err: any, req: any, res: any, next: any) => {
 });
 
 export default app;
-
