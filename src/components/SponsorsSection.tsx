@@ -51,7 +51,7 @@ const SPONSORS: Sponsor[] = [
   {
     name: 'Kavita Sales',
     category: 'title',
-    logo: '/kavitasales.png',
+    logo: '/sponsors/kavitasales.png',
   },
 ];
 
@@ -121,7 +121,7 @@ export const SponsorsSection: React.FC = () => {
               </div>
               <div className="mt-4 font-heading text-xs text-[#FF3B00] font-bold uppercase tracking-widest">
                 {sponsor.name.toLowerCase().includes('sheryians') || sponsor.name.toLowerCase().includes('shreyians')
-                  ? 'OFFICIAL JUDGES & TITLE PARTNER'
+                  ? 'OFFICIAL JUDGES & SPONSOR'
                   : 'OFFICIAL SPONSOR'}
               </div>
             </div>

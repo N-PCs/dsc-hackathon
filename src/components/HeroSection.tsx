@@ -88,15 +88,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     { value: 6, suffix: ' ARENAS', label: 'INNOVATION TRACKS' },
   ];
 
-  const filterTabs = [
-    'ALL ARENAS',
-    'AI & ML',
-    'WEB3',
-    'FINTECH',
-    'HEALTHTECH',
-    'SMART CITY',
-    'SOCIAL IMPACT'
-  ];
+
 
   return (
     <div id="hero" ref={heroRef} className="relative min-h-screen flex flex-col justify-center pt-24">
@@ -149,24 +141,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 VIEW SCHEDULE
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* Filter Navigation Bar matching reference image catalog sub-tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#222222] pt-8 pb-4 my-6">
-          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar py-1">
-            {filterTabs.map((tab, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedFilterTab(tab)}
-                className={`font-heading text-sm uppercase tracking-wider whitespace-nowrap cursor-pointer transition-all pb-1 ${selectedFilterTab === tab
-                    ? 'text-white border-b-2 border-[#FF3B00] font-bold'
-                    : 'text-neutral-400 hover:text-white'
-                  }`}
-              >
-                {tab}
-              </button>
-            ))}
           </div>
         </div>
 

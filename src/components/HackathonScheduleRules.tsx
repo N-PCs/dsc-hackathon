@@ -57,7 +57,7 @@ export const HackathonScheduleRules: React.FC = () => {
                   VENUE & LOGISTICS
                 </h3>
                 <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-                  AB02 Auditorium 1 & Auditorium 2, VIT Bhopal University. High-speed dual-band Wi-Fi, 
+                  AB02 Auditorium 1 & Auditorium 2, VIT Bhopal University. High-speed dual-band Wi-Fi,
                   power at desk, dinner break, continuous refreshments, and rest zones.
                 </p>
               </div>
@@ -103,9 +103,8 @@ export const HackathonScheduleRules: React.FC = () => {
                 return (
                   <div
                     key={idx}
-                    className={`gsap-tl-item flex gap-6 py-5 border-b border-[#222222] transition-colors ${
-                      isActive ? 'border-l-4 border-l-[#FF3B00] pl-6 bg-[#141414]' : isPast ? 'opacity-40' : ''
-                    }`}
+                    className={`gsap-tl-item flex gap-6 py-5 border-b border-[#222222] transition-colors ${isActive ? 'border-l-4 border-l-[#FF3B00] pl-6 bg-[#141414]' : isPast ? 'opacity-40' : ''
+                      }`}
                   >
                     {/* Time */}
                     <div className="w-24 shrink-0">
@@ -116,16 +115,7 @@ export const HackathonScheduleRules: React.FC = () => {
 
                     {/* Content */}
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h4 className={`font-display text-xl ${isActive ? 'text-[#FF3B00]' : 'text-white'}`}>
-                          {item.title}
-                        </h4>
-                        {isActive && (
-                          <span className="font-heading text-[10px] font-bold text-[#FF3B00] uppercase tracking-wider bg-[#FF3B00]/10 px-2 py-0.5 border border-[#FF3B00]/30">
-                            LIVE NOW
-                          </span>
-                        )}
-                      </div>
+
                       <p className="text-xs text-neutral-400 font-sans leading-relaxed">
                         {item.desc}
                       </p>
@@ -149,9 +139,8 @@ export const HackathonScheduleRules: React.FC = () => {
                 RULES & CODE OF CONDUCT
               </h3>
               <ChevronDown
-                className={`w-6 h-6 text-neutral-400 transition-transform duration-300 ${
-                  rulesOpen ? 'rotate-180 text-[#FF3B00]' : ''
-                }`}
+                className={`w-6 h-6 text-neutral-400 transition-transform duration-300 ${rulesOpen ? 'rotate-180 text-[#FF3B00]' : ''
+                  }`}
               />
             </button>
 
@@ -186,9 +175,8 @@ export const HackathonScheduleRules: React.FC = () => {
                 JUDGING CRITERIA — 100 POINTS EVALUATION
               </h3>
               <ChevronDown
-                className={`w-6 h-6 text-neutral-400 transition-transform duration-300 ${
-                  rubricOpen ? 'rotate-180 text-[#FF3B00]' : ''
-                }`}
+                className={`w-6 h-6 text-neutral-400 transition-transform duration-300 ${rubricOpen ? 'rotate-180 text-[#FF3B00]' : ''
+                  }`}
               />
             </button>
 
