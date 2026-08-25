@@ -13,6 +13,7 @@ import { LiveAnnouncementsBanner } from './components/LiveAnnouncementsBanner';
 import { SponsorsSection } from './components/SponsorsSection';
 import { FAQSection } from './components/FAQSection';
 import { BackgroundVeins } from './components/BackgroundVeins';
+import { CustomCursor } from './components/CustomCursor';
 import { Team, Announcement, HackathonStats, TrackType, PaymentStatus } from './types';
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from './data/mockData';
 import { ArrowRight } from 'lucide-react';
@@ -45,6 +46,52 @@ export default function App() {
     requestAnimationFrame(raf);
 
     return () => lenis.destroy();
+  }, []);
+
+  // Global Comic Click Particles/Bubbles Effect
+  useEffect(() => {
+    const isMobile = window.matchMedia('(pointer: coarse)').matches;
+    if (isMobile) return;
+
+    const words = ['POW!', 'BOOM!', 'BANG!', 'CODE!', 'BUILD!', 'HACK!', 'ORIGIN!', 'DATA!'];
+
+    const handleGlobalClick = (e: MouseEvent) => {
+      // Ignore click if scrollbar/margins
+      if (e.clientX > window.innerWidth - 12) return;
+
+      const randomWord = words[Math.floor(Math.random() * words.length)];
+      const bubble = document.createElement('div');
+      
+      bubble.innerText = randomWord;
+      bubble.className = "fixed pointer-events-none select-none z-[99999] text-[#FF5F00] font-black uppercase";
+      bubble.style.fontFamily = "var(--font-heading)";
+      bubble.style.left = `${e.clientX}px`;
+      bubble.style.top = `${e.clientY}px`;
+      bubble.style.fontSize = `${Math.random() * 8 + 14}px`;
+      bubble.style.textShadow = "2.5px 2.5px 0px #000000";
+      
+      const angle = (Math.random() - 0.5) * 40;
+      bubble.style.transform = `translate(-50%, -50%) rotate(${angle}deg) scale(0)`;
+      bubble.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+      bubble.style.opacity = "1";
+
+      document.body.appendChild(bubble);
+
+      // Force layout layout trigger for CSS transition transition
+      bubble.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        bubble.style.transform = `translate(-50%, -160%) rotate(${angle + (Math.random() - 0.5) * 20}deg) scale(1.4)`;
+        bubble.style.opacity = "0";
+      });
+
+      setTimeout(() => {
+        bubble.remove();
+      }, 800);
+    };
+
+    window.addEventListener('mousedown', handleGlobalClick);
+    return () => window.removeEventListener('mousedown', handleGlobalClick);
   }, []);
 
   // Sync Clerk authenticated user
@@ -268,6 +315,9 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen bg-black text-white flex flex-col">
+      {/* Custom Trailing Cursor */}
+      <CustomCursor />
+
       {/* Background Veins Canvas */}
       <BackgroundVeins />
 
@@ -377,21 +427,21 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="border-t border-neutral-800 py-16 mt-24">
+      <footer className="border-t-3 border-[#FF5F00] py-16 mt-24 bg-black relative z-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
             {/* Brand */}
             <div className="md:col-span-4">
-              <div className="flex items-center gap-0.5 mb-4">
+              <div className="flex items-center gap-2 mb-4">
                 <span
-                  className="text-lg font-bold tracking-tight"
+                  className="text-2xl font-bold tracking-wider text-[#FF5F00] comic-title bg-black px-4 py-1.5 border-2 border-[#FF5F00] shadow-[2px_2px_0px_#000]"
                   style={{ fontFamily: 'var(--font-heading)' }}
                 >
                   ORIGIN
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5" />
+                <span className="w-2 h-2 rounded-full bg-[#FF5F00] mt-3" />
               </div>
-              <p className="text-[13px] text-neutral-500 leading-relaxed max-w-xs">
+              <p className="text-[13px] text-neutral-400 leading-relaxed max-w-xs font-body font-medium">
                 The flagship 24-hour overnight hackathon organized by the 
                 Data Science Club at VIT Bhopal University.
               </p>
@@ -399,7 +449,7 @@ export default function App() {
 
             {/* Quick links */}
             <div className="md:col-span-2">
-              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+              <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-widest block mb-4 font-bold">
                 Event
               </span>
               <div className="space-y-2.5">
@@ -411,7 +461,7 @@ export default function App() {
                   <button
                     key={link.tab}
                     onClick={() => setActiveTab(link.tab)}
-                    className="block text-[13px] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                    className="block text-[13px] text-neutral-400 hover:text-[#FF5F00] transition-colors cursor-pointer font-mono uppercase font-bold"
                   >
                     {link.label}
                   </button>
@@ -420,7 +470,7 @@ export default function App() {
             </div>
 
             <div className="md:col-span-2">
-              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+              <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-widest block mb-4 font-bold">
                 Participate
               </span>
               <div className="space-y-2.5">
@@ -432,7 +482,7 @@ export default function App() {
                   <button
                     key={link.tab}
                     onClick={() => setActiveTab(link.tab)}
-                    className="block text-[13px] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                    className="block text-[13px] text-neutral-400 hover:text-[#FF5F00] transition-colors cursor-pointer font-mono uppercase font-bold"
                   >
                     {link.label}
                   </button>
@@ -442,20 +492,20 @@ export default function App() {
 
             {/* CTA */}
             <div className="md:col-span-4">
-              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
+              <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-widest block mb-4 font-bold">
                 Ready to build?
               </span>
               <button
                 onClick={() => setActiveTab('register')}
-                className="btn-primary text-[13px] mb-6"
+                className="btn-comic-primary text-[12px] mb-6 py-2.5 px-6"
               >
                 Register Now
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-[#000]" />
               </button>
-              <p className="text-[12px] text-neutral-600">
+              <p className="text-[12px] text-neutral-500 font-mono uppercase font-bold">
                 <button
                   onClick={() => setActiveTab('admin')}
-                  className="hover:text-neutral-400 cursor-pointer transition-colors"
+                  className="hover:text-[#FF5F00] cursor-pointer transition-colors"
                 >
                   Organiser Access →
                 </button>
@@ -463,11 +513,11 @@ export default function App() {
             </div>
           </div>
 
-          <div className="mt-16 pt-6 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span className="text-[12px] text-neutral-600">
+          <div className="mt-16 pt-6 border-t-2 border-dashed border-[#FF5F00]/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-[12px] text-neutral-400 font-body font-medium">
               © 2026 Data Science Club, VIT Bhopal University
             </span>
-            <span className="text-[12px] text-neutral-700 font-mono">
+            <span className="text-[12px] text-neutral-500 font-mono font-bold uppercase tracking-wider">
               24H Code Freeze Protocol
             </span>
           </div>

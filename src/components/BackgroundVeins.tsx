@@ -1,6 +1,20 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
+interface VeinNode {
+  x: number;
+  y: number;
+  children: VeinNode[];
+  thickness: number;
+}
+
+interface EnergyPulse {
+  path: VeinNode[];
+  nodeIndex: number;
+  progress: number;
+  speed: number;
+}
+
 export const BackgroundVeins = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -13,92 +27,188 @@ export const BackgroundVeins = () => {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
+    // Create offscreen canvas for caching static veins
+    const offscreenCanvas = document.createElement('canvas');
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+
+    let veinRoots: VeinNode[] = [];
+    let pulses: EnergyPulse[] = [];
+
+    // Helper: generate a recursive branching vein tree
+    const generateVeinTree = (
+      x: number,
+      y: number,
+      angle: number,
+      depth: number,
+      maxDepth: number,
+      thickness: number
+    ): VeinNode => {
+      const node: VeinNode = { x, y, children: [], thickness };
+      if (depth >= maxDepth) return node;
+
+      const length = Math.random() * 25 + 15;
+      const nextX = x + Math.cos(angle) * length;
+      const nextY = y + Math.sin(angle) * length;
+
+      if (nextX < -50 || nextX > width + 50 || nextY < -50 || nextY > height + 50) {
+        return node;
+      }
+
+      const branchChance = 0.15;
+      if (Math.random() < branchChance && depth < maxDepth - 2) {
+        const angle1 = angle + (Math.random() * 0.4 + 0.15);
+        const angle2 = angle - (Math.random() * 0.4 + 0.15);
+        node.children.push(generateVeinTree(nextX, nextY, angle1, depth + 1, maxDepth, thickness * 0.75));
+        node.children.push(generateVeinTree(nextX, nextY, angle2, depth + 1, maxDepth, thickness * 0.75));
+      } else {
+        const angleOffset = (Math.random() - 0.5) * 0.3;
+        node.children.push(generateVeinTree(nextX, nextY, angle + angleOffset, depth + 1, maxDepth, thickness));
+      }
+
+      return node;
+    };
+
+    // Draw veins on the offscreen context (drawn once during init/resize)
+    const drawVeinNode = (cCtx: CanvasRenderingContext2D, node: VeinNode) => {
+      node.children.forEach((child) => {
+        cCtx.beginPath();
+        cCtx.moveTo(node.x, node.y);
+        cCtx.lineTo(child.x, child.y);
+        cCtx.lineWidth = node.thickness;
+        cCtx.strokeStyle = 'rgba(255, 95, 0, 0.08)'; // low opacity solid orange
+        cCtx.stroke();
+        drawVeinNode(cCtx, child);
+      });
+    };
+
+    // Build the full vein system and pre-render static paths
+    const initVeins = () => {
+      veinRoots = [];
+      pulses = [];
+
+      // Resize offscreen canvas
+      offscreenCanvas.width = width;
+      offscreenCanvas.height = height;
+
+      if (offscreenCtx) {
+        offscreenCtx.clearRect(0, 0, width, height);
+      }
+
+      // Generate roots from corners and borders
+      const borderRoots = [
+        { x: 0, y: 0, angle: Math.PI / 4 }, // Top-Left
+        { x: width, y: 0, angle: (3 * Math.PI) / 4 }, // Top-Right
+        { x: 0, y: height, angle: -Math.PI / 4 }, // Bottom-Left
+        { x: width, y: height, angle: (-3 * Math.PI) / 4 }, // Bottom-Right
+        { x: width / 2, y: 0, angle: Math.PI / 2 }, // Top-Center
+        { x: width / 2, y: height, angle: -Math.PI / 2 }, // Bottom-Center
+      ];
+
+      borderRoots.forEach((root) => {
+        const tree = generateVeinTree(root.x, root.y, root.angle, 0, 16, 3.5); // Depth 16 is safe and dense
+        veinRoots.push(tree);
+      });
+
+      // Render static veins onto the offscreen cache
+      if (offscreenCtx) {
+        veinRoots.forEach((root) => {
+          drawVeinNode(offscreenCtx, root);
+        });
+      }
+
+      // Spawn pulses along the branches
+      veinRoots.forEach((root) => {
+        for (let k = 0; k < 2; k++) {
+          const path: VeinNode[] = [];
+          let current = root;
+          path.push(current);
+
+          while (current.children.length > 0) {
+            const nextNode = current.children[Math.floor(Math.random() * current.children.length)];
+            path.push(nextNode);
+            current = nextNode;
+          }
+
+          if (path.length > 2) {
+            pulses.push({
+              path,
+              nodeIndex: 0,
+              progress: Math.random(),
+              speed: Math.random() * 0.015 + 0.01,
+            });
+          }
+        }
+      });
+    };
+
+    initVeins();
+
     const handleResize = () => {
       if (!canvas) return;
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+      initVeins();
     };
     window.addEventListener('resize', handleResize);
 
-    // Particles
-    const numParticles = 40;
-    const particles: { x: number; y: number; vx: number; vy: number; radius: number }[] = [];
-
-    for (let i = 0; i < numParticles; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
-        radius: Math.random() * 1.5 + 0.8,
-      });
-    }
-
-    let mouseX = 0;
-    let mouseY = 0;
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-
-    // GSAP Ticker for animation
+    // GSAP Ticker animation loop (blazing fast)
     const update = () => {
       if (!ctx || !canvas) return;
+
+      // Clear frame
       ctx.clearRect(0, 0, width, height);
 
-      // Draw connections
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < numParticles; i++) {
-        const p1 = particles[i];
-        
-        // Move particles
-        p1.x += p1.vx;
-        p1.y += p1.vy;
+      // Render static background veins cache (extremely fast 1-draw)
+      ctx.drawImage(offscreenCanvas, 0, 0);
 
-        // Bounce off walls
-        if (p1.x < 0 || p1.x > width) p1.vx *= -1;
-        if (p1.y < 0 || p1.y > height) p1.vy *= -1;
+      // Update and draw glowing energy pulses
+      pulses.forEach((pulse) => {
+        pulse.progress += pulse.speed;
+        if (pulse.progress >= 1) {
+          pulse.progress = 0;
+          pulse.nodeIndex++;
 
-        // Pull towards mouse subtly
-        const dxMouse = mouseX - p1.x;
-        const dyMouse = mouseY - p1.y;
-        const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
-        if (distMouse < 180) {
-          p1.x += dxMouse * 0.005;
-          p1.y += dyMouse * 0.005;
-        }
+          if (pulse.nodeIndex >= pulse.path.length - 1) {
+            pulse.nodeIndex = 0;
+            const rootTree = pulse.path[0];
+            const newPath: VeinNode[] = [];
+            let current = rootTree;
+            newPath.push(current);
 
-        // Draw connections
-        for (let j = i + 1; j < numParticles; j++) {
-          const p2 = particles[j];
-          const dx = p1.x - p2.x;
-          const dy = p1.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < 130) {
-            const alpha = (1 - dist / 130) * 0.12;
-            ctx.strokeStyle = `rgba(37, 99, 235, ${alpha})`;
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
+            while (current.children.length > 0) {
+              const nextNode = current.children[Math.floor(Math.random() * current.children.length)];
+              newPath.push(nextNode);
+              current = nextNode;
+            }
+            pulse.path = newPath;
           }
         }
 
-        // Draw node points
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-        ctx.beginPath();
-        ctx.arc(p1.x, p1.y, p1.radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
+        const fromNode = pulse.path[pulse.nodeIndex];
+        const toNode = pulse.path[pulse.nodeIndex + 1];
+        if (fromNode && toNode) {
+          const px = fromNode.x + (toNode.x - fromNode.x) * pulse.progress;
+          const py = fromNode.y + (toNode.y - fromNode.y) * pulse.progress;
+
+          // Pulse Core
+          ctx.beginPath();
+          ctx.arc(px, py, 3, 0, Math.PI * 2);
+          ctx.fillStyle = '#FF5F00';
+          ctx.fill();
+
+          // Pulse Aura
+          ctx.beginPath();
+          ctx.arc(px, py, 6, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 95, 0, 0.3)';
+          ctx.fill();
+        }
+      });
     };
 
     gsap.ticker.add(update);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mousemove', handleMouseMove);
       gsap.ticker.remove(update);
     };
   }, []);
@@ -107,7 +217,7 @@ export const BackgroundVeins = () => {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0 pointer-events-none"
-      style={{ opacity: 0.8 }}
+      style={{ opacity: 0.95 }}
     />
   );
 };

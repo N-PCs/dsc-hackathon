@@ -82,37 +82,37 @@ export const FAQSection: React.FC = () => {
   }, []);
 
   return (
-    <section id="faq-section" ref={faqRef} className="py-24 border-t border-neutral-800">
+    <section id="faq-section" ref={faqRef} className="py-24 border-t-3 border-[#FF5F00] bg-black">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
           {/* Left column — heading + contact */}
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-24 space-y-6">
               <div>
-                <span className="text-[13px] font-mono text-neutral-500 uppercase tracking-wider block mb-3">
+                <span className="text-[13px] font-mono text-[#FF5F00] uppercase tracking-wider block mb-2 font-bold">
                   FAQ
                 </span>
                 <h2
-                  className="text-3xl md:text-4xl font-bold tracking-tight"
+                  className="text-4xl font-bold tracking-tight text-[#FF5F00] comic-title"
                   style={{ fontFamily: 'var(--font-heading)' }}
                 >
                   Frequently asked questions.
                 </h2>
               </div>
 
-              <p className="text-[14px] text-neutral-400 leading-relaxed">
+              <p className="text-[14px] text-[#FFC599] leading-relaxed font-body font-bold">
                 Everything about registration, venue logistics, 24-hour rules, 
                 payment verification, and jury evaluation.
               </p>
 
-              <div className="pt-4">
-                <p className="text-[13px] text-neutral-500 mb-3">Still have questions?</p>
+              <div className="pt-4 space-y-3">
+                <p className="text-[12px] font-mono text-neutral-400 font-bold uppercase tracking-wider">Still have questions?</p>
                 <a
                   href="mailto:dsc.origin@vitbhopal.ac.in"
-                  className="inline-flex items-center gap-2 text-[13px] font-semibold text-blue-500 hover:text-blue-400 transition-colors"
+                  className="btn-comic-outline text-[12px] py-2 px-5"
                 >
                   Contact DSC Support
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#FF5F00]" />
                 </a>
               </div>
             </div>
@@ -120,25 +120,28 @@ export const FAQSection: React.FC = () => {
 
           {/* Right column — accordion */}
           <div className="lg:col-span-8">
-            <div className="divide-y divide-neutral-800">
+            <div className="space-y-5">
               {FAQ_ITEMS.map((faq) => {
                 const isOpen = openId === faq.id;
                 return (
-                  <div key={faq.id} className="gsap-faq-item">
+                  <div
+                    key={faq.id}
+                    className="gsap-faq-item comic-card p-6 shadow-[5px_5px_0px_#000] bg-[#0D0E12] border-3 border-[#FF5F00] transition-all duration-200"
+                  >
                     <button
                       onClick={() => setOpenId(isOpen ? null : faq.id)}
-                      className="w-full py-6 text-left flex items-start justify-between gap-6 cursor-pointer group"
+                      className="w-full text-left flex items-start justify-between gap-6 cursor-pointer group"
                     >
                       <span
-                        className={`text-[15px] md:text-[16px] font-bold transition-colors ${
-                          isOpen ? 'text-blue-500' : 'text-white group-hover:text-neutral-300'
+                        className={`text-[15px] md:text-[17px] font-extrabold uppercase tracking-wide transition-colors ${
+                          isOpen ? 'text-[#FF5F00]' : 'text-[#FFC599] group-hover:text-[#FF5F00]'
                         }`}
-                        style={{ fontFamily: 'var(--font-heading)' }}
+                        style={{ fontFamily: 'var(--font-subheading)' }}
                       >
                         {faq.question}
                       </span>
                       <ChevronDown
-                        className={`w-5 h-5 shrink-0 text-neutral-500 transition-transform duration-300 mt-0.5 ${
+                        className={`w-5 h-5 shrink-0 text-[#FF5F00] transition-transform duration-300 mt-0.5 ${
                           isOpen ? 'rotate-180' : ''
                         }`}
                       />
@@ -146,10 +149,10 @@ export const FAQSection: React.FC = () => {
 
                     <div
                       className={`overflow-hidden transition-all duration-300 ${
-                        isOpen ? 'max-h-60 pb-6' : 'max-h-0'
+                        isOpen ? 'max-h-60 mt-4' : 'max-h-0'
                       }`}
                     >
-                      <p className="text-[14px] text-neutral-400 leading-relaxed pr-12">
+                      <p className="text-[14px] text-neutral-300 leading-relaxed pr-6 font-body font-bold border-t border-neutral-800 pt-4">
                         {faq.answer}
                       </p>
                     </div>

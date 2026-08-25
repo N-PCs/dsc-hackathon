@@ -27,6 +27,9 @@ import {
   UserPlus,
   LogOut,
   ChevronRight,
+  QrCode,
+  Check,
+  Camera,
 } from 'lucide-react';
 import { Team, Announcement, TrackType, PaymentStatus, AdminUser } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
@@ -138,8 +141,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [newAdminDept, setNewAdminDept] = useState('Hackathon Operations');
   const [addAdminSuccess, setAddAdminSuccess] = useState('');
 
-  // Active Admin Tab: 'teams' | 'submissions' | 'leaderboard' | 'broadcast' | 'access'
-  const [adminTab, setAdminTab] = useState<'teams' | 'submissions' | 'leaderboard' | 'broadcast' | 'access'>('teams');
+  // Active Admin Tab: 'teams' | 'submissions' | 'leaderboard' | 'broadcast' | 'access' | 'scanner'
+  const [adminTab, setAdminTab] = useState<'teams' | 'submissions' | 'leaderboard' | 'broadcast' | 'access' | 'scanner'>('teams');
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -497,10 +500,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     return (
       <div className="max-w-xl mx-auto px-4 py-16">
         <div className="bg-[#111114] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden text-center">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 mb-3 shadow-lg">
+          <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 mx-auto flex items-center justify-center text-orange-400 mb-3 shadow-lg">
             <ShieldCheck className="w-7 h-7" />
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[11px] font-bold border border-emerald-500/20">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 font-mono text-[11px] font-bold border border-orange-500/20">
             <Shield className="w-3.5 h-3.5" />
             <span>AUTHENTICATED ORGANIZER & JURY CONSOLE</span>
           </div>
@@ -520,9 +523,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   headerTitle: 'text-white font-serif font-bold',
                   headerSubtitle: 'text-zinc-400 text-xs',
                   socialButtonsBlockButton: 'bg-[#222227] text-white border border-white/10 hover:bg-[#2a2a30]',
-                  formButtonPrimary: 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold',
+                  formButtonPrimary: 'bg-orange-500 hover:bg-orange-400 text-zinc-950 font-bold',
                   formFieldInput: 'bg-[#111114] border border-white/10 text-white',
-                  footerActionLink: 'text-emerald-400 hover:text-emerald-300 font-bold',
+                  footerActionLink: 'text-orange-400 hover:text-orange-300 font-bold',
                 },
               }}
             />
@@ -546,10 +549,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-white/10 gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider">
+            <span className="text-xs font-mono text-orange-400 font-bold uppercase tracking-wider">
               OPERATIONS & JURY CONSOLE
             </span>
-            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 text-[10px] font-mono font-bold border border-orange-500/30">
               {currentAdmin.role.toUpperCase()}
             </span>
             <span className="px-2 py-0.5 rounded bg-white/5 text-zinc-300 text-[10px] font-mono border border-white/10 hidden sm:inline">
@@ -560,7 +563,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             Origin Overnight Command Hub
           </h2>
           <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1 font-mono">
-            <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+            <span className="text-orange-400 flex items-center gap-1 font-semibold">
               <UserCheck className="w-3.5 h-3.5" /> {currentAdmin.name}
             </span>
             <span>•</span>
@@ -575,7 +578,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             disabled={isTogglingSubmissions}
             className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer border ${
               isSubmissionsOpen
-                ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 border-emerald-400/50'
+                ? 'bg-orange-500 hover:bg-orange-400 text-zinc-950 border-orange-400/50'
                 : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/40'
             }`}
           >
@@ -601,7 +604,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <button
             id="admin-btn-export-csv"
             onClick={handleExportCsv}
-            className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Export CSV</span>
@@ -625,8 +628,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="text-2xl font-bold text-white font-mono mt-1">{totalTeams}</div>
         </div>
         <div className="p-4 bg-[#111114] border border-white/10 rounded-2xl">
-          <span className="text-xs text-emerald-400 font-medium">Verified ID Badges</span>
-          <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">{verifiedTeams}</div>
+          <span className="text-xs text-orange-400 font-medium">Verified ID Badges</span>
+          <div className="text-2xl font-bold text-orange-400 font-mono mt-1">{verifiedTeams}</div>
         </div>
         <div className="p-4 bg-[#111114] border border-white/10 rounded-2xl">
           <span className="text-xs text-amber-400 font-medium">Pending Verification</span>
@@ -644,7 +647,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           onClick={() => setAdminTab('teams')}
           className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             adminTab === 'teams'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
+              ? 'bg-orange-500/10 text-orange-300 border border-orange-500/30 font-bold'
               : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -656,7 +659,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           onClick={() => setAdminTab('submissions')}
           className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             adminTab === 'submissions'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
+              ? 'bg-orange-500/10 text-orange-300 border border-orange-500/30 font-bold'
               : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -668,7 +671,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           onClick={() => setAdminTab('leaderboard')}
           className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             adminTab === 'leaderboard'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
+              ? 'bg-orange-500/10 text-orange-300 border border-orange-500/30 font-bold'
               : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -680,7 +683,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           onClick={() => setAdminTab('broadcast')}
           className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             adminTab === 'broadcast'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
+              ? 'bg-orange-500/10 text-orange-300 border border-orange-500/30 font-bold'
               : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -692,12 +695,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           onClick={() => setAdminTab('access')}
           className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             adminTab === 'access'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
+              ? 'bg-orange-500/10 text-orange-300 border border-orange-500/30 font-bold'
               : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Admin Whitelist ({adminWhitelist.length})</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('scanner')}
+          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+            adminTab === 'scanner'
+              ? 'bg-orange-500/10 text-orange-300 border border-orange-500/30 font-bold'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <QrCode className="w-4 h-4" />
+          <span>Gate Pass Scanner</span>
         </button>
       </div>
 
@@ -713,7 +728,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 placeholder="Search Team ID, Team Name, Leader Name, Email, UTR..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#18181b] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder-zinc-500"
+                className="w-full bg-[#18181b] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-orange-500 placeholder-zinc-500"
               />
             </div>
 
@@ -770,7 +785,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <tr key={team.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="p-3.5">
                         <div className="font-bold text-white">{team.teamName}</div>
-                        <div className="font-mono text-[10px] text-emerald-400">{team.id}</div>
+                        <div className="font-mono text-[10px] text-orange-400">{team.id}</div>
                       </td>
 
                       <td className="p-3.5">
@@ -790,7 +805,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         {team.paymentProofUrl && (
                           <button
                             onClick={() => setSelectedProofTeam(team)}
-                            className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1 mt-0.5 cursor-pointer"
+                            className="text-[10px] text-orange-400 hover:underline flex items-center gap-1 mt-0.5 cursor-pointer"
                           >
                             <Eye className="w-3 h-3" /> View Screenshot
                           </button>
@@ -799,7 +814,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <td className="p-3.5">
                         {team.paymentStatus === 'verified' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 font-mono text-[10px] font-bold border border-orange-500/20">
                             <CheckCircle className="w-3 h-3" /> Verified
                           </span>
                         ) : team.paymentStatus === 'pending' ? (
@@ -822,7 +837,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                               checkedInVenue: e.target.checked,
                             })
                           }
-                          className="rounded bg-[#18181b] border-zinc-700 text-emerald-500 focus:ring-0 cursor-pointer"
+                          className="rounded bg-[#18181b] border-zinc-700 text-orange-500 focus:ring-0 cursor-pointer"
                         />
                       </td>
 
@@ -835,7 +850,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                 ticketIssued: true,
                               })
                             }
-                            className="px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-zinc-950 font-bold text-[10px] transition-all cursor-pointer"
+                            className="px-2.5 py-1 rounded bg-orange-500/20 hover:bg-orange-500 text-orange-300 hover:text-zinc-950 font-bold text-[10px] transition-all cursor-pointer"
                             title="Verify payment and issue pass"
                           >
                             Approve
@@ -895,15 +910,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 return (
                   <div
                     key={team.id}
-                    className="bg-[#111114] border border-white/10 rounded-2xl p-5 space-y-4 hover:border-emerald-500/30 transition-all flex flex-col justify-between"
+                    className="bg-[#111114] border border-white/10 rounded-2xl p-5 space-y-4 hover:border-orange-500/30 transition-all flex flex-col justify-between"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="font-mono text-[10px] text-orange-400 font-bold px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
                           {team.id}
                         </span>
                         {isScored ? (
-                          <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                          <span className="font-mono text-xs font-bold text-orange-400 bg-orange-950/60 px-2 py-0.5 rounded border border-orange-500/30">
                             Score: {proj.score?.total}/100
                           </span>
                         ) : (
@@ -935,7 +950,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           href={proj.githubUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-emerald-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                          className="text-orange-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
                         >
                           <Github className="w-3.5 h-3.5" /> Repository &rarr;
                         </a>
@@ -954,7 +969,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <button
                         onClick={() => handleOpenScoreModal(team)}
-                        className="w-full py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-zinc-950 font-bold text-xs border border-emerald-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-zinc-950 font-bold text-xs border border-orange-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Award className="w-3.5 h-3.5" />
                         <span>{isScored ? 'Update Jury Score' : 'Grade / Evaluate Project'}</span>
@@ -1040,7 +1055,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         <td className="p-3.5 text-zinc-400">{score ? `${score.presentation}/20` : '-'}</td>
                         <td className="p-3.5 text-zinc-400">{score ? `${score.impact}/20` : '-'}</td>
 
-                        <td className="p-3.5 text-right font-bold text-base text-emerald-400">
+                        <td className="p-3.5 text-right font-bold text-base text-orange-400">
                           {score ? `${score.total}/100` : 'Unscored'}
                         </td>
                       </tr>
@@ -1059,7 +1074,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="lg:col-span-6 bg-[#111114] border border-white/10 rounded-3xl p-6 sm:p-7 space-y-5">
             <div>
               <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                <Radio className="w-5 h-5 text-emerald-400" />
+                <Radio className="w-5 h-5 text-orange-400" />
                 <span>Send Real-Time Broadcast</span>
               </h3>
               <p className="text-xs text-zinc-400 mt-1">
@@ -1068,7 +1083,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
 
             {annSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-orange-300 text-xs flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" />
                 <span>Broadcast message dispatched live!</span>
               </div>
@@ -1080,7 +1095,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <select
                   value={annCategory}
                   onChange={(e) => setAnnCategory(e.target.value as any)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500"
                 >
                   <option value="urgent">🚨 Urgent / Crucial Milestone</option>
                   <option value="schedule">⏰ Schedule & Deadline Alert</option>
@@ -1098,7 +1113,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   placeholder="e.g. Code Freeze in 60 Minutes!"
                   value={annTitle}
                   onChange={(e) => setAnnTitle(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
 
@@ -1110,13 +1125,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   placeholder="All teams must commit repository branches and finalize demo URLs..."
                   value={annMessage}
                   onChange={(e) => setAnnMessage(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl p-3 text-white resize-none focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#18181b] border border-white/10 rounded-xl p-3 text-white resize-none focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                className="w-full py-3 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>Publish Broadcast Alert</span>
@@ -1137,7 +1152,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <span className="text-[10px] font-mono text-zinc-500">{ann.timestamp}</span>
                 </div>
                 <p className="text-xs text-zinc-400 leading-relaxed">{ann.message}</p>
-                <span className="text-[10px] font-mono text-emerald-400 block pt-1">
+                <span className="text-[10px] font-mono text-orange-400 block pt-1">
                   Sent by: {ann.sender}
                 </span>
               </div>
@@ -1154,14 +1169,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
                 <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                  <ShieldCheck className="w-5 h-5 text-orange-400" />
                   <span>Authorized Email Whitelist</span>
                 </h3>
                 <p className="text-xs text-zinc-400 mt-1">
                   Only email addresses listed here can access the Admin Console and Jury Evaluation sheets.
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+              <span className="text-xs font-mono font-bold text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20">
                 {adminWhitelist.length} Admins
               </span>
             </div>
@@ -1176,14 +1191,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     className="p-4 bg-[#18181b] border border-white/10 rounded-2xl flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-mono text-sm font-bold shrink-0">
+                      <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-mono text-sm font-bold shrink-0">
                         {admin.name.charAt(0)}
                       </div>
                       <div className="truncate">
                         <div className="text-xs font-bold text-white flex items-center gap-2">
                           <span>{admin.name}</span>
                           {isSelf && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 font-mono font-bold">
                               YOU
                             </span>
                           )}
@@ -1215,7 +1230,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="lg:col-span-5 bg-[#111114] border border-white/10 rounded-3xl p-6 space-y-5">
             <div>
               <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-emerald-400" />
+                <UserPlus className="w-5 h-5 text-orange-400" />
                 <span>Authorize New Email</span>
               </h3>
               <p className="text-xs text-zinc-400 mt-1">
@@ -1224,7 +1239,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
 
             {addAdminSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-orange-300 text-xs flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" />
                 <span>{addAdminSuccess}</span>
               </div>
@@ -1239,7 +1254,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   placeholder="e.g. mentor.ai@vitbhopal.ac.in"
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
                 />
               </div>
 
@@ -1251,7 +1266,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   placeholder="e.g. Prof. Priya Sharma"
                   value={newAdminName}
                   onChange={(e) => setNewAdminName(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
 
@@ -1260,7 +1275,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <select
                   value={newAdminRole}
                   onChange={(e) => setNewAdminRole(e.target.value as any)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500"
                 >
                   <option value="Lead Organizer">Lead Organizer (DSC Core)</option>
                   <option value="Jury Chair">Jury Member / Evaluator</option>
@@ -1277,13 +1292,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   placeholder="e.g. Data Science Club or Dept of AI"
                   value={newAdminDept}
                   onChange={(e) => setNewAdminDept(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                className="w-full py-3 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Email to Authorized Whitelist</span>
@@ -1291,6 +1306,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* TAB 6: GATE PASS QR SCANNER SIMULATION */}
+      {adminTab === 'scanner' && (
+        <ScannerConsole
+          teams={teams}
+          onUpdateTeamStatus={onUpdateTeamStatus}
+        />
       )}
 
       {/* POPUP 1: PAYMENT PROOF SCREENSHOT VIEWER MODAL */}
@@ -1314,7 +1337,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
             <div className="bg-[#18181b] p-3 rounded-xl text-xs font-mono space-y-1 border border-white/10">
               <div>
-                Transaction Ref: <span className="text-emerald-400 font-bold">{selectedProofTeam.transactionRef}</span>
+                Transaction Ref: <span className="text-orange-400 font-bold">{selectedProofTeam.transactionRef}</span>
               </div>
               <div>Leader: {selectedProofTeam.leader.name} ({selectedProofTeam.leader.phone})</div>
             </div>
@@ -1354,7 +1377,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   });
                   setSelectedProofTeam(null);
                 }}
-                className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                className="px-5 py-2 bg-orange-500 hover:bg-orange-400 text-zinc-950 rounded-xl text-xs font-bold shadow-md cursor-pointer"
               >
                 Approve & Issue ID Badge
               </button>
@@ -1468,8 +1491,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 />
               </div>
 
-              <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between font-mono">
-                <span className="text-emerald-300 font-bold">TOTAL SCORE:</span>
+              <div className="p-3 bg-orange-950/40 border border-orange-500/30 rounded-xl flex items-center justify-between font-mono">
+                <span className="text-orange-300 font-bold">TOTAL SCORE:</span>
                 <span className="text-base font-extrabold text-white">
                   {scores.innovation + scores.technicalComplexity + scores.uiUx + scores.presentation + scores.impact} / 100
                 </span>
@@ -1485,7 +1508,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                  className="px-5 py-2 bg-orange-500 hover:bg-orange-400 text-zinc-950 rounded-xl text-xs font-bold shadow-md cursor-pointer"
                 >
                   Save Score & Update Rank
                 </button>
@@ -1494,6 +1517,202 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ==========================================
+// SUB-COMPONENT: RETRO QR GATE PASS SCANNER
+// ==========================================
+interface ScannerConsoleProps {
+  teams: Team[];
+  onUpdateTeamStatus: (teamId: string, status: { paymentStatus?: PaymentStatus; checkedInVenue?: boolean; ticketIssued?: boolean; notes?: string }) => void;
+}
+
+const ScannerConsole: React.FC<ScannerConsoleProps> = ({ teams, onUpdateTeamStatus }) => {
+  const [selectedScanTeamId, setSelectedScanTeamId] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [flash, setFlash] = useState(false);
+  const [scanResult, setScanResult] = useState<Team | null>(null);
+
+  const verifiedTeamsList = teams.filter((t) => t.paymentStatus === 'verified');
+
+  const handleSimulateScan = () => {
+    if (!selectedScanTeamId) return;
+    setScanning(true);
+    setScanResult(null);
+
+    setTimeout(() => {
+      setScanning(false);
+      setFlash(true);
+
+      const teamObj = teams.find((t) => t.id === selectedScanTeamId);
+      if (teamObj) {
+        onUpdateTeamStatus(selectedScanTeamId, { checkedInVenue: true });
+        setScanResult({ ...teamObj, checkedInVenue: true });
+      }
+
+      setTimeout(() => {
+        setFlash(false);
+      }, 250);
+    }, 1500);
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Scanner Viewfinder Box */}
+      <div className="lg:col-span-6 bg-[#111114] border border-white/10 rounded-3xl p-6 sm:p-7 space-y-6 flex flex-col justify-between relative overflow-hidden">
+        
+        {flash && (
+          <div className="absolute inset-0 bg-[#FF5F00] opacity-90 z-30 transition-opacity duration-200 pointer-events-none" />
+        )}
+
+        <div>
+          <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
+            <Camera className="w-5 h-5 text-orange-400" />
+            <span>Pass Scanner Camera Terminal</span>
+          </h3>
+          <p className="text-xs text-zinc-400 mt-1">
+            Point pass QR codes at target scanner or select a registered team below to simulate scan check-in.
+          </p>
+        </div>
+
+        {/* Viewfinder Frame */}
+        <div className="relative w-full aspect-video border-3 border-[#FF5F00]/30 rounded-2xl bg-black overflow-hidden flex items-center justify-center shadow-[inset_0_0_30px_rgba(255,95,0,0.2)]">
+          {/* Target corners */}
+          <div className="absolute top-4 left-4 w-6 h-6 border-t-3 border-l-3 border-orange-500" />
+          <div className="absolute top-4 right-4 w-6 h-6 border-t-3 border-r-3 border-orange-500" />
+          <div className="absolute bottom-4 left-4 w-6 h-6 border-b-3 border-l-3 border-orange-500" />
+          <div className="absolute bottom-4 right-4 w-6 h-6 border-b-3 border-r-3 border-orange-500" />
+
+          {/* Scanner Line */}
+          {scanning && (
+            <div className="absolute w-full h-[3px] bg-[#FF5F00] shadow-[0_0_12px_#FF5F00] top-0 left-0 animate-[scan_2s_infinite_ease-in-out] z-15" />
+          )}
+
+          {/* Center QR watermark icon */}
+          <QrCode className={`w-20 h-20 text-neutral-850 transition-all ${scanning ? 'text-orange-500/30 scale-110 animate-pulse' : ''}`} />
+
+          {scanning && (
+            <span className="absolute bottom-6 text-[10px] font-mono font-bold tracking-widest text-orange-400 animate-pulse uppercase">
+              SCANNING GATE PASS...
+            </span>
+          )}
+
+          {/* Scan style sheet animation injection */}
+          <style>{`
+            @keyframes scan {
+              0% { top: 5%; }
+              50% { top: 90%; }
+              100% { top: 5%; }
+            }
+          `}</style>
+        </div>
+
+        {/* Controls */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-zinc-300 font-semibold mb-2 text-xs">Simulate Camera Feed (Select Verified Team)</label>
+            <select
+              value={selectedScanTeamId}
+              onChange={(e) => setSelectedScanTeamId(e.target.value)}
+              className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 text-xs font-mono"
+            >
+              <option value="">-- Choose verified hacker pass --</option>
+              {verifiedTeamsList.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.teamName} [UTR: {t.transactionRef.substring(0, 10)}...]
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={handleSimulateScan}
+            disabled={scanning || !selectedScanTeamId}
+            className="w-full py-3 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>{scanning ? 'Analyzing QR Matrix...' : 'Trigger Pass Scan'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Verification Logs / Output details */}
+      <div className="lg:col-span-6 space-y-6">
+        <h4 className="text-sm font-serif font-bold text-white mb-2">Check-in Verification Log</h4>
+        
+        {scanResult ? (
+          <div className="comic-card p-6 border-3 border-orange-500 bg-[#0D0E12] shadow-[5px_5px_0px_#000] space-y-5 animate-[pop_0.3s_ease-out]">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 border border-orange-500/30">
+                <Check className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono text-orange-400 block font-bold uppercase tracking-widest">
+                  ACCESS APPROVED
+                </span>
+                <h4 className="text-lg font-bold text-white font-subheading uppercase">{scanResult.teamName}</h4>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+              <div className="space-y-1">
+                <span className="text-neutral-500 block">TEAM ID</span>
+                <span className="text-[#FFC599] font-bold">{scanResult.id}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-neutral-500 block">TRACK</span>
+                <span className="text-[#FFC599] font-bold">{scanResult.track}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-neutral-500 block">LEADER</span>
+                <span className="text-[#FFC599] font-bold">{scanResult.leader.name}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-neutral-500 block">PHONE</span>
+                <span className="text-[#FFC599] font-bold">{scanResult.leader.phone}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-dashed border-[#FF5F00]/20 flex justify-between items-center text-xs font-mono">
+              <span className="text-neutral-500 font-bold">VENUE ACCESS:</span>
+              <span className="text-orange-400 font-extrabold uppercase animate-pulse">CHECKED IN ✓</span>
+            </div>
+
+            <style>{`
+              @keyframes pop {
+                0% { transform: scale(0.95); opacity: 0; }
+                100% { transform: scale(1); opacity: 1; }
+              }
+            `}</style>
+          </div>
+        ) : (
+          <div className="border border-white/5 bg-[#111114] rounded-2xl p-10 text-center text-zinc-500 font-mono text-xs flex flex-col items-center justify-center space-y-3">
+            <QrCode className="w-10 h-10 text-zinc-700 animate-pulse" />
+            <span>Awaiting digital QR gate scan trigger...</span>
+          </div>
+        )}
+
+        {/* History stream of checks */}
+        <div className="bg-[#111114] border border-white/10 rounded-2xl p-5 space-y-3">
+          <span className="text-[10px] font-mono text-neutral-500 font-bold uppercase tracking-wider block">
+            Recent Check-in Logs (Live)
+          </span>
+          <div className="divide-y divide-white/5 font-mono text-[11px] space-y-2">
+            {teams.filter(t => t.checkedInVenue).slice(0, 3).map((t, idx) => (
+              <div key={idx} className="flex justify-between items-center pt-2 first:pt-0">
+                <span className="text-neutral-450 font-bold">{t.teamName} ({t.id})</span>
+                <span className="text-orange-400">CHECKED IN 12:00 PM</span>
+              </div>
+            ))}
+            {teams.filter(t => t.checkedInVenue).length === 0 && (
+              <div className="text-zinc-600 text-center py-2">No active check-ins recorded yet.</div>
+            )}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

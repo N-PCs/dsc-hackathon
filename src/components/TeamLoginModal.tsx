@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ticket, Lock, ArrowRight, AlertCircle, Sparkles, CheckCircle2, User } from 'lucide-react';
+import { Ticket, AlertCircle, Sparkles } from 'lucide-react';
 import { Team } from '../types';
 
 interface TeamLoginModalProps {
@@ -77,36 +77,45 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111114] border border-white/10 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+      <div className="comic-card p-6 sm:p-8 max-w-md w-full bg-[#0D0E12] border-3 border-white shadow-[8px_8px_0px_#FF5F00] relative space-y-6">
+        
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-zinc-400 hover:text-white text-xs cursor-pointer"
+          className="absolute top-5 right-5 text-neutral-400 hover:text-[#FF5F00] text-xs font-mono font-bold uppercase cursor-pointer"
         >
           ✕ Close
         </button>
 
+        {/* Brand Icon & Heading */}
         <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 mb-3">
+          <div className="w-12 h-12 border-2 border-white bg-black mx-auto flex items-center justify-center text-[#FF5F00] mb-4 shadow-[2px_2px_0px_#FF5F00]">
             <Ticket className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-serif font-bold text-white">Access Your Team Workspace</h3>
-          <p className="text-xs text-zinc-400 mt-1">
+          <h3
+            className="text-2xl font-bold text-white font-subheading uppercase"
+          >
+            Access Team Workspace
+          </h3>
+          <p className="text-[13px] text-neutral-400 mt-2 font-body font-medium">
             Retrieve your Digital ID Pass, check verification status, or submit 24h project deliverables.
           </p>
         </div>
 
+        {/* Error Notification */}
         {errorMsg && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <div className="p-3 bg-red-950/80 border-2 border-black text-red-300 text-xs flex items-center gap-2 font-mono font-bold shadow-[2px_2px_0px_#000]">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
             <span>{errorMsg}</span>
           </div>
         )}
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1">
-              Team ID or Leader Email <span className="text-emerald-400">*</span>
+            <label className="block text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2">
+              Team ID or Leader Email <span className="text-[#FF5F00]">*</span>
             </label>
             <input
               type="text"
@@ -114,48 +123,49 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
               placeholder="e.g. ORIGIN-101 or aarav.sharma2023@vitbhopal.ac.in"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+              className="w-full comic-input font-bold font-mono text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1 flex items-center justify-between">
-              <span>Team Access Code / PIN (Optional)</span>
-              <span className="text-[10px] text-zinc-500">4-digit PIN</span>
+            <label className="block text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Team Access PIN (Optional)</span>
+              <span className="text-[9px] text-neutral-500 font-bold">4-digit PIN</span>
             </label>
             <input
               type="password"
               placeholder="e.g. 7821"
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono tracking-widest"
+              className="w-full comic-input font-bold font-mono text-xs tracking-widest"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 cursor-pointer disabled:opacity-50 transition-all"
+            className="w-full btn-comic-primary justify-center text-xs mt-2"
           >
             {isLoading ? (
               <span>Authenticating...</span>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
-                <span>Open Team Pass & Submission</span>
+                <Sparkles className="w-4 h-4 text-black" />
+                <span>Open Team Pass</span>
               </>
             )}
           </button>
         </form>
 
-        <div className="pt-3 border-t border-white/10 text-center">
-          <span className="text-xs text-zinc-400">Haven't registered your team yet? </span>
+        {/* Footer actions */}
+        <div className="pt-4 border-t border-neutral-800 text-center text-xs font-mono font-bold">
+          <span className="text-neutral-400">Haven't registered yet? </span>
           <button
             onClick={() => {
               onClose();
               onNavigateToRegister();
             }}
-            className="text-xs font-semibold text-emerald-400 hover:underline cursor-pointer"
+            className="text-[#FF5F00] hover:underline cursor-pointer"
           >
             Register Now &rarr;
           </button>
