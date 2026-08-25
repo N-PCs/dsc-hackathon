@@ -32,26 +32,24 @@ export async function uploadFileToImagekit(
   const resourceType = isImage ? 'image' : 'raw';
 
   if (!isImagekitConfigured) {
-    // Fallback Local Storage
-    const uploadsDir = path.join(process.cwd(), 'dist', 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    // Fallback Data URL storage for serverless compatibility
+    try {
+      const fileExt = path.extname(originalFilename) || (isImage ? '.png' : '.pdf');
+      const base64Str = fileBuffer.toString('base64');
+      const dataUrl = `data:${mimeType || 'application/octet-stream'};base64,${base64Str}`;
+      const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
+
+      console.log(`[Storage Fallback] Created Data URL: (${(fileBuffer.length / 1024).toFixed(1)} KB)`);
+
+      return {
+        url: dataUrl,
+        publicId: filename,
+        format: fileExt.replace('.', ''),
+      };
+    } catch (fallbackErr) {
+      console.error('[Storage Fallback Error]:', fallbackErr);
+      throw new Error('Failed to process image buffer.');
     }
-
-    const fileExt = path.extname(originalFilename) || (isImage ? '.png' : '.pdf');
-    const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
-    const filePath = path.join(uploadsDir, filename);
-
-    fs.writeFileSync(filePath, fileBuffer);
-
-    const localUrl = `/uploads/${filename}`;
-    console.log(`[Storage Fallback] Saved file locally: ${localUrl} (${(fileBuffer.length / 1024).toFixed(1)} KB)`);
-
-    return {
-      url: localUrl,
-      publicId: filename,
-      format: fileExt.replace('.', ''),
-    };
   }
 
   // Imagekit API upload using official REST endpoint and Basic Auth
@@ -88,7 +86,19 @@ export async function uploadFileToImagekit(
       format: result.format || path.extname(originalFilename).replace('.', ''),
     };
   } catch (err: any) {
-    console.error('[Imagekit] Upload error:', err);
-    throw new Error(err.message || 'Imagekit upload failed');
+    console.error('[Imagekit] Upload error, using Data URL fallback:', err);
+    try {
+      const fileExt = path.extname(originalFilename) || (isImage ? '.png' : '.pdf');
+      const base64Str = fileBuffer.toString('base64');
+      const dataUrl = `data:${mimeType || 'application/octet-stream'};base64,${base64Str}`;
+      const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
+      return {
+        url: dataUrl,
+        publicId: filename,
+        format: fileExt.replace('.', ''),
+      };
+    } catch (fallbackErr) {
+      throw new Error(err.message || 'Imagekit upload failed');
+    }
   }
 }

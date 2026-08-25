@@ -88,36 +88,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     setErrorMsg('');
 
     try {
-      try {
-        const result = await uploadDirectToImagekit(file, 'payment-proofs');
-        setPaymentProofUrl(result.url);
-      } catch (directErr) {
-        console.warn('[Direct ImageKit upload warning, attempting /api/upload fallback]:', directErr);
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        let data: any;
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          data = await res.json();
-        } else {
-          const text = await res.text();
-          throw new Error(text || `Server returned non-JSON response (${res.status})`);
-        }
-
-        if (!res.ok || !data.success) {
-          throw new Error(data?.message || 'Image upload to Imagekit failed.');
-        }
-
-        setPaymentProofUrl(data.url);
-      }
+      const result = await uploadDirectToImagekit(file, 'payment-proofs');
+      setPaymentProofUrl(result.url);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to upload screenshot. Please try again.');
+      setErrorMsg(err.message || 'Failed to upload payment proof image. Please try again.');
     } finally {
       setIsUploadingImage(false);
     }

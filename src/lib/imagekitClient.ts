@@ -7,31 +7,30 @@ export async function uploadDirectToImagekit(
   file: File,
   folder = 'origin-hackathon'
 ): Promise<{ url: string; publicId: string }> {
-  const endpoint = `https://upload.imagekit.io/api/v1/files/upload`;
-  const authHeader = 'Basic ' + btoa(privateKey + ':');
-
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('fileName', file.name);
   formData.append('folder', folder);
-  formData.append('useUniqueFileName', 'true');
 
-  const response = await fetch(endpoint, {
+  const response = await fetch('/api/upload', {
     method: 'POST',
-    headers: {
-      Authorization: authHeader,
-    },
     body: formData,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`ImageKit Direct Upload Error (${response.status}): ${errorText}`);
+  let data: any;
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+    throw new Error(text || `Upload server returned status ${response.status}`);
   }
 
-  const result = await response.json();
+  if (!response.ok || !data.success) {
+    throw new Error(data?.message || 'File upload failed');
+  }
+
   return {
-    url: result.url,
-    publicId: result.fileId || file.name,
+    url: data.url,
+    publicId: data.publicId || file.name,
   };
 }

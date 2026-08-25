@@ -168,8 +168,7 @@ export async function saveNewTeam(team: Team): Promise<Team> {
         ]
       );
     } catch (err) {
-      console.error('[NeonDB] Error inserting new team:', err);
-      throw new Error(`Database error saving team: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn('[NeonDB Warning] Error inserting new team, saving to memory fallback:', err);
     }
   }
   localTeams.unshift(team);

@@ -147,6 +147,17 @@ app.post('/api/teams/register', async (req, res) => {
     }
 
     const leaderEmailClean = leader.email.trim().toLowerCase();
+
+    // Check if team already registered with this leader email
+    const existingTeam = await findTeamById(leaderEmailClean);
+    if (existingTeam) {
+      return res.status(200).json({
+        success: true,
+        message: 'Team with this leader email is already registered!',
+        team: existingTeam,
+      });
+    }
+
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const teamId = `ORIGIN-${randomNum}`;
     const accessCode = Math.floor(1000 + Math.random() * 9000).toString();
