@@ -103,7 +103,6 @@ export const HackathonScheduleRules: React.FC = () => {
             {/* Vertical connector track line */}
             <div className="absolute left-[15px] sm:left-[24px] top-6 bottom-6 w-1 border-l-3 border-dashed border-[#FF5F00]/25 z-0" />
 
-<<<<<<< HEAD
             {HACKATHON_SCHEDULE.map((item, idx) => {
               const isActive = item.phase === 'active';
               const isPast = item.phase === 'past';
@@ -124,40 +123,6 @@ export const HackathonScheduleRules: React.FC = () => {
                     <div className="absolute left-[-23px] sm:-left-[30px] top-1/2 -translate-y-1/2 z-20">
                       <span className="absolute w-4.5 h-4.5 rounded-full bg-[#FF5F00] border-2 border-black animate-ping" />
                       <span className="relative block w-4.5 h-4.5 rounded-full bg-[#FF5F00] border-3 border-black" />
-=======
-                return (
-                  <div
-                    key={idx}
-                    className={`gsap-tl-item flex gap-6 py-5 border-b border-neutral-800 transition-colors ${
-                      isActive ? 'border-l-2 border-l-orange-600 pl-6' : isPast ? 'opacity-40' : ''
-                    }`}
-                  >
-                    {/* Time */}
-                    <div className="w-20 shrink-0">
-                      <span className="text-[13px] font-mono font-medium text-neutral-500">
-                        {item.time}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h4
-                          className={`text-[15px] font-bold ${isActive ? 'text-orange-500' : 'text-white'}`}
-                          style={{ fontFamily: 'var(--font-heading)' }}
-                        >
-                          {item.title}
-                        </h4>
-                        {isActive && (
-                          <span className="text-[10px] font-mono font-semibold text-orange-500 uppercase tracking-wider">
-                            Now
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[13px] text-neutral-500 leading-relaxed">
-                        {item.desc}
-                      </p>
->>>>>>> upstream/master
                     </div>
                   )}
 
@@ -200,12 +165,7 @@ export const HackathonScheduleRules: React.FC = () => {
               className="w-full p-6 flex items-center justify-between cursor-pointer group"
             >
               <h3
-<<<<<<< HEAD
                 className="text-xl md:text-2xl font-bold text-[#FFC599] font-subheading group-hover:text-[#FF5F00] transition-colors uppercase"
-=======
-                className="text-xl md:text-2xl font-bold group-hover:text-orange-500 transition-colors"
-                style={{ fontFamily: 'var(--font-heading)' }}
->>>>>>> upstream/master
               >
                 Rules & Code of Conduct
               </h3>
@@ -248,12 +208,7 @@ export const HackathonScheduleRules: React.FC = () => {
               className="w-full p-6 flex items-center justify-between cursor-pointer group"
             >
               <h3
-<<<<<<< HEAD
                 className="text-xl md:text-2xl font-bold text-[#FFC599] font-subheading group-hover:text-[#FF5F00] transition-colors uppercase"
-=======
-                className="text-xl md:text-2xl font-bold group-hover:text-orange-500 transition-colors"
-                style={{ fontFamily: 'var(--font-heading)' }}
->>>>>>> upstream/master
               >
                 Judging Criteria — 100 Points
               </h3>
@@ -271,12 +226,7 @@ export const HackathonScheduleRules: React.FC = () => {
                     <div key={idx} className="comic-card p-5 bg-[#0D0E12] border-3 border-[#FF5F00] shadow-[4px_4px_0px_#000]">
                       <div className="flex items-baseline justify-between mb-3 pb-2 border-b border-neutral-850">
                         <span
-<<<<<<< HEAD
                           className="text-3xl font-extrabold text-[#FF5F00] font-subheading"
-=======
-                          className="text-2xl font-bold text-orange-500"
-                          style={{ fontFamily: 'var(--font-heading)' }}
->>>>>>> upstream/master
                         >
                           {item.pts}
                         </span>

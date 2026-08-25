@@ -109,11 +109,7 @@ export const FAQSection: React.FC = () => {
                 <p className="text-[12px] font-mono text-neutral-400 font-bold uppercase tracking-wider">Still have questions?</p>
                 <a
                   href="mailto:dsc.origin@vitbhopal.ac.in"
-<<<<<<< HEAD
                   className="btn-comic-outline text-[12px] py-2 px-5"
-=======
-                  className="inline-flex items-center gap-2 text-[13px] font-semibold text-orange-500 hover:text-orange-400 transition-colors"
->>>>>>> upstream/master
                 >
                   Contact DSC Support
                   <ArrowRight className="w-3.5 h-3.5 text-[#FF5F00]" />
@@ -137,13 +133,8 @@ export const FAQSection: React.FC = () => {
                       className="w-full text-left flex items-start justify-between gap-6 cursor-pointer group"
                     >
                       <span
-<<<<<<< HEAD
                         className={`text-[15px] md:text-[17px] font-extrabold uppercase tracking-wide transition-colors ${
                           isOpen ? 'text-[#FF5F00]' : 'text-[#FFC599] group-hover:text-[#FF5F00]'
-=======
-                        className={`text-[15px] md:text-[16px] font-bold transition-colors ${
-                          isOpen ? 'text-orange-500' : 'text-white group-hover:text-neutral-300'
->>>>>>> upstream/master
                         }`}
                         style={{ fontFamily: 'var(--font-subheading)' }}
                       >

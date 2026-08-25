@@ -498,13 +498,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         </div>
       )}
 
-<<<<<<< HEAD
       <form onSubmit={handleSubmit} className="space-y-10">
-        
-=======
-      <form onSubmit={handleSubmit} className="space-y-8">
-
->>>>>>> upstream/master
         {/* Section 1: Project Overview */}
         <div className="comic-card p-6 sm:p-8 bg-[#0D0E12] border-3 border-white shadow-[6px_6px_0px_#FF5F00] space-y-6">
           <div className="flex items-center gap-2.5 pb-3 border-b-2 border-dashed border-neutral-800 text-white font-subheading font-bold text-lg uppercase">
@@ -742,15 +736,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           </div>
         </div>
 
-<<<<<<< HEAD
-        {/* Submit */}
-        <div className="flex justify-center pt-2">
-          <button
-            id="submit-btn-save-project"
-            type="submit"
-            disabled={isSubmitting || isUploadingDoc}
-            className="w-full sm:w-auto min-w-[320px] btn-comic-primary justify-center text-sm py-4"
-=======
         {/* Submit button */}
         <div className="flex flex-col items-center justify-center pt-2 gap-3">
           {isDeadlinePassed && (
@@ -769,12 +754,11 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             id="submit-btn-save-project"
             type="submit"
             disabled={isSubmitting || isUploadingDoc || !isSubmissionsOpen || isDeadlinePassed}
-            className={`w-full sm:w-auto min-w-[280px] px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 shadow-xl transition-all ${
+            className={`w-full sm:w-auto min-w-[320px] justify-center text-sm py-4 transition-all duration-200 ${
               isDeadlinePassed || !isSubmissionsOpen
-                ? 'bg-zinc-800 text-zinc-500 border border-white/10 cursor-not-allowed opacity-60 shadow-none'
-                : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.98] cursor-pointer'
+                ? 'bg-zinc-800 text-zinc-500 border-3 border-neutral-900 cursor-not-allowed opacity-50 shadow-none'
+                : 'btn-comic-primary'
             }`}
->>>>>>> upstream/master
           >
             {isSubmitting ? (
               <span>Saving Deliverables...</span>

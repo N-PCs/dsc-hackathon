@@ -456,11 +456,7 @@ export default function App() {
                 >
                   ORIGIN
                 </span>
-<<<<<<< HEAD
                 <span className="w-2 h-2 rounded-full bg-[#FF5F00] mt-3" />
-=======
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5" />
->>>>>>> upstream/master
               </div>
               <p className="text-[13px] text-neutral-400 leading-relaxed max-w-xs font-body font-medium">
                 The flagship 24-hour overnight hackathon organized by the 
@@ -523,21 +519,11 @@ export default function App() {
                 Register Now
                 <ArrowRight className="w-3.5 h-3.5 text-[#000]" />
               </button>
-<<<<<<< HEAD
-              <p className="text-[12px] text-neutral-500 font-mono uppercase font-bold">
-                <button
-                  onClick={() => setActiveTab('admin')}
-                  className="hover:text-[#FF5F00] cursor-pointer transition-colors"
-                >
-                  Organiser Access →
-                </button>
-              </p>
-=======
-              <div className="space-y-1.5 text-[12px] text-neutral-600">
+              <div className="space-y-1.5 text-[12px] text-neutral-500 font-mono uppercase font-bold">
                 <p>
                   <button
                     onClick={() => setActiveTab('admin')}
-                    className="hover:text-neutral-400 cursor-pointer transition-colors"
+                    className="hover:text-[#FF5F00] cursor-pointer transition-colors"
                   >
                     Organiser Access →
                   </button>
@@ -545,13 +531,12 @@ export default function App() {
                 <p>
                   <button
                     onClick={() => setActiveTab('jury')}
-                    className="hover:text-orange-400 cursor-pointer transition-colors"
+                    className="hover:text-[#FF5F00] cursor-pointer transition-colors"
                   >
                     Jury Access →
                   </button>
                 </p>
               </div>
->>>>>>> upstream/master
             </div>
           </div>
 
