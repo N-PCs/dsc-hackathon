@@ -19,7 +19,7 @@ import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from './data/mockData';
 import { ArrowRight } from 'lucide-react';
 
 import { useUser } from '@clerk/clerk-react';
-import { isAdminEmail } from './lib/clerk';
+import { isVITBhopalEmail } from './lib/clerk';
 
 export default function App() {
   const { user, isSignedIn } = useUser();
@@ -52,16 +52,7 @@ export default function App() {
   useEffect(() => {
     if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
       const email = user.primaryEmailAddress.emailAddress.toLowerCase();
-      if (isAdminEmail(email)) {
-        const adminObj = {
-          email,
-          name: user.fullName || user.firstName || 'Authorized Admin',
-          role: 'Superadmin' as const,
-          department: 'Executive Operations',
-          addedAt: new Date().toISOString().split('T')[0],
-        };
-        localStorage.setItem('origin_active_admin', JSON.stringify(adminObj));
-      }
+
 
       const matchedTeam = teams.find(
         (t) =>
