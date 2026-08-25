@@ -31,6 +31,10 @@ const upload = multer({
 
 const adminOtps = new Map<string, { otp: string; expiresAt: number }>();
 
+process.on('unhandledRejection', (reason) => {
+  console.error('[Unhandled Rejection in API Serverless Function]', reason);
+});
+
 const app = express();
 
 app.use(express.json({ limit: '25mb' }));
@@ -661,8 +665,20 @@ app.get('/api/export-excel', async (req, res) => {
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="origin-hackathon-teams-${Date.now()}.xlsx"`);
   res.send(buffer);
+// Catch-all for unhandled API routes
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
 });
 
-export default function handler(req: Request, res: Response) {
-  return app(req, res);
-}
+// Global error handler
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('[Vercel API Express Error]', err);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+  });
+});
+
+export default app;
+
