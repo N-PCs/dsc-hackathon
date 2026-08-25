@@ -83,7 +83,7 @@ export async function initDatabase() {
           track VARCHAR(100) NOT NULL,
           payment_status VARCHAR(50) DEFAULT 'pending',
           payment_proof_url TEXT,
-          transaction_ref VARCHAR(100),
+          transaction_ref VARCHAR(100) UNIQUE,
           registered_at VARCHAR(100),
           checked_in_venue BOOLEAN DEFAULT FALSE,
           ticket_issued BOOLEAN DEFAULT FALSE,
@@ -110,6 +110,13 @@ export async function initDatabase() {
           value TEXT NOT NULL
         );
       `);
+
+      try {
+        await client.query('ALTER TABLE teams ADD CONSTRAINT unique_transaction_ref UNIQUE (transaction_ref);');
+      } catch (e: any) {
+        // Ignore if constraint already exists
+      }
+
       console.log('[NeonDB] Database tables initialized successfully.');
     } finally {
       client.release();
@@ -339,4 +346,22 @@ export async function addAnnouncementDB(ann: Announcement): Promise<Announcement
   }
   localAnnouncements.unshift(ann);
   return ann;
+}
+
+export async function isTransactionRefUsed(ref: string): Promise<boolean> {
+  if (!ref) return false;
+  const cleanRef = ref.trim().toLowerCase();
+  
+  if (useNeon && pool) {
+    try {
+      const res = await pool.query('SELECT id FROM teams WHERE LOWER(transaction_ref) = $1', [cleanRef]);
+      if (res.rows.length > 0) {
+        return true;
+      }
+    } catch (err) {
+      console.error('[NeonDB] Error checking transaction ref:', err);
+    }
+  }
+  
+  return localTeams.some(t => t.transactionRef?.toLowerCase() === cleanRef);
 }
