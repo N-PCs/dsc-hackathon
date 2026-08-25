@@ -7,6 +7,7 @@ import { RegistrationForm } from './components/RegistrationForm';
 import { TeamPassTicket } from './components/TeamPassTicket';
 import { ProjectSubmissionModal } from './components/ProjectSubmissionModal';
 import { AdminPortal } from './components/AdminPortal';
+import { JuryPortal } from './components/JuryPortal';
 import { HackathonScheduleRules } from './components/HackathonScheduleRules';
 import { TeamLoginModal } from './components/TeamLoginModal';
 import { LiveAnnouncementsBanner } from './components/LiveAnnouncementsBanner';
@@ -24,7 +25,7 @@ import { isAdminEmail } from './lib/clerk';
 export default function App() {
   const { user, isSignedIn } = useUser();
   const [activeTab, setActiveTab] = useState<
-    'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'faq'
+    'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'jury' | 'faq'
   >('home');
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
@@ -142,9 +143,18 @@ export default function App() {
   // Fetch teams & announcements from API
   const fetchTeamsAndStats = async () => {
     try {
+      const safeJson = async (res: Response) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          const txt = await res.text();
+          throw new Error(`Invalid JSON response: ${txt.slice(0,100)}`);
+        }
+        return res.json();
+      };
       const [teamsRes, annRes] = await Promise.all([
-        fetch('/api/teams').then((r) => r.json()),
-        fetch('/api/announcements').then((r) => r.json()),
+        fetch('/api/teams').then(safeJson),
+        fetch('/api/announcements').then(safeJson),
       ]);
 
       if (teamsRes.success && teamsRes.teams) {
@@ -352,7 +362,6 @@ export default function App() {
                   onSelectTrack={(track) => setSelectedTrackForReg(track)}
                 />
                 <HackathonScheduleRules />
-                <SponsorsSection />
                 <FAQSection />
               </>
             )}
@@ -408,6 +417,14 @@ export default function App() {
                 onRefreshData={fetchTeamsAndStats}
               />
             )}
+
+            {activeTab === 'jury' && (
+              <JuryPortal
+                teams={teams}
+                onScoreProject={handleAdminScoreProject}
+                onRefreshData={fetchTeamsAndStats}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -439,7 +456,11 @@ export default function App() {
                 >
                   ORIGIN
                 </span>
+<<<<<<< HEAD
                 <span className="w-2 h-2 rounded-full bg-[#FF5F00] mt-3" />
+=======
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5" />
+>>>>>>> upstream/master
               </div>
               <p className="text-[13px] text-neutral-400 leading-relaxed max-w-xs font-body font-medium">
                 The flagship 24-hour overnight hackathon organized by the 
@@ -502,6 +523,7 @@ export default function App() {
                 Register Now
                 <ArrowRight className="w-3.5 h-3.5 text-[#000]" />
               </button>
+<<<<<<< HEAD
               <p className="text-[12px] text-neutral-500 font-mono uppercase font-bold">
                 <button
                   onClick={() => setActiveTab('admin')}
@@ -510,6 +532,26 @@ export default function App() {
                   Organiser Access →
                 </button>
               </p>
+=======
+              <div className="space-y-1.5 text-[12px] text-neutral-600">
+                <p>
+                  <button
+                    onClick={() => setActiveTab('admin')}
+                    className="hover:text-neutral-400 cursor-pointer transition-colors"
+                  >
+                    Organiser Access →
+                  </button>
+                </p>
+                <p>
+                  <button
+                    onClick={() => setActiveTab('jury')}
+                    className="hover:text-orange-400 cursor-pointer transition-colors"
+                  >
+                    Jury Access →
+                  </button>
+                </p>
+              </div>
+>>>>>>> upstream/master
             </div>
           </div>
 

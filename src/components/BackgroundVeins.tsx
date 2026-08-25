@@ -175,12 +175,29 @@ export const BackgroundVeins = () => {
             let current = rootTree;
             newPath.push(current);
 
+<<<<<<< HEAD
             while (current.children.length > 0) {
               const nextNode = current.children[Math.floor(Math.random() * current.children.length)];
               newPath.push(nextNode);
               current = nextNode;
             }
             pulse.path = newPath;
+=======
+        // Draw connections
+        for (let j = i + 1; j < numParticles; j++) {
+          const p2 = particles[j];
+          const dx = p1.x - p2.x;
+          const dy = p1.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 130) {
+            const alpha = (1 - dist / 130) * 0.12;
+            ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+>>>>>>> upstream/master
           }
         }
 

@@ -4,8 +4,12 @@ import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { HackathonStats, TrackType } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
+<<<<<<< HEAD
 import { OriginSun } from './OriginSun';
 import { OriginLogo } from './OriginLogo';
+=======
+import { SponsorsSection } from './SponsorsSection';
+>>>>>>> upstream/master
 
 interface HeroSectionProps {
   stats: HackathonStats;
@@ -102,6 +106,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <OriginSun />
       </div>
 
+<<<<<<< HEAD
       {/* Centered Hero Content */}
       <div className="max-w-7xl mx-auto px-6 lg:px-8 w-full z-10 relative flex flex-col items-center justify-center pt-12 md:pt-20 text-center">
         
@@ -111,6 +116,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             Data Science Club · VIT Bhopal University
           </span>
         </div>
+=======
+            {/* Massive title */}
+            <div className="space-y-0 overflow-hidden">
+              <h1 className="text-[clamp(2.5rem,6vw,5.5rem)] font-bold leading-[0.95] tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                <span className="gsap-title-word block">ORIGIN</span>
+                <span className="gsap-title-word block text-orange-500">OVERNIGHT</span>
+                <span className="gsap-title-word block">HACKATHON</span>
+              </h1>
+            </div>
+>>>>>>> upstream/master
 
         {/* Custom Distressed Logo with solar flare behind 'O' */}
         <div className="gsap-title-word flex justify-center mb-6">
@@ -188,6 +203,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Normal grid layout for innovation tracks (no horizontal scrolls) */}
       <div id="tracks-section" className="py-24 border-t-3 border-[#FF5F00] bg-black relative z-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -228,6 +244,72 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               />
             ))}
           </div>
+=======
+      {/* Sponsors Section — Placed before Choose your arena */}
+      <SponsorsSection />
+
+      {/* Tracks Section */}
+      <div id="tracks-section" className="max-w-7xl mx-auto px-6 lg:px-8 w-full py-24">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+          <div>
+            <span className="text-[13px] font-mono text-neutral-500 uppercase tracking-wider block mb-3">
+              Innovation Tracks
+            </span>
+            <h2
+              className="text-3xl md:text-5xl font-bold tracking-tight"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Choose your arena.
+            </h2>
+          </div>
+          <button
+            onClick={() => onNavigate('schedule')}
+            className="text-[13px] font-medium text-orange-500 hover:text-orange-400 transition-colors cursor-pointer flex items-center gap-1"
+          >
+            View judging criteria <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-neutral-800">
+          {HACKATHON_TRACKS.map((track, idx) => {
+            const trackCount = stats.trackCounts[track.name] || 0;
+            return (
+              <button
+                key={idx}
+                id={`track-card-${idx}`}
+                onClick={() => {
+                  onSelectTrack(track.name);
+                  onNavigate('register');
+                }}
+                className="bg-black p-8 text-left group cursor-pointer transition-colors hover:bg-neutral-950 flex flex-col justify-between min-h-[200px]"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[11px] font-mono text-neutral-600 uppercase">
+                      Track {String(idx + 1).padStart(2, '0')}
+                    </span>
+                    <span className="text-[11px] font-mono text-neutral-600">
+                      {trackCount} teams
+                    </span>
+                  </div>
+                  <h3
+                    className="text-lg font-bold text-white group-hover:text-orange-500 transition-colors mb-3"
+                    style={{ fontFamily: 'var(--font-heading)' }}
+                  >
+                    {track.name}
+                  </h3>
+                  <p className="text-[13px] text-neutral-500 leading-relaxed">
+                    {track.description}
+                  </p>
+                </div>
+
+                <div className="mt-6 flex items-center gap-2 text-[13px] font-medium text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Select track <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </button>
+            );
+          })}
+>>>>>>> upstream/master
         </div>
       </div>
 

@@ -17,7 +17,7 @@ export const HACKATHON_TRACKS: { name: TrackType; icon: string; description: str
     name: 'FinTech & Cybersecurity',
     icon: 'ShieldCheck',
     description: 'Fraud detection algorithms, threat mitigation, secure payment gateways & algorithmic trading.',
-    color: 'from-cyan-500 to-blue-600',
+    color: 'from-amber-500 to-orange-600',
   },
   {
     name: 'HealthTech & BioInformatics',
@@ -81,6 +81,9 @@ export const HACKATHON_SCHEDULE = [
   { time: '03:30 PM', title: 'Grand Awards & Closing Ceremony', desc: 'Trophies, cash prize pool of ₹1,50,000, internship offers & swag distribution.', phase: 'upcoming' },
 ];
 
+export const DEFAULT_SUBMISSION_DEADLINE = '2026-08-26T11:00:00+05:30';
+
 export const INITIAL_ANNOUNCEMENTS: Announcement[] = [];
 
 export const INITIAL_TEAMS: Team[] = [];
+

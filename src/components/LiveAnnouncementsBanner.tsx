@@ -16,7 +16,11 @@ export const LiveAnnouncementsBanner: React.FC<LiveAnnouncementsBannerProps> = (
   const latest = announcements[0];
 
   return (
+<<<<<<< HEAD
     <div className="fixed top-0 left-0 right-0 z-[60] bg-[#FF5F00] text-black text-[13px] px-6 py-2.5 border-b-3 border-black font-bold uppercase tracking-wide">
+=======
+    <div className="fixed top-0 left-0 right-0 z-[60] bg-orange-600 text-white text-[13px] px-6 py-2.5">
+>>>>>>> upstream/master
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 overflow-hidden">
           <span

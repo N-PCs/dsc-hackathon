@@ -10,6 +10,11 @@ import {
 import { TrackType, Team, TeamMember } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
 import { isVITBhopalEmail } from '../lib/clerk';
+<<<<<<< HEAD
+=======
+import { uploadDirectToImagekit } from '../lib/imagekitClient';
+import { QrCode } from 'lucide-react';
+>>>>>>> upstream/master
 
 interface RegistrationFormProps {
   selectedTrack?: TrackType;
@@ -87,6 +92,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     setErrorMsg('');
 
     try {
+<<<<<<< HEAD
       const formData = new FormData();
       formData.append('file', file);
 
@@ -101,8 +107,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
 
       setPaymentProofUrl(data.url);
+=======
+      const result = await uploadDirectToImagekit(file, 'payment-proofs');
+      setPaymentProofUrl(result.url);
+>>>>>>> upstream/master
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to upload screenshot. Please try again.');
+      setErrorMsg(err.message || 'Failed to upload payment proof image. Please try again.');
     } finally {
       setIsUploadingImage(false);
     }
@@ -158,7 +168,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Server error during registration (${res.status})`);
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to complete registration.');
@@ -182,6 +199,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }
   };
 
+<<<<<<< HEAD
+=======
+  const inputClass =
+    'input-underline';
+
+  const memberInputClass =
+    'w-full bg-transparent border-b border-neutral-800 py-3 text-[14px] text-white placeholder:text-neutral-600 focus:border-orange-600 focus:outline-none transition-colors';
+
+>>>>>>> upstream/master
   return (
     <div className="max-w-3xl mx-auto px-6 pt-28 pb-16">
       {/* Header Panel */}
@@ -203,7 +229,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           Already registered?{' '}
           <button
             onClick={onSwitchToLogin}
+<<<<<<< HEAD
             className="text-[#FF5F00] hover:underline cursor-pointer transition-colors"
+=======
+            className="text-orange-500 font-semibold hover:text-orange-400 cursor-pointer transition-colors"
+>>>>>>> upstream/master
           >
             Sign in to your team →
           </button>
@@ -235,8 +265,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
           <div className="space-y-6">
             <div>
+<<<<<<< HEAD
               <label className="block text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2">
                 Team Name <span className="text-[#FF5F00]">*</span>
+=======
+              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+                Team Name <span className="text-orange-500">*</span>
+>>>>>>> upstream/master
               </label>
               <input
                 id="reg-input-team-name"
@@ -250,14 +285,23 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
 
             <div>
+<<<<<<< HEAD
               <label className="block text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2">
                 Innovation Track <span className="text-[#FF5F00]">*</span>
+=======
+              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+                Innovation Track <span className="text-orange-500">*</span>
+>>>>>>> upstream/master
               </label>
               <select
                 id="reg-select-track"
                 value={track}
                 onChange={(e) => setTrack(e.target.value as TrackType)}
+<<<<<<< HEAD
                 className="w-full comic-input font-bold cursor-pointer bg-black text-[#FFC599]"
+=======
+                className="w-full bg-transparent border-b border-neutral-700 py-3 text-[14px] text-white focus:border-orange-600 focus:outline-none transition-colors cursor-pointer"
+>>>>>>> upstream/master
               >
                 {HACKATHON_TRACKS.map((t, idx) => (
                   <option key={idx} value={t.name} className="bg-black text-[#FFC599]">
@@ -279,8 +323,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     onClick={() => setMemberCount(num)}
                     className={`py-3 text-[12px] font-bold uppercase transition-colors cursor-pointer font-mono border-r-3 border-[#FF5F00] last:border-r-0 ${
                       memberCount === num
+<<<<<<< HEAD
                         ? 'bg-[#FF5F00] text-black font-extrabold'
                         : 'bg-black text-neutral-450 hover:bg-neutral-900 hover:text-[#FF5F00]'
+=======
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-black text-neutral-400 hover:bg-neutral-950 hover:text-white'
+>>>>>>> upstream/master
                     }`}
                   >
                     {num === 1 ? '1 Solo' : num === 2 ? '2 Duo' : num === 3 ? '3 Trio' : '4 Squad'}
@@ -305,8 +354,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
+<<<<<<< HEAD
               <label className="block text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2">
                 Full Name <span className="text-[#FF5F00]">*</span>
+=======
+              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+                Full Name <span className="text-orange-500">*</span>
+>>>>>>> upstream/master
               </label>
               <input
                 id="reg-input-leader-name"
@@ -320,11 +374,19 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
 
             <div>
+<<<<<<< HEAD
               <label className="flex items-center justify-between text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2">
                 <span>Email <span className="text-[#FF5F00]">*</span></span>
                 {domainNotice && (
                   <span className="text-[10px] text-[#FF5F00] flex items-center gap-1 font-bold">
                     <CheckCircle className="w-3.5 h-3.5" /> Verified Domain
+=======
+              <label className="flex items-center justify-between text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+                <span>Email <span className="text-orange-500">*</span></span>
+                {domainNotice && (
+                  <span className="text-[10px] text-orange-500 flex items-center gap-1 normal-case">
+                    <CheckCircle className="w-3 h-3" /> Verified domain
+>>>>>>> upstream/master
                   </span>
                 )}
               </label>
@@ -340,8 +402,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
 
             <div>
+<<<<<<< HEAD
               <label className="block text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2">
                 Phone <span className="text-[#FF5F00]">*</span>
+=======
+              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+                Phone <span className="text-orange-500">*</span>
+>>>>>>> upstream/master
               </label>
               <input
                 id="reg-input-leader-phone"
@@ -454,8 +521,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             {/* UTR + Screenshot Upload */}
             <div className="space-y-6">
               <div>
+<<<<<<< HEAD
                 <label className="block text-[11px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-2">
                   Transaction Ref (UTR) <span className="text-[#FF5F00]">*</span>
+=======
+                <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+                  Transaction Ref (UTR) <span className="text-orange-500">*</span>
+>>>>>>> upstream/master
                 </label>
                 <input
                   id="reg-input-txn-ref"
@@ -497,8 +569,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       alt="Payment Preview"
                       className="w-12 h-12 object-cover border-2 border-[#FF5F00]"
                     />
+<<<<<<< HEAD
                     <div className="text-[12px]">
                       <span className="text-[#FF5F00] font-bold flex items-center gap-1">
+=======
+                    <div className="text-[13px]">
+                      <span className="text-orange-500 font-medium flex items-center gap-1">
+>>>>>>> upstream/master
                         <CheckCircle className="w-3.5 h-3.5" /> Uploaded successfully
                       </span>
                       <span className="text-neutral-500 font-bold block">Pass releases after admin review</span>
@@ -511,10 +588,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         </div>
 
         {/* Verification notice */}
+<<<<<<< HEAD
         <div className="py-4 px-5 border-3 border-[#FF5F00] bg-neutral-900 text-[13px] text-[#FFC599] font-bold">
           <span className="text-white font-extrabold">Note: </span>
           Your status will be set to <span className="font-mono text-[#FF5F00] font-bold">pending</span> until 
           DSC Admins verify your transaction. Your digital ID pass will unlock automatically.
+=======
+        <div className="py-4 px-5 border border-neutral-800 text-[13px] text-neutral-400">
+          <span className="text-white font-semibold">Note: </span>
+          Your status will be set to <span className="font-mono text-orange-500">pending</span> until 
+          DSC Admins verify your payment. Your Digital ID Pass unlocks after approval.
+>>>>>>> upstream/master
         </div>
 
         {/* Agreement */}
@@ -524,7 +608,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             type="checkbox"
             checked={agreeTerms}
             onChange={(e) => setAgreeTerms(e.target.checked)}
+<<<<<<< HEAD
             className="mt-1 w-4.5 h-4.5 accent-[#FF5F00] bg-black border-2 border-[#FF5F00] rounded-none cursor-pointer"
+=======
+            className="mt-1 w-4 h-4 accent-orange-600 bg-transparent border-neutral-600"
+>>>>>>> upstream/master
           />
           <span className="text-[13px] text-[#FFC599] leading-relaxed font-body font-bold">
             I agree to the <span className="text-white font-extrabold">Origin Hackathon Rules</span> & Code of Conduct. 
@@ -537,7 +625,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           id="reg-btn-submit-team"
           type="submit"
           disabled={isSubmitting || isUploadingImage}
+<<<<<<< HEAD
           className="w-full btn-comic-primary justify-center gap-2"
+=======
+          className="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold text-[15px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          style={{ fontFamily: 'var(--font-heading)' }}
+>>>>>>> upstream/master
         >
           {isSubmitting ? (
             <span>Submitting...</span>

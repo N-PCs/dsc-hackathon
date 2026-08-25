@@ -14,9 +14,13 @@ import {
   Lock,
   Plus,
   FileCheck,
+  Clock,
 } from 'lucide-react';
 import { Team, TrackType } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
+import { uploadDirectToImagekit } from '../lib/imagekitClient';
+import { DEFAULT_SUBMISSION_DEADLINE, isDeadlinePassed as checkDeadlinePassed } from '../lib/deadline';
+
 
 interface ProjectSubmissionModalProps {
   team: Team | null;
@@ -66,24 +70,83 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
   const [presentationUrl, setPresentationUrl] = useState(existingProject?.presentationUrl || '');
   const [presentationFileName, setPresentationFileName] = useState('');
 
-  // Submitting states
+  // Submitting states & deadline lock state
+  const [deadline, setDeadline] = useState<string>(DEFAULT_SUBMISSION_DEADLINE);
+  const [isDeadlinePassed, setIsDeadlinePassed] = useState<boolean>(() => checkDeadlinePassed(DEFAULT_SUBMISSION_DEADLINE));
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    totalMs: number;
+    isPassed: boolean;
+  }>(() => {
+    const target = new Date(DEFAULT_SUBMISSION_DEADLINE).getTime();
+    const diff = target - Date.now();
+    if (isNaN(target) || diff <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, isPassed: true };
+    }
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / (1000 * 60)) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+      totalMs: diff,
+      isPassed: false,
+    };
+  });
   const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Check backend submission gate status on load
+  // Check backend submission gate status & deadline on load and periodically
   React.useEffect(() => {
-    fetch('/api/admin/submissions-status')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setIsSubmissionsOpen(data.submissionsOpen);
-        }
-      })
-      .catch(() => {});
+    const fetchStatus = () => {
+      fetch('/api/admin/submissions-status')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setIsSubmissionsOpen(data.submissionsOpen);
+            if (data.deadline) {
+              setDeadline(data.deadline);
+            }
+            if (typeof data.isDeadlinePassed === 'boolean') {
+              setIsDeadlinePassed(data.isDeadlinePassed);
+            }
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchStatus();
+    // Periodically poll (every 10s) to keep frontend synced with admin toggles
+    const interval = setInterval(fetchStatus, 10000);
+    return () => clearInterval(interval);
   }, []);
+
+  // Live countdown timer ticking every second
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      const target = new Date(deadline).getTime();
+      const diff = target - Date.now();
+      if (isNaN(target) || diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, isPassed: true });
+        setIsDeadlinePassed(true);
+      } else {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        setTimeLeft({ days, hours, minutes, seconds, totalMs: diff, isPassed: false });
+        setIsDeadlinePassed(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [deadline]);
+
 
   const toggleTechTag = (tag: string) => {
     if (techStack.includes(tag)) {
@@ -124,9 +187,17 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         body: formData,
       });
 
-      const data = await res.json();
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Server returned non-JSON response (${res.status})`);
+      }
+
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'File upload failed');
+        throw new Error(data?.message || 'File upload failed');
       }
 
       setPresentationUrl(data.url);
@@ -151,6 +222,18 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
     if (team.paymentStatus !== 'verified') {
       setErrorMsg('Project submission is locked! Admin payment verification is required.');
+      return;
+    }
+
+    // STRICT DEADLINE & ADMIN LOCK CHECK
+    if (isDeadlinePassed || checkDeadlinePassed(deadline)) {
+      setIsDeadlinePassed(true);
+      setErrorMsg('Submission deadline has passed. Late submissions are not accepted.');
+      return;
+    }
+
+    if (!isSubmissionsOpen) {
+      setErrorMsg('Project submissions are currently closed by the Admin! Submissions will open when enabled by the organizers.');
       return;
     }
 
@@ -183,7 +266,14 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to submit project.');
+        const errorText = data?.message || 'Failed to submit project.';
+        if (errorText.toLowerCase().includes('deadline')) {
+          setIsDeadlinePassed(true);
+        }
+        if (errorText.toLowerCase().includes('closed by the admin')) {
+          setIsSubmissionsOpen(false);
+        }
+        throw new Error(errorText);
       }
 
       setSuccessMsg('Project saved successfully! The jury panel can now evaluate your submission.');
@@ -205,6 +295,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
 
   if (!team) {
     return (
@@ -308,6 +399,91 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         </p>
       </div>
 
+      {/* Live Submission Countdown Timer */}
+      <div className={`mb-8 p-5 sm:p-6 rounded-2xl border transition-all ${
+        isDeadlinePassed
+          ? 'bg-rose-950/20 border-rose-500/30 shadow-lg shadow-rose-950/20'
+          : !isSubmissionsOpen
+          ? 'bg-amber-950/20 border-amber-500/30 shadow-lg shadow-amber-950/20'
+          : 'bg-[#111114] border-emerald-500/30 shadow-lg shadow-emerald-950/20'
+      }`}>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-5">
+          <div className="flex items-center gap-3.5 text-center md:text-left">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+              isDeadlinePassed
+                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                : !isSubmissionsOpen
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+            }`}>
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+                <span className="text-xs font-mono font-semibold uppercase tracking-wider text-zinc-300">
+                  Submission Window
+                </span>
+                <span className={`text-[11px] font-mono px-2.5 py-0.5 rounded-full border font-bold uppercase ${
+                  isDeadlinePassed
+                    ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                    : !isSubmissionsOpen
+                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                    : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 animate-pulse'
+                }`}>
+                  {isDeadlinePassed
+                    ? 'DEADLINE PASSED • CLOSED'
+                    : !isSubmissionsOpen
+                    ? 'PAUSED BY ADMIN'
+                    : 'LIVE COUNTDOWN'}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 mt-1">
+                {isDeadlinePassed
+                  ? 'The submission deadline has officially ended. Late submissions are strictly rejected.'
+                  : !isSubmissionsOpen
+                  ? 'Submissions are currently paused by hackathon organizers.'
+                  : 'Submissions strictly lock at 11:00 AM Code Freeze.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Time Digits Card */}
+          <div className="flex items-center gap-2">
+            {timeLeft.days > 0 && (
+              <>
+                <div className="bg-[#18181b] border border-white/10 rounded-xl px-3.5 py-2 text-center min-w-[58px]">
+                  <div className="text-xl font-mono font-bold text-white leading-tight">
+                    {String(timeLeft.days).padStart(2, '0')}
+                  </div>
+                  <div className="text-[10px] text-zinc-400 uppercase font-mono">Days</div>
+                </div>
+                <span className="text-zinc-600 font-mono font-bold text-lg">:</span>
+              </>
+            )}
+            <div className="bg-[#18181b] border border-white/10 rounded-xl px-3.5 py-2 text-center min-w-[58px]">
+              <div className={`text-xl font-mono font-bold leading-tight ${isDeadlinePassed ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {String(timeLeft.hours).padStart(2, '0')}
+              </div>
+              <div className="text-[10px] text-zinc-400 uppercase font-mono">Hours</div>
+            </div>
+            <span className="text-zinc-600 font-mono font-bold text-lg">:</span>
+            <div className="bg-[#18181b] border border-white/10 rounded-xl px-3.5 py-2 text-center min-w-[58px]">
+              <div className={`text-xl font-mono font-bold leading-tight ${isDeadlinePassed ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {String(timeLeft.minutes).padStart(2, '0')}
+              </div>
+              <div className="text-[10px] text-zinc-400 uppercase font-mono">Mins</div>
+            </div>
+            <span className="text-zinc-600 font-mono font-bold text-lg">:</span>
+            <div className="bg-[#18181b] border border-white/10 rounded-xl px-3.5 py-2 text-center min-w-[58px]">
+              <div className={`text-xl font-mono font-bold leading-tight ${isDeadlinePassed ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {String(timeLeft.seconds).padStart(2, '0')}
+              </div>
+              <div className="text-[10px] text-zinc-400 uppercase font-mono">Secs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {errorMsg && (
         <div className="mb-6 p-4 border-3 border-black bg-red-950/80 text-red-300 text-xs flex items-center gap-3 font-mono font-bold shadow-[3px_3px_0px_#000]">
           <AlertCircle className="w-5 h-5 shrink-0 text-red-400" />
@@ -322,8 +498,13 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         </div>
       )}
 
+<<<<<<< HEAD
       <form onSubmit={handleSubmit} className="space-y-10">
         
+=======
+      <form onSubmit={handleSubmit} className="space-y-8">
+
+>>>>>>> upstream/master
         {/* Section 1: Project Overview */}
         <div className="comic-card p-6 sm:p-8 bg-[#0D0E12] border-3 border-white shadow-[6px_6px_0px_#FF5F00] space-y-6">
           <div className="flex items-center gap-2.5 pb-3 border-b-2 border-dashed border-neutral-800 text-white font-subheading font-bold text-lg uppercase">
@@ -561,6 +742,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* Submit */}
         <div className="flex justify-center pt-2">
           <button
@@ -568,9 +750,44 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             type="submit"
             disabled={isSubmitting || isUploadingDoc}
             className="w-full sm:w-auto min-w-[320px] btn-comic-primary justify-center text-sm py-4"
+=======
+        {/* Submit button */}
+        <div className="flex flex-col items-center justify-center pt-2 gap-3">
+          {isDeadlinePassed && (
+            <p className="text-xs text-rose-400 font-mono font-semibold flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Submissions are closed. The hackathon deadline has officially passed.</span>
+            </p>
+          )}
+          {!isDeadlinePassed && !isSubmissionsOpen && (
+            <p className="text-xs text-amber-400 font-mono font-semibold flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Submissions are temporarily paused by hackathon organizers.</span>
+            </p>
+          )}
+          <button
+            id="submit-btn-save-project"
+            type="submit"
+            disabled={isSubmitting || isUploadingDoc || !isSubmissionsOpen || isDeadlinePassed}
+            className={`w-full sm:w-auto min-w-[280px] px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 shadow-xl transition-all ${
+              isDeadlinePassed || !isSubmissionsOpen
+                ? 'bg-zinc-800 text-zinc-500 border border-white/10 cursor-not-allowed opacity-60 shadow-none'
+                : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.98] cursor-pointer'
+            }`}
+>>>>>>> upstream/master
           >
             {isSubmitting ? (
               <span>Saving Deliverables...</span>
+            ) : isDeadlinePassed ? (
+              <>
+                <Lock className="w-5 h-5 text-zinc-500" />
+                <span>Submissions Closed (Deadline Passed)</span>
+              </>
+            ) : !isSubmissionsOpen ? (
+              <>
+                <Lock className="w-5 h-5 text-zinc-500" />
+                <span>Submissions Disabled by Admin</span>
+              </>
             ) : (
               <>
                 <Send className="w-5 h-5 text-black" />
@@ -580,6 +797,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           </button>
         </div>
       </form>
+
     </div>
   );
 };

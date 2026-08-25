@@ -21,6 +21,8 @@ import {
   setSubmissionStatusDB,
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
+import { getSubmissionDeadline, isDeadlinePassed } from './src/lib/deadline';
+
 
 // Configure Multer for file uploads (10MB size limit)
 const storage = multer.memoryStorage();
@@ -33,6 +35,11 @@ const upload = multer({
 
 // OTP Store for Admin Login: email -> { otp: string, expiresAt: number }
 const adminOtps = new Map<string, { otp: string; expiresAt: number }>();
+
+// Global unhandled rejection handler to avoid crashes and ensure JSON errors
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Unhandled Rejection]', reason);
+});
 
 async function startServer() {
   // Initialize DB tables if Neon DB URL is present
@@ -159,8 +166,17 @@ async function startServer() {
         });
       }
 
-      // Enforce @vitbhopal.ac.in domain validation for leader email if desired
       const leaderEmailClean = leader.email.trim().toLowerCase();
+
+      // Check if team already registered with this leader email
+      const existingTeam = await findTeamById(leaderEmailClean);
+      if (existingTeam) {
+        return res.status(200).json({
+          success: true,
+          message: 'Team with this leader email is already registered!',
+          team: existingTeam,
+        });
+      }
 
       // Generate unique ID & 4-digit PIN access code
       const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -229,8 +245,17 @@ async function startServer() {
     }
   });
 
-  // Update Project Submission (Gated: Team must be verified by Admin)
+  // Update Project Submission (Gated: Team must be verified by Admin & within Deadline)
   app.put('/api/teams/:id/project', async (req, res) => {
+    // STRICT LOCK: Reject late submissions after official deadline
+    const deadline = getSubmissionDeadline();
+    if (isDeadlinePassed(deadline)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Submission deadline has passed. Submissions are permanently closed.',
+      });
+    }
+
     const isSubmissionsOpen = await getSubmissionStatusDB();
     if (!isSubmissionsOpen) {
       return res.status(403).json({
@@ -238,6 +263,7 @@ async function startServer() {
         message: 'Project submissions are currently closed by the Admin! Submissions will open when enabled by the organizers.',
       });
     }
+
 
     const team = await findTeamById(req.params.id);
 
@@ -484,8 +510,17 @@ async function startServer() {
   // SUBMISSIONS TOGGLE API
   app.get('/api/admin/submissions-status', async (req, res) => {
     const submissionsOpen = await getSubmissionStatusDB();
-    res.json({ success: true, submissionsOpen });
+    const deadline = getSubmissionDeadline();
+    const deadlinePassed = isDeadlinePassed(deadline);
+    res.json({
+      success: true,
+      submissionsOpen,
+      deadline,
+      isDeadlinePassed: deadlinePassed,
+      serverTime: new Date().toISOString(),
+    });
   });
+
 
   app.post('/api/admin/submissions-toggle', async (req, res) => {
     const { submissionsOpen } = req.body;
@@ -698,8 +733,30 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, () => {
+  // Global error handler to always return JSON
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error('[Express Error]', err);
+    if (res.headersSent) return next(err);
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || 'Internal Server Error',
+    });
+  });
+
+  const server = app.listen(PORT, () => {
     console.log(`ORIGIN Hackathon Portal running at http://localhost:${PORT}`);
+  });
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[Port Warning] Port ${PORT} is busy. Trying http://localhost:${Number(PORT) + 1}...`);
+      const nextPort = Number(PORT) + 1;
+      app.listen(nextPort, () => {
+        console.log(`ORIGIN Hackathon Portal running at http://localhost:${nextPort}`);
+      });
+    } else {
+      console.error('[Server Error]', err);
+    }
   });
 }
 
