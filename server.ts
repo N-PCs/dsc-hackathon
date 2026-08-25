@@ -23,15 +23,30 @@ import {
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from './src/lib/deadline';
+import { validateFileSignature } from './src/lib/fileValidation';
 
 
 // Configure Multer for file uploads (10MB size limit)
 const storage = multer.memoryStorage();
+
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = file.originalname.substring(file.originalname.lastIndexOf('.')).toLowerCase();
+  if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and PDF are allowed.'));
+  }
+};
+
 const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
+  fileFilter,
 });
 
 // OTP Store for Admin Login: email -> { otp: string, expiresAt: number }
@@ -80,6 +95,10 @@ async function startServer() {
               buffer = Buffer.from(matches[2], 'base64');
             } else {
               buffer = Buffer.from(fileData, 'base64');
+            }
+
+            if (!validateFileSignature(buffer, mimeType, fileName)) {
+              return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
             }
 
             const result = await uploadFileToImagekit(buffer, fileName, mimeType);
@@ -478,9 +497,7 @@ async function startServer() {
     if (otp) {
       const cleanOtp = String(otp).trim();
       if (!storedOtp || storedOtp.otp !== cleanOtp || Date.now() > storedOtp.expiresAt) {
-        if (cleanOtp !== storedOtp?.otp && cleanOtp !== '000000') {
-          return res.status(401).json({ success: false, message: 'Invalid or expired verification passcode.' });
-        }
+        return res.status(401).json({ success: false, message: 'Invalid or expired verification passcode.' });
       }
     }
 

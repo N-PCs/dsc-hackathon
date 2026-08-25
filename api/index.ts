@@ -19,14 +19,30 @@ import {
 } from '../server/db';
 import { uploadFileToImagekit } from '../server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from '../src/lib/deadline';
+import { validateFileSignature } from '../src/lib/fileValidation';
+
 import 'dotenv/config';
 
 const storage = multer.memoryStorage();
+
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = file.originalname.substring(file.originalname.lastIndexOf('.')).toLowerCase();
+  if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and PDF are allowed.'));
+  }
+};
+
 const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
+  fileFilter,
 });
 
 const adminOtps = new Map<string, { otp: string; expiresAt: number }>();
@@ -76,10 +92,18 @@ app.post('/api/upload', (req: Request, res: Response) => {
             buffer = Buffer.from(fileData, 'base64');
           }
 
+          if (!validateFileSignature(buffer, mimeType, fileName)) {
+            return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
+          }
+
           const result = await uploadFileToImagekit(buffer, fileName, mimeType);
           return res.json({ success: true, url: result.url, publicId: result.publicId });
         }
         return res.status(400).json({ success: false, message: 'No file provided in request.' });
+      }
+
+      if (!validateFileSignature(req.file.buffer, req.file.mimetype, req.file.originalname)) {
+        return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
       }
 
       const result = await uploadFileToImagekit(
@@ -452,9 +476,7 @@ app.post('/api/admin/auth/verify-otp', async (req, res) => {
   if (otp) {
     const cleanOtp = String(otp).trim();
     if (!storedOtp || storedOtp.otp !== cleanOtp || Date.now() > storedOtp.expiresAt) {
-      if (cleanOtp !== storedOtp?.otp && cleanOtp !== '000000') {
-        return res.status(401).json({ success: false, message: 'Invalid or expired verification passcode.' });
-      }
+      return res.status(401).json({ success: false, message: 'Invalid or expired verification passcode.' });
     }
   }
 

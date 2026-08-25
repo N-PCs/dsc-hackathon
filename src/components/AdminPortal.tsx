@@ -227,6 +227,61 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     setAuthError('');
   };
 
+<<<<<<< HEAD
+  // Handle Verify OTP
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const cleanOtp = otpInput.trim();
+
+    setAuthError('');
+
+    if (!cleanOtp) {
+      setAuthError('Please enter the 6-digit verification passcode.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, otp: cleanOtp }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setCurrentAdmin(data.admin);
+        localStorage.setItem('origin_active_admin', JSON.stringify(data.admin));
+      } else if (cleanOtp === sentOtp) {
+        const localAdmin = adminWhitelist.find(
+          (a) => a.email.toLowerCase() === cleanEmail
+        );
+        if (localAdmin) {
+          setCurrentAdmin(localAdmin);
+          localStorage.setItem('origin_active_admin', JSON.stringify(localAdmin));
+        } else {
+          setAuthError('Unauthorized admin email.');
+        }
+      } else {
+        setAuthError(data.message || 'Invalid or expired verification passcode.');
+      }
+    } catch (err) {
+      if (cleanOtp === sentOtp) {
+        const localAdmin = adminWhitelist.find(
+          (a) => a.email.toLowerCase() === cleanEmail
+        );
+        if (localAdmin) {
+          setCurrentAdmin(localAdmin);
+          localStorage.setItem('origin_active_admin', JSON.stringify(localAdmin));
+        }
+      } else {
+        setAuthError('Invalid verification passcode.');
+      }
+    }
+  };
+
+=======
+>>>>>>> eb20f68ab0f19049e17587b20de210281d6fa28e
   // Admin Sign Out
   const handleSignOut = () => {
     setCurrentAdmin(null);
