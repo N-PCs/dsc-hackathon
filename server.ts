@@ -21,6 +21,8 @@ import {
   setSubmissionStatusDB,
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
+import { getSubmissionDeadline, isDeadlinePassed } from './src/lib/deadline';
+
 
 // Configure Multer for file uploads (10MB size limit)
 const storage = multer.memoryStorage();
@@ -243,8 +245,17 @@ async function startServer() {
     }
   });
 
-  // Update Project Submission (Gated: Team must be verified by Admin)
+  // Update Project Submission (Gated: Team must be verified by Admin & within Deadline)
   app.put('/api/teams/:id/project', async (req, res) => {
+    // STRICT LOCK: Reject late submissions after official deadline
+    const deadline = getSubmissionDeadline();
+    if (isDeadlinePassed(deadline)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Submission deadline has passed. Submissions are permanently closed.',
+      });
+    }
+
     const isSubmissionsOpen = await getSubmissionStatusDB();
     if (!isSubmissionsOpen) {
       return res.status(403).json({
@@ -252,6 +263,7 @@ async function startServer() {
         message: 'Project submissions are currently closed by the Admin! Submissions will open when enabled by the organizers.',
       });
     }
+
 
     const team = await findTeamById(req.params.id);
 
@@ -498,8 +510,17 @@ async function startServer() {
   // SUBMISSIONS TOGGLE API
   app.get('/api/admin/submissions-status', async (req, res) => {
     const submissionsOpen = await getSubmissionStatusDB();
-    res.json({ success: true, submissionsOpen });
+    const deadline = getSubmissionDeadline();
+    const deadlinePassed = isDeadlinePassed(deadline);
+    res.json({
+      success: true,
+      submissionsOpen,
+      deadline,
+      isDeadlinePassed: deadlinePassed,
+      serverTime: new Date().toISOString(),
+    });
   });
+
 
   app.post('/api/admin/submissions-toggle', async (req, res) => {
     const { submissionsOpen } = req.body;
