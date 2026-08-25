@@ -54,20 +54,24 @@ export async function uploadFileToImagekit(
     };
   }
 
-  // Imagekit API upload using built-in Fetch API (Node 18+)
-  const endpoint = `https://upload.imagekit.io/${imageKitPublicKey}`;
+  // Imagekit API upload using official REST endpoint and Basic Auth
+  const endpoint = `https://upload.imagekit.io/api/v1/files/upload`;
+  const authHeader = 'Basic ' + Buffer.from(imageKitPrivateKey + ':').toString('base64');
 
   const blob = new Blob([fileBuffer], { type: mimeType || 'application/octet-stream' });
 
   const formData = new FormData();
   formData.append('file', blob, originalFilename);
+  formData.append('fileName', originalFilename);
   formData.append('folder', folder);
-  formData.append('use_unique_filename', 'true');
-  formData.append('resource_type', resourceType);
+  formData.append('useUniqueFileName', 'true');
 
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
+      headers: {
+        Authorization: authHeader,
+      },
       body: formData,
     });
 
