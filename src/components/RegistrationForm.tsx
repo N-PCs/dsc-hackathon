@@ -179,7 +179,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     'input-underline';
 
   const memberInputClass =
-    'w-full bg-transparent border-b border-neutral-800 py-3 text-[14px] text-white placeholder:text-neutral-600 focus:border-blue-600 focus:outline-none transition-colors';
+    'w-full bg-transparent border-b border-neutral-800 py-3 text-[14px] text-white placeholder:text-neutral-600 focus:border-orange-600 focus:outline-none transition-colors';
 
   return (
     <div className="max-w-3xl mx-auto px-6 pt-24 pb-16">
@@ -202,7 +202,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           Already registered?{' '}
           <button
             onClick={onSwitchToLogin}
-            className="text-blue-500 font-semibold hover:text-blue-400 cursor-pointer transition-colors"
+            className="text-orange-500 font-semibold hover:text-orange-400 cursor-pointer transition-colors"
           >
             Sign in to your team →
           </button>
@@ -233,7 +233,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           <div className="space-y-6">
             <div>
               <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                Team Name <span className="text-blue-500">*</span>
+                Team Name <span className="text-orange-500">*</span>
               </label>
               <input
                 id="reg-input-team-name"
@@ -248,13 +248,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
             <div>
               <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                Innovation Track <span className="text-blue-500">*</span>
+                Innovation Track <span className="text-orange-500">*</span>
               </label>
               <select
                 id="reg-select-track"
                 value={track}
                 onChange={(e) => setTrack(e.target.value as TrackType)}
-                className="w-full bg-transparent border-b border-neutral-700 py-3 text-[14px] text-white focus:border-blue-600 focus:outline-none transition-colors cursor-pointer"
+                className="w-full bg-transparent border-b border-neutral-700 py-3 text-[14px] text-white focus:border-orange-600 focus:outline-none transition-colors cursor-pointer"
               >
                 {HACKATHON_TRACKS.map((t, idx) => (
                   <option key={idx} value={t.name} className="bg-black text-white">
@@ -276,7 +276,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     onClick={() => setMemberCount(num)}
                     className={`py-3 text-[13px] font-semibold transition-colors cursor-pointer ${
                       memberCount === num
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-orange-600 text-white'
                         : 'bg-black text-neutral-400 hover:bg-neutral-950 hover:text-white'
                     }`}
                     style={{ fontFamily: 'var(--font-heading)' }}
@@ -304,7 +304,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
             <div>
               <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                Full Name <span className="text-blue-500">*</span>
+                Full Name <span className="text-orange-500">*</span>
               </label>
               <input
                 id="reg-input-leader-name"
@@ -319,9 +319,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
             <div>
               <label className="flex items-center justify-between text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                <span>Email <span className="text-blue-500">*</span></span>
+                <span>Email <span className="text-orange-500">*</span></span>
                 {domainNotice && (
-                  <span className="text-[10px] text-blue-500 flex items-center gap-1 normal-case">
+                  <span className="text-[10px] text-orange-500 flex items-center gap-1 normal-case">
                     <CheckCircle className="w-3 h-3" /> Verified domain
                   </span>
                 )}
@@ -339,7 +339,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
             <div>
               <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                Phone <span className="text-blue-500">*</span>
+                Phone <span className="text-orange-500">*</span>
               </label>
               <input
                 id="reg-input-leader-phone"
@@ -447,7 +447,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             <div className="space-y-6">
               <div>
                 <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                  Transaction Ref (UTR) <span className="text-blue-500">*</span>
+                  Transaction Ref (UTR) <span className="text-orange-500">*</span>
                 </label>
                 <input
                   id="reg-input-txn-ref"
@@ -490,7 +490,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       className="w-10 h-10 object-cover"
                     />
                     <div className="text-[13px]">
-                      <span className="text-blue-500 font-medium flex items-center gap-1">
+                      <span className="text-orange-500 font-medium flex items-center gap-1">
                         <CheckCircle className="w-3.5 h-3.5" /> Uploaded successfully
                       </span>
                       <span className="text-neutral-500 text-[11px]">Admin will verify for pass release</span>
@@ -505,7 +505,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         {/* Verification notice */}
         <div className="py-4 px-5 border border-neutral-800 text-[13px] text-neutral-400">
           <span className="text-white font-semibold">Note: </span>
-          Your status will be set to <span className="font-mono text-blue-500">pending</span> until 
+          Your status will be set to <span className="font-mono text-orange-500">pending</span> until 
           DSC Admins verify your payment. Your Digital ID Pass unlocks after approval.
         </div>
 
@@ -516,7 +516,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             type="checkbox"
             checked={agreeTerms}
             onChange={(e) => setAgreeTerms(e.target.checked)}
-            className="mt-1 w-4 h-4 accent-blue-600 bg-transparent border-neutral-600"
+            className="mt-1 w-4 h-4 accent-orange-600 bg-transparent border-neutral-600"
           />
           <span className="text-[13px] text-neutral-400 leading-relaxed">
             I agree to the <span className="text-white font-semibold">Origin Hackathon Rules</span> & Code of Conduct. 
@@ -529,7 +529,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           id="reg-btn-submit-team"
           type="submit"
           disabled={isSubmitting || isUploadingImage}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[15px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold text-[15px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           style={{ fontFamily: 'var(--font-heading)' }}
         >
           {isSubmitting ? (

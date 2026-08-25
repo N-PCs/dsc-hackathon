@@ -109,7 +109,7 @@ export const HackathonScheduleRules: React.FC = () => {
                   <div
                     key={idx}
                     className={`gsap-tl-item flex gap-6 py-5 border-b border-neutral-800 transition-colors ${
-                      isActive ? 'border-l-2 border-l-blue-600 pl-6' : isPast ? 'opacity-40' : ''
+                      isActive ? 'border-l-2 border-l-orange-600 pl-6' : isPast ? 'opacity-40' : ''
                     }`}
                   >
                     {/* Time */}
@@ -123,13 +123,13 @@ export const HackathonScheduleRules: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
                         <h4
-                          className={`text-[15px] font-bold ${isActive ? 'text-blue-500' : 'text-white'}`}
+                          className={`text-[15px] font-bold ${isActive ? 'text-orange-500' : 'text-white'}`}
                           style={{ fontFamily: 'var(--font-heading)' }}
                         >
                           {item.title}
                         </h4>
                         {isActive && (
-                          <span className="text-[10px] font-mono font-semibold text-blue-500 uppercase tracking-wider">
+                          <span className="text-[10px] font-mono font-semibold text-orange-500 uppercase tracking-wider">
                             Now
                           </span>
                         )}
@@ -154,7 +154,7 @@ export const HackathonScheduleRules: React.FC = () => {
               className="w-full py-6 flex items-center justify-between cursor-pointer group"
             >
               <h3
-                className="text-xl md:text-2xl font-bold group-hover:text-blue-500 transition-colors"
+                className="text-xl md:text-2xl font-bold group-hover:text-orange-500 transition-colors"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
                 Rules & Code of Conduct
@@ -199,7 +199,7 @@ export const HackathonScheduleRules: React.FC = () => {
               className="w-full py-6 flex items-center justify-between cursor-pointer group"
             >
               <h3
-                className="text-xl md:text-2xl font-bold group-hover:text-blue-500 transition-colors"
+                className="text-xl md:text-2xl font-bold group-hover:text-orange-500 transition-colors"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
                 Judging Criteria — 100 Points
@@ -218,7 +218,7 @@ export const HackathonScheduleRules: React.FC = () => {
                     <div key={idx} className="bg-black p-6">
                       <div className="flex items-baseline justify-between mb-3">
                         <span
-                          className="text-2xl font-bold text-blue-500"
+                          className="text-2xl font-bold text-orange-500"
                           style={{ fontFamily: 'var(--font-heading)' }}
                         >
                           {item.pts}

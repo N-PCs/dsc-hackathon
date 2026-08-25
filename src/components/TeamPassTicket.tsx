@@ -92,7 +92,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
   return (
     <div className="max-w-2xl mx-auto px-6 pt-24 pb-16">
       <div className="mb-8">
-        <span className="text-[13px] font-mono text-blue-500 uppercase tracking-wider block mb-3">
+        <span className="text-[13px] font-mono text-orange-500 uppercase tracking-wider block mb-3">
           Verified — Entry Approved
         </span>
         <h2
@@ -117,10 +117,10 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
             >
               ORIGIN '26
             </span>
-            <span className="w-1 h-1 rounded-full bg-blue-600" />
+            <span className="w-1 h-1 rounded-full bg-orange-600" />
             <span className="text-[11px] font-mono text-neutral-500">24H HACKATHON</span>
           </div>
-          <span className="text-[11px] font-mono text-blue-500 font-semibold uppercase">
+          <span className="text-[11px] font-mono text-orange-500 font-semibold uppercase">
             Verified ✓
           </span>
         </div>
@@ -199,7 +199,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-800 text-[12px] font-mono text-neutral-500">
           <span>Auditorium AB02 · VIT Bhopal</span>
-          <span className={team.checkedInVenue ? 'text-blue-500' : ''}>
+          <span className={team.checkedInVenue ? 'text-orange-500' : ''}>
             {team.checkedInVenue ? 'Checked In ✓' : 'Awaiting Check-in'}
           </span>
         </div>

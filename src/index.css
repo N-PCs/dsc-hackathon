@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --accent: #2563EB;
-  --accent-light: #3B82F6;
+  --accent: #ff5500;
+  --accent-light: #ff7733;
   --black: #080C14;
   --white: #FFFFFF;
   --gray-50: #FAFAFA;
@@ -22,29 +22,34 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-  html {
-    scroll-behavior: smooth;
-  }
+html {
+  scroll-behavior: smooth;
+}
 
-  body {
-    background-color: var(--black);
-    color: var(--white);
-    font-family: var(--font-body);
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
+body {
+  background-color: var(--black);
+  color: var(--white);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
 
-  ::selection {
-    background-color: var(--accent);
-    color: var(--white);
-  }
+::selection {
+  background-color: var(--accent);
+  color: var(--white);
+}
 
 /* Full-viewport section snapping */
 .snap-container {
@@ -59,19 +64,23 @@
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--black);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--gray-800);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gray-600);
 }
 
 /* Smooth scroll from Lenis */
-html.lenis, html.lenis body {
+html.lenis,
+html.lenis body {
   height: auto;
 }
 
@@ -162,6 +171,7 @@ html.lenis, html.lenis body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

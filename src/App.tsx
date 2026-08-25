@@ -312,7 +312,6 @@ export default function App() {
                   onSelectTrack={(track) => setSelectedTrackForReg(track)}
                 />
                 <HackathonScheduleRules />
-                <SponsorsSection />
                 <FAQSection />
               </>
             )}
@@ -407,7 +406,7 @@ export default function App() {
                 >
                   ORIGIN
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5" />
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5" />
               </div>
               <p className="text-[13px] text-neutral-500 leading-relaxed max-w-xs">
                 The flagship 24-hour overnight hackathon organized by the 
@@ -482,7 +481,7 @@ export default function App() {
                 <p>
                   <button
                     onClick={() => setActiveTab('jury')}
-                    className="hover:text-blue-400 cursor-pointer transition-colors"
+                    className="hover:text-orange-400 cursor-pointer transition-colors"
                   >
                     Jury Access →
                   </button>

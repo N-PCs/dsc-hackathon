@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { ArrowRight } from 'lucide-react';
 import { HackathonStats, TrackType } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
+import { SponsorsSection } from './SponsorsSection';
 
 interface HeroSectionProps {
   stats: HackathonStats;
@@ -112,7 +113,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="space-y-0 overflow-hidden">
               <h1 className="text-[clamp(2.5rem,6vw,5.5rem)] font-bold leading-[0.95] tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                 <span className="gsap-title-word block">ORIGIN</span>
-                <span className="gsap-title-word block text-blue-600">OVERNIGHT</span>
+                <span className="gsap-title-word block text-orange-500">OVERNIGHT</span>
                 <span className="gsap-title-word block">HACKATHON</span>
               </h1>
             </div>
@@ -183,6 +184,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
       </div>
 
+      {/* Sponsors Section — Placed before Choose your arena */}
+      <SponsorsSection />
+
       {/* Tracks Section */}
       <div id="tracks-section" className="max-w-7xl mx-auto px-6 lg:px-8 w-full py-24">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
@@ -199,7 +203,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
           <button
             onClick={() => onNavigate('schedule')}
-            className="text-[13px] font-medium text-blue-500 hover:text-blue-400 transition-colors cursor-pointer flex items-center gap-1"
+            className="text-[13px] font-medium text-orange-500 hover:text-orange-400 transition-colors cursor-pointer flex items-center gap-1"
           >
             View judging criteria <ArrowRight className="w-3.5 h-3.5" />
           </button>
@@ -228,7 +232,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     </span>
                   </div>
                   <h3
-                    className="text-lg font-bold text-white group-hover:text-blue-500 transition-colors mb-3"
+                    className="text-lg font-bold text-white group-hover:text-orange-500 transition-colors mb-3"
                     style={{ fontFamily: 'var(--font-heading)' }}
                   >
                     {track.name}
@@ -238,7 +242,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </p>
                 </div>
 
-                <div className="mt-6 flex items-center gap-2 text-[13px] font-medium text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-6 flex items-center gap-2 text-[13px] font-medium text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
                   Select track <ArrowRight className="w-3.5 h-3.5" />
                 </div>
               </button>

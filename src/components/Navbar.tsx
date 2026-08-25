@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
     const handleScroll = () => {
       const scrollPos = window.scrollY + 200; // Offset for navbar height
-      
+
       for (const section of sections) {
         const el = document.getElementById(section.id);
         if (el) {
@@ -88,25 +88,31 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-[#080C14]/90 backdrop-blur-sm border-b border-neutral-800'
-            : 'bg-transparent border-b border-transparent'
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+          ? 'bg-[#080C14]/90 backdrop-blur-sm border-b border-neutral-800'
+          : 'bg-transparent border-b border-transparent'
+          }`}
       >
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo — pure text */}
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 md:h-24 flex items-center justify-between">
+          {/* Logo — DSC Logo + Text */}
           <button
             onClick={() => {
               setActiveTab('home');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="flex items-center gap-0.5 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group"
           >
-            <span className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-              ORIGIN
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 group-hover:scale-125 transition-transform" />
+            <img
+              src="/DSClogo.png"
+              alt="Data Science Club Logo"
+              className="h-12 md:h-16 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
+            <div className="flex items-center gap-0.5">
+              <span className="text-xl md:text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                ORIGIN
+              </span>
+              <span className="w-2 h-2 rounded-full bg-orange-600 mt-2 group-hover:scale-125 transition-transform" />
+            </div>
           </button>
 
           {/* Desktop nav links */}
@@ -115,11 +121,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 key={i}
                 onClick={() => handleNavClick(link)}
-                className={`text-[13px] font-medium transition-colors cursor-pointer relative ${
-                  activeTab === 'home' && activeSection === link.label
-                    ? 'text-white'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
+                className={`text-[13px] font-medium transition-colors cursor-pointer relative ${activeTab === 'home' && activeSection === link.label
+                  ? 'text-white'
+                  : 'text-neutral-400 hover:text-white'
+                  }`}
               >
                 {link.label}
               </button>
@@ -139,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={() => setActiveTab('register')}
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[13px] font-semibold transition-colors cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white text-[13px] font-semibold transition-colors cursor-pointer"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
               Register
@@ -194,7 +199,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ))}
             <button
               onClick={() => { setActiveTab('register'); setMobileOpen(false); }}
-              className="text-left text-2xl font-bold text-blue-500 py-3 border-b border-neutral-800 cursor-pointer"
+              className="text-left text-2xl font-bold text-orange-500 py-3 border-b border-neutral-800 cursor-pointer"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
               Register →

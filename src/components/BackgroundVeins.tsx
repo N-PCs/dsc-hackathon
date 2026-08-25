@@ -78,7 +78,7 @@ export const BackgroundVeins = () => {
 
           if (dist < 130) {
             const alpha = (1 - dist / 130) * 0.12;
-            ctx.strokeStyle = `rgba(37, 99, 235, ${alpha})`;
+            ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);

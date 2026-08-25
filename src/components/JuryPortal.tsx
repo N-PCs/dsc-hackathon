@@ -156,7 +156,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="max-w-md w-full bg-[#111114] border border-white/10 rounded-3xl p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-center mx-auto text-blue-400">
+            <div className="w-12 h-12 bg-orange-500/10 border border-orange-500/30 rounded-2xl flex items-center justify-center mx-auto text-orange-400">
               <KeyRound className="w-6 h-6" />
             </div>
             <h2 className="text-2xl font-bold font-serif text-white tracking-tight">Jury Portal Access</h2>
@@ -175,7 +175,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                 placeholder="Enter Access Code"
                 value={accessCodeInput}
                 onChange={(e) => setAccessCodeInput(e.target.value)}
-                className="w-full bg-[#18181b] border border-white/10 focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+                className="w-full bg-[#18181b] border border-white/10 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
                 autoFocus
               />
             </div>
@@ -188,7 +188,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               Verify & Enter Jury Portal
               <ChevronRight className="w-4 h-4" />
@@ -204,13 +204,13 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-[#111114] border border-white/10 rounded-3xl p-6 shadow-2xl">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-center text-blue-400">
+          <div className="w-12 h-12 bg-orange-500/10 border border-orange-500/30 rounded-2xl flex items-center justify-center text-orange-400">
             <Award className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold font-serif text-white">Jury Evaluation Portal</h1>
-              <span className="px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-[10px] font-mono font-semibold">
+              <span className="px-2.5 py-0.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-full text-[10px] font-mono font-semibold">
                 Official Jury Access
               </span>
             </div>
@@ -248,7 +248,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             </span>
             <span className="text-2xl font-bold font-mono text-white">{totalSubmissions}</span>
           </div>
-          <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400">
+          <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-400">
             <Layers className="w-5 h-5" />
           </div>
         </div>
@@ -289,7 +289,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               placeholder="Search by project title, team name, or tech stack..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[#18181b] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
             />
           </div>
 
@@ -301,7 +301,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                 onClick={() => setStatusFilter(st)}
                 className={`px-3 py-2 rounded-xl text-xs font-medium capitalize cursor-pointer transition-colors ${
                   statusFilter === st
-                    ? 'bg-blue-600 text-white font-semibold'
+                    ? 'bg-orange-600 text-white font-semibold'
                     : 'bg-white/5 text-zinc-400 hover:text-white'
                 }`}
               >
@@ -329,7 +329,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               onClick={() => setSelectedTrack(t.name)}
               className={`px-3 py-1.5 rounded-xl text-xs whitespace-nowrap cursor-pointer transition-colors ${
                 selectedTrack === t.name
-                  ? 'bg-blue-500/20 border border-blue-500/40 text-blue-300 font-bold'
+                  ? 'bg-orange-500/20 border border-orange-500/40 text-orange-300 font-bold'
                   : 'bg-white/5 text-zinc-400 hover:text-white'
               }`}
             >
@@ -359,13 +359,13 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               return (
                 <div
                   key={team.id}
-                  className="bg-[#111114] border border-white/10 hover:border-blue-500/30 rounded-3xl p-6 space-y-4 transition-all shadow-xl flex flex-col justify-between"
+                  className="bg-[#111114] border border-white/10 hover:border-orange-500/30 rounded-3xl p-6 space-y-4 transition-all shadow-xl flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     {/* Header line */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-mono text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md">
                           {team.track}
                         </span>
                         <h3 className="text-lg font-bold text-white font-serif mt-1">
@@ -415,7 +415,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                           href={proj.githubUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="hover:text-white flex items-center gap-1 text-blue-400"
+                          className="hover:text-white flex items-center gap-1 text-orange-400"
                         >
                           <Github className="w-3.5 h-3.5" />
                           Code
@@ -457,7 +457,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     </button>
                     <button
                       onClick={() => setSelectedScoringTeam(team)}
-                      className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-md"
+                      className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-md"
                     >
                       <Award className="w-3.5 h-3.5" />
                       {hasScore ? 'Edit Score' : 'Evaluate'}
@@ -477,7 +477,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             {/* Modal Header */}
             <div className="flex items-start justify-between pb-4 border-b border-white/10">
               <div>
-                <span className="text-xs font-mono text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md">
+                <span className="text-xs font-mono text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-md">
                   {selectedDetailTeam.track}
                 </span>
                 <h3 className="text-xl font-bold text-white font-serif mt-2">
@@ -525,7 +525,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                 <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider mb-2">Tech Stack</h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedDetailTeam.project.techStack.map((tech, i) => (
-                    <span key={i} className="text-xs bg-blue-500/10 border border-blue-500/20 text-blue-300 px-3 py-1 rounded-lg">
+                    <span key={i} className="text-xs bg-orange-500/10 border border-orange-500/20 text-orange-300 px-3 py-1 rounded-lg">
                       {tech}
                     </span>
                   ))}
@@ -542,7 +542,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     href={selectedDetailTeam.project.githubUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-3 bg-[#18181b] hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-between text-xs text-blue-400 transition-colors"
+                    className="p-3 bg-[#18181b] hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-between text-xs text-orange-400 transition-colors"
                   >
                     <span className="flex items-center gap-2 font-semibold">
                       <Github className="w-4 h-4" /> GitHub Repository
@@ -629,7 +629,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                   setSelectedDetailTeam(null);
                   setSelectedScoringTeam(teamToScore);
                 }}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-lg"
+                className="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-lg"
               >
                 Evaluate & Score Project
               </button>
@@ -730,9 +730,9 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                 />
               </div>
 
-              <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl flex items-center justify-between text-xs">
-                <span className="font-semibold text-blue-300">Total Calculated Rubric Score:</span>
-                <span className="text-base font-bold font-mono text-blue-400">
+              <div className="bg-orange-500/10 border border-orange-500/20 p-3 rounded-xl flex items-center justify-between text-xs">
+                <span className="font-semibold text-orange-300">Total Calculated Rubric Score:</span>
+                <span className="text-base font-bold font-mono text-orange-400">
                   {scores.innovation + scores.technicalComplexity + scores.uiUx + scores.presentation + scores.impact} / 100
                 </span>
               </div>
@@ -760,7 +760,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                  className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
                 >
                   Save & Record Evaluation
                 </button>

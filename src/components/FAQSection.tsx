@@ -109,7 +109,7 @@ export const FAQSection: React.FC = () => {
                 <p className="text-[13px] text-neutral-500 mb-3">Still have questions?</p>
                 <a
                   href="mailto:dsc.origin@vitbhopal.ac.in"
-                  className="inline-flex items-center gap-2 text-[13px] font-semibold text-blue-500 hover:text-blue-400 transition-colors"
+                  className="inline-flex items-center gap-2 text-[13px] font-semibold text-orange-500 hover:text-orange-400 transition-colors"
                 >
                   Contact DSC Support
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -131,7 +131,7 @@ export const FAQSection: React.FC = () => {
                     >
                       <span
                         className={`text-[15px] md:text-[16px] font-bold transition-colors ${
-                          isOpen ? 'text-blue-500' : 'text-white group-hover:text-neutral-300'
+                          isOpen ? 'text-orange-500' : 'text-white group-hover:text-neutral-300'
                         }`}
                         style={{ fontFamily: 'var(--font-heading)' }}
                       >

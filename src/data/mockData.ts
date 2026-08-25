@@ -17,7 +17,7 @@ export const HACKATHON_TRACKS: { name: TrackType; icon: string; description: str
     name: 'FinTech & Cybersecurity',
     icon: 'ShieldCheck',
     description: 'Fraud detection algorithms, threat mitigation, secure payment gateways & algorithmic trading.',
-    color: 'from-cyan-500 to-blue-600',
+    color: 'from-amber-500 to-orange-600',
   },
   {
     name: 'HealthTech & BioInformatics',
