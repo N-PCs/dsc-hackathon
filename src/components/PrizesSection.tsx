@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { Trophy, Award, Medal, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Trophy, Award, Medal, CheckCircle2, ShieldCheck, Gift, Gavel } from 'lucide-react';
 
 export const PrizesSection: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -27,10 +27,10 @@ export const PrizesSection: React.FC = () => {
 
   const prizes = [
     {
-      rank: 'Winner',
+      rank: '1st Prize',
       subtitle: 'Grand Champion',
       amount: '₹7,000',
-      extras: ['Trophy', 'Certificate of Achievement'],
+      extras: ['Winner Trophy', 'Certificate of Achievement', 'Exclusive Swag Box'],
       icon: Trophy,
       badgeBg: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
       accentBorder: 'hover:border-amber-500/50',
@@ -38,10 +38,10 @@ export const PrizesSection: React.FC = () => {
       iconColor: 'text-amber-400',
     },
     {
-      rank: '1st Runner-Up',
-      subtitle: 'Second Place',
+      rank: '2nd Prize',
+      subtitle: 'First Runner-Up',
       amount: '₹5,000',
-      extras: ['Trophy', 'Certificate of Achievement'],
+      extras: ['Runner-Up Trophy', 'Certificate of Achievement', 'Swag Kit'],
       icon: Award,
       badgeBg: 'bg-slate-400/10 text-slate-300 border-slate-400/30',
       accentBorder: 'hover:border-slate-400/50',
@@ -49,10 +49,10 @@ export const PrizesSection: React.FC = () => {
       iconColor: 'text-slate-300',
     },
     {
-      rank: '2nd Runner-Up',
-      subtitle: 'Third Place',
+      rank: '3rd Prize',
+      subtitle: 'Second Runner-Up',
       amount: '₹3,000',
-      extras: ['Trophy', 'Certificate of Achievement'],
+      extras: ['Runner-Up Trophy', 'Certificate of Achievement', 'Swag Kit'],
       icon: Medal,
       badgeBg: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
       accentBorder: 'hover:border-orange-500/50',
@@ -74,12 +74,17 @@ export const PrizesSection: React.FC = () => {
               className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight text-white"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
-              Prize Pool & Trophies
+              Prize Pool & Goodies
             </h2>
           </div>
-          <p className="text-xs sm:text-[14px] text-neutral-500 max-w-md leading-relaxed">
-            Compete across tracks to claim top cash awards, official trophies, and certificates of achievement.
-          </p>
+          <div className="text-right md:text-left">
+            <span className="text-[11px] font-mono text-orange-500 uppercase tracking-wider block mb-1">
+              Total Prize Pool: ₹15,000 Cash + Goodies
+            </span>
+            <p className="text-xs sm:text-[14px] text-neutral-400 max-w-md leading-relaxed">
+              Total Cash Prize Pool of ₹15,000 along with Goodies worth ₹50,000+ for participants!
+            </p>
+          </div>
         </div>
 
         {/* Top 3 Winner Cards — Grid matching Sponsors layout */}
@@ -133,10 +138,55 @@ export const PrizesSection: React.FC = () => {
           })}
         </div>
 
+        {/* Goodies & Judges Banner */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* Goodies Box */}
+          <div className="gsap-prize-card bg-black/40 border border-neutral-800 p-6 rounded-2xl flex items-start gap-4">
+            <div className="p-2.5 bg-black border border-neutral-800 shrink-0 rounded-lg">
+              <Gift className="w-6 h-6 text-orange-500" />
+            </div>
+            <div>
+              <div className="text-[11px] font-mono text-orange-500 uppercase tracking-wider font-semibold mb-1">
+                Swag & Goodies
+              </div>
+              <h4
+                className="text-xl font-bold text-white mb-1"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                Goodies Worth ₹50,000+
+              </h4>
+              <p className="text-[13px] text-neutral-400 leading-relaxed">
+                T-shirts, stickers, cloud credits, tech perks, and exclusive swag kits distributed to hackers!
+              </p>
+            </div>
+          </div>
+
+          {/* Judges Box */}
+          <div className="gsap-prize-card bg-black/40 border border-neutral-800 p-6 rounded-2xl flex items-start gap-4">
+            <div className="p-2.5 bg-black border border-neutral-800 shrink-0 rounded-lg">
+              <Gavel className="w-6 h-6 text-orange-500" />
+            </div>
+            <div>
+              <div className="text-[11px] font-mono text-orange-500 uppercase tracking-wider font-semibold mb-1">
+                Official Jury Panel
+              </div>
+              <h4
+                className="text-xl font-bold text-white mb-1"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                Shreyians Coding Academy
+              </h4>
+              <p className="text-[13px] text-neutral-400 leading-relaxed">
+                Expert evaluation and live pitch feedback conducted by esteemed industry educators from Shreyians Coding Academy.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Participation Banner */}
         <div className="gsap-prize-card bg-black/40 border border-neutral-800 p-6 sm:p-8 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
-            <div className="p-2.5 bg-black border border-neutral-800 shrink-0">
+            <div className="p-2.5 bg-black border border-neutral-800 shrink-0 rounded-lg">
               <ShieldCheck className="w-5 h-5 text-orange-500" />
             </div>
             <div>

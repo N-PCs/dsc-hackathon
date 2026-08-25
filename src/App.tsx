@@ -400,18 +400,16 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
             {/* Brand */}
-            <div className="md:col-span-4">
-              <div className="flex items-center gap-0.5 mb-4">
-                <span
-                  className="text-lg font-bold tracking-tight"
-                  style={{ fontFamily: 'var(--font-heading)' }}
-                >
-                  ORIGIN
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5" />
+            <div className="md:col-span-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/origin-logo.png"
+                  alt="ORIGIN Hackathon Logo"
+                  className="h-24 md:h-20 w-auto object-contain"
+                />
               </div>
               <p className="text-[13px] text-neutral-500 leading-relaxed max-w-xs">
-                The flagship 24-hour overnight hackathon organized by the 
+                The flagship 18-hour overnight hackathon organized by the
                 Data Science Club at VIT Bhopal University.
               </p>
             </div>
@@ -497,7 +495,7 @@ export default function App() {
               © 2026 Data Science Club, VIT Bhopal University
             </span>
             <span className="text-[12px] text-neutral-700 font-mono">
-              24H Code Freeze Protocol
+              18H Code Freeze Protocol
             </span>
           </div>
         </div>

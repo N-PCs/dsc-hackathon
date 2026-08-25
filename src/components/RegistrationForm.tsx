@@ -556,7 +556,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               <div className="text-[12px] text-neutral-500 font-mono space-y-1">
                 <p>• UPI ID: <span className="text-white">dsc.origin26@upi</span></p>
                 <p>• Amount to Pay: <span className="text-orange-400 font-bold">₹{calculateTotalFee()}</span></p>
-                <p>• Covers: 24H entry, cloud credits, swag kit, food (for Day Scholars)</p>
+                <p>• Covers: Hackathon entry (4-5 Sep), cloud credits, swag kit, food (for Day Scholars)</p>
               </div>
             </div>
 

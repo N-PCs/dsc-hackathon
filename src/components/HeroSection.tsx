@@ -89,8 +89,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const statItems = [
     { value: stats.totalParticipants || 200, suffix: '+', label: 'Hackers' },
-    { value: 24, suffix: '', label: 'Hours' },
-    { value: 15000, suffix: '', label: 'In Prizes (₹)', prefix: '₹' },
+    { value: 18, suffix: '', label: 'Hours (4-5 Sep)' },
+    { value: 15000, suffix: '', label: 'Cash Prizes (+₹50k Goodies)', prefix: '₹' },
     { value: 6, suffix: '', label: 'Tracks' },
   ];
 
@@ -102,12 +102,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Left: Text */}
           <div className="space-y-8 pt-8 lg:pt-0">
             {/* Registration Deadline Tag — Site theme matched */}
-            <div className="gsap-title-word flex items-center gap-2.5 text-[12px] font-mono uppercase tracking-wider text-orange-500 font-semibold">
+            <div className="gsap-title-word flex flex-wrap items-center gap-2 text-[12px] font-mono uppercase tracking-wider text-orange-500 font-semibold">
               <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
-              <span>Last Date to Register: 2 September 2026</span>
+              <span>4 Sep 6:00 PM – 5 Sep 12:00 PM</span>
               <span className="text-neutral-600 font-normal">|</span>
-              <span className="text-neutral-400 font-normal normal-case tracking-normal">
-                Registrations close strictly after deadline
+              <span className="text-neutral-300 font-normal normal-case tracking-normal">
+                AB02 Auditorium 1 & Auditorium 2
               </span>
             </div>
 
@@ -131,8 +131,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* Tagline */}
             <p className="gsap-tagline text-base lg:text-lg text-neutral-400 max-w-md leading-relaxed">
-              24 hours. One venue. Build something extraordinary from scratch — 
-              AI, Web3, FinTech, HealthTech, IoT, or Open Innovation.
+              18 hours of non-stop innovation. AB02 Auditorium 1 & Auditorium 2. Build cutting-edge projects evaluated by <span className="text-white font-semibold">Shreyians Coding Academy</span>.
             </p>
 
             {/* CTAs */}
@@ -166,7 +165,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {/* Photo overlay text */}
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
               <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
-                Auditorium AB02 · VIT Bhopal Campus
+                AB02 Auditorium 1 & Auditorium 2 · VIT Bhopal Campus
               </span>
             </div>
           </div>

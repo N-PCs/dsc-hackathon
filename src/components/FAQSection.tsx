@@ -19,7 +19,7 @@ const FAQ_ITEMS: FAQItem[] = [
     id: 'faq-2',
     question: 'What is the registration fee and team size?',
     answer:
-      'Teams must consist of 2 to 5 members. Registration fee is ₹100 per member for Hostellers and ₹219 per member for Day Scholars (Food Included). Registrations close strictly on 2 September 2026.',
+      'Teams must consist of 2 to 5 members. Registration fee is ₹100 per member for Hostellers and ₹219 per member for Day Scholars (Dinner & Food Included). Registrations close strictly on 2 September 2026.',
   },
   {
     id: 'faq-3',
@@ -29,33 +29,33 @@ const FAQ_ITEMS: FAQItem[] = [
   },
   {
     id: 'faq-4',
-    question: 'What happens during the 24-hour sprint?',
+    question: 'What is the event schedule & timing?',
     answer:
-      'The hackathon kicks off with problem statement releases, followed by intensive hacking, live mentor check-ins, midnight snacks and chill zones, final code freeze, and live jury pitching.',
+      'The 18-hour event runs from 4 September 6:00 PM to 5 September 12:00 PM at AB02 Auditorium 1 & Auditorium 2. Highlights include Inauguration (6:00 PM), Problem Statement Reveal (6:30 PM), Dinner Break (7:30–8:30 PM), Development (8:30 PM–9:00 AM), Evaluation (9:00–11:00 AM), and Awards (11:00 AM–12:00 PM).',
   },
   {
     id: 'faq-5',
-    question: 'How are projects evaluated?',
+    question: 'Who are the official judges and evaluation criteria?',
     answer:
-      'Projects are scored out of 100 points across 5 pillars (20 pts each): Innovation & Originality, Technical Complexity, UI/UX Design, Pitch & Demo Execution, and Real-World Impact.',
+      'Official evaluation is conducted by Shreyians Coding Academy judges. Projects are scored out of 100 points across 5 pillars (20 pts each): Innovation & Originality, Technical Complexity, UI/UX Design, Pitch & Demo Execution, and Real-World Impact.',
   },
   {
     id: 'faq-6',
     question: 'Can we use pre-existing code?',
     answer:
-      'No. All project code must be developed strictly during the 24-hour window. Open-source packages, libraries, and public APIs are permitted with proper attribution in your GitHub README.',
+      'No. All project code must be developed strictly during the 18-hour hackathon window (4 Sep 6:00 PM – 5 Sep 12:00 PM). Open-source packages, libraries, and public APIs are permitted with proper attribution in your GitHub README.',
   },
   {
     id: 'faq-7',
-    question: 'How does payment verification work?',
+    question: 'What are the prizes and goodies?',
     answer:
-      'After submitting your UPI UTR reference and receipt screenshot during registration (calculated based on Hosteller ₹100/member vs Day Scholar ₹219/member with food), DSC Admins verify the transaction and issue your Digital ID Pass.',
+      'The total cash prize pool is ₹15,000 (1st Prize: ₹7,000, 2nd Prize: ₹5,000, 3rd Prize: ₹3,000) alongside Goodies worth ₹50,000+, trophies, and digital participation certificates for all submitting teams.',
   },
   {
     id: 'faq-8',
-    question: 'Will hardware, Wi-Fi, and rest zones be provided?',
+    question: 'Will Wi-Fi, power, and rest zones be provided at the venue?',
     answer:
-      'Yes. High-speed dual-band campus Wi-Fi, designated rest/sleep areas, continuous refreshments, and technical mentor tables will be available throughout the 24 hours at Auditorium AB02.',
+      'Yes. High-speed dual-band campus Wi-Fi, power sockets at desks, dinner break meals, continuous refreshments, and technical mentor desks will be available at AB02 Auditorium 1 & Auditorium 2.',
   },
 ];
 

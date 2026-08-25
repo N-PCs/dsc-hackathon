@@ -117,7 +117,9 @@ export const SponsorsSection: React.FC = () => {
                 </h3>
               </div>
               <div className="mt-4 sm:mt-6 text-[10px] sm:text-[11px] font-mono text-orange-500 font-semibold uppercase tracking-wider">
-                Official Sponsors
+                {sponsor.name.toLowerCase().includes('sheryians') || sponsor.name.toLowerCase().includes('shreyians')
+                  ? 'Official Judges & Title Partner'
+                  : 'Official Sponsor'}
               </div>
             </div>
           ))}

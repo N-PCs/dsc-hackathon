@@ -40,13 +40,13 @@ export const HackathonScheduleRules: React.FC = () => {
         {/* Header */}
         <div className="mb-16">
           <span className="text-[13px] font-mono text-neutral-500 uppercase tracking-wider block mb-3">
-            24-Hour Schedule
+            18-Hour Event Flow (4 Sep 6:00 PM – 5 Sep 12:00 PM)
           </span>
           <h2
             className="text-3xl md:text-5xl font-bold tracking-tight max-w-xl"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            From check-in to awards. Every hour mapped.
+            From inauguration to awards. Every stage mapped.
           </h2>
         </div>
 
@@ -63,8 +63,8 @@ export const HackathonScheduleRules: React.FC = () => {
                   Venue & Logistics
                 </h3>
                 <p className="text-[14px] text-neutral-400 leading-relaxed">
-                  Auditorium AB02, VIT Bhopal University. High-speed dual-band Wi-Fi, 
-                  power at every desk, continuous meals, energy drinks, and designated rest zones.
+                  AB02 Auditorium 1 & Auditorium 2, VIT Bhopal University. High-speed dual-band Wi-Fi, 
+                  power at desk, dinner break, continuous refreshments, and rest zones.
                 </p>
               </div>
 
@@ -72,27 +72,27 @@ export const HackathonScheduleRules: React.FC = () => {
               <div className="overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80"
-                  alt="VIT Bhopal Auditorium"
+                  alt="AB02 Auditorium 1 & Auditorium 2"
                   className="w-full h-48 object-cover"
                 />
               </div>
 
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between py-3 border-b border-neutral-800 text-[13px]">
+                  <span className="text-neutral-500">Official Judges</span>
+                  <span className="text-orange-500 font-medium">Shreyians Coding Academy</span>
+                </div>
+                <div className="flex justify-between py-3 border-b border-neutral-800 text-[13px]">
                   <span className="text-neutral-500">Wi-Fi & Power</span>
                   <span className="text-white font-medium">Included</span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-neutral-800 text-[13px]">
                   <span className="text-neutral-500">Meals</span>
-                  <span className="text-white font-medium">Dinner, Midnight, Breakfast</span>
+                  <span className="text-white font-medium">Dinner Break included</span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-neutral-800 text-[13px]">
-                  <span className="text-neutral-500">Rest Zones</span>
-                  <span className="text-white font-medium">Available 24h</span>
-                </div>
-                <div className="flex justify-between py-3 text-[13px]">
-                  <span className="text-neutral-500">Compute Credits</span>
-                  <span className="text-white font-medium">Cloud GPUs provided</span>
+                  <span className="text-neutral-500">Venue</span>
+                  <span className="text-white font-medium">AB02 Aud 1 & Aud 2</span>
                 </div>
               </div>
             </div>
@@ -238,12 +238,12 @@ export const HackathonScheduleRules: React.FC = () => {
                   ))}
                 </div>
                 <div className="mt-6 flex items-center justify-between py-4 border-t border-neutral-800">
-                  <span className="text-[14px] text-neutral-400">Total Prize Pool</span>
+                  <span className="text-[14px] text-neutral-400">Total Cash Prize Pool + Goodies</span>
                   <span
                     className="text-2xl font-bold text-white"
                     style={{ fontFamily: 'var(--font-heading)' }}
                   >
-                    ₹1,50,000+
+                    ₹15,000 Cash + ₹50,000+ Goodies
                   </span>
                 </div>
               </div>
