@@ -37,8 +37,12 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 let dbInitialized = false;
 app.use(async (req, res, next) => {
   if (!dbInitialized) {
-    await initDatabase();
-    dbInitialized = true;
+    try {
+      await initDatabase();
+      dbInitialized = true;
+    } catch (e) {
+      console.error('[Database Init Warning]:', e);
+    }
   }
   next();
 });
