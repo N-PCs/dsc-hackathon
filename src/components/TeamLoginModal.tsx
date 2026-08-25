@@ -40,7 +40,11 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: identifier.trim() }),
       });
-      const adminData = await adminRes.json();
+      let adminData: any = {};
+      const adminContentType = adminRes.headers.get('content-type') || '';
+      if (adminContentType.includes('application/json')) {
+        adminData = await adminRes.json();
+      }
 
       if (adminRes.ok && adminData.success) {
         // Automatically transition to Admin Console!
@@ -61,7 +65,14 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
         }),
       });
 
-      const data = await res.json();
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Server error during login (${res.status})`);
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'No registered team or authorized admin found with this email or ID.');
