@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
-import { Team, Announcement, TrackType, AdminUser } from '../src/types';
+import { Team, Announcement, TrackType, AdminUser } from '../src/types.js';
 import {
   initDatabase,
   getAllTeams,
@@ -16,10 +16,10 @@ import {
   addAnnouncementDB,
   getSubmissionStatusDB,
   setSubmissionStatusDB,
-} from '../server/db';
-import { uploadFileToImagekit } from '../server/imagekit';
-import { getSubmissionDeadline, isDeadlinePassed } from '../src/lib/deadline';
-import { validateFileSignature } from '../src/lib/fileValidation';
+} from '../server/db.js';
+import { uploadFileToImagekit } from '../server/imagekit.js';
+import { getSubmissionDeadline, isDeadlinePassed } from '../src/lib/deadline.js';
+import { validateFileSignature } from '../src/lib/fileValidation.js';
 
 import 'dotenv/config';
 

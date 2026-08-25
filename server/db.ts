@@ -1,5 +1,5 @@
 import { Pool } from '@neondatabase/serverless';
-import { Team, Announcement, AdminUser } from '../src/types';
+import { Team, Announcement, AdminUser } from '../src/types.js';
 
 
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
