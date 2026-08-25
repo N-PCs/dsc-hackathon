@@ -1,5 +1,6 @@
 import { Pool } from '@neondatabase/serverless';
-import { Team, Announcement, AdminUser } from '../src/types';
+// api/server/db.ts
+import { Team, Announcement, AdminUser } from '../../src/types';
 
 const rawUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 // Remove problematic channel_binding parameter (Neon WebSocket issue)
