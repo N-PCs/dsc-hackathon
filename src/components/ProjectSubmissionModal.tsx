@@ -124,36 +124,29 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     setErrorMsg('');
 
     try {
-      try {
-        const result = await uploadDirectToImagekit(file, 'project-deliverables');
-        setPresentationUrl(result.url);
-        setSuccessMsg(`PPT/PDF document successfully uploaded to Imagekit! (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
-      } catch (directErr) {
-        console.warn('[Direct ImageKit upload warning, attempting /api/upload fallback]:', directErr);
-        const formData = new FormData();
-        formData.append('file', file);
+      const formData = new FormData();
+      formData.append('file', file);
 
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-        let data: any;
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          data = await res.json();
-        } else {
-          const text = await res.text();
-          throw new Error(text || `Server returned non-JSON response (${res.status})`);
-        }
-
-        if (!res.ok || !data.success) {
-          throw new Error(data?.message || 'File upload failed');
-        }
-
-        setPresentationUrl(data.url);
-        setSuccessMsg(`PPT/PDF document successfully uploaded to Imagekit! (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Server returned non-JSON response (${res.status})`);
       }
+
+      if (!res.ok || !data.success) {
+        throw new Error(data?.message || 'File upload failed');
+      }
+
+      setPresentationUrl(data.url);
+      setSuccessMsg(`PPT/PDF document successfully uploaded to Imagekit! (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error uploading PPT/PDF document.');
     } finally {
