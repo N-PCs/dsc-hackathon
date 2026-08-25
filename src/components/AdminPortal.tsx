@@ -319,7 +319,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       if (res.ok && data.success) {
         setCurrentAdmin(data.admin);
         localStorage.setItem('origin_active_admin', JSON.stringify(data.admin));
-      } else if (cleanOtp === sentOtp || cleanOtp === '000000' || cleanOtp === '123456') {
+      } else if (cleanOtp === sentOtp) {
         const localAdmin = adminWhitelist.find(
           (a) => a.email.toLowerCase() === cleanEmail
         );
@@ -333,7 +333,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         setAuthError(data.message || 'Invalid or expired verification passcode.');
       }
     } catch (err) {
-      if (cleanOtp === sentOtp || cleanOtp === '000000' || cleanOtp === '123456') {
+      if (cleanOtp === sentOtp) {
         const localAdmin = adminWhitelist.find(
           (a) => a.email.toLowerCase() === cleanEmail
         );

@@ -469,9 +469,7 @@ async function startServer() {
     if (otp) {
       const cleanOtp = String(otp).trim();
       if (!storedOtp || storedOtp.otp !== cleanOtp || Date.now() > storedOtp.expiresAt) {
-        if (cleanOtp !== storedOtp?.otp && cleanOtp !== '000000') {
-          return res.status(401).json({ success: false, message: 'Invalid or expired verification passcode.' });
-        }
+        return res.status(401).json({ success: false, message: 'Invalid or expired verification passcode.' });
       }
     }
 
