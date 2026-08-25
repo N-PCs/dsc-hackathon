@@ -40,15 +40,20 @@ const app = express();
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-let dbInitialized = false;
+// Immediately start DB initialization (non-blocking, no await)
+let dbInitPromise = initDatabase()
+  .then(() => console.log('[NeonDB] Initialized successfully.'))
+  .catch((err) => console.error('[NeonDB] Init failed (fallback to memory):', err));
+
+// Optional: middleware to ensure DB is ready for routes that need it (but won't block)
 app.use(async (req, res, next) => {
-  if (!dbInitialized) {
+  if (dbInitPromise) {
     try {
-      await initDatabase();
-      dbInitialized = true;
-    } catch (e) {
-      console.error('[Database Init Warning]:', e);
+      await dbInitPromise; // wait only once if needed, but it's already running
+    } catch (_) {
+      // ignore; fallback will handle
     }
+    dbInitPromise = null; // only wait once
   }
   next();
 });

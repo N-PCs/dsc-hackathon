@@ -1,21 +1,26 @@
 import { Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../src/types';
 
-const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+const rawUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+// Remove problematic channel_binding parameter (Neon WebSocket issue)
+const connectionString = rawUrl?.replace(/&?channel_binding=[^&]*/, '');
 
 let pool: Pool | null = null;
 let useNeon = false;
 
 if (connectionString) {
   try {
-    pool = new Pool({ connectionString });
+    pool = new Pool({
+      connectionString,
+      connectionTimeoutMillis: 5000, // fail fast instead of hanging
+    });
     useNeon = true;
-    console.log('[NeonDB] Database URL detected. Initializing Neon DB Pool connection...');
+    console.log('[NeonDB] Database URL detected. Pool initialized with timeout.');
   } catch (err) {
     console.warn('[NeonDB] Failed to initialize Neon Pool. Falling back to local store.', err);
   }
 } else {
-  console.log('[NeonDB] No DATABASE_URL found in environment. Using reactive memory/local store adapter.');
+  console.log('[NeonDB] No DATABASE_URL found. Using in-memory fallback.');
 }
 
 // In-Memory Fallback Store
