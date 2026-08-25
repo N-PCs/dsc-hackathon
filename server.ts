@@ -23,15 +23,30 @@ import {
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from './src/lib/deadline';
+import { validateFileSignature } from './src/lib/fileValidation';
 
 
 // Configure Multer for file uploads (10MB size limit)
 const storage = multer.memoryStorage();
+
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = file.originalname.substring(file.originalname.lastIndexOf('.')).toLowerCase();
+  if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and PDF are allowed.'));
+  }
+};
+
 const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
+  fileFilter,
 });
 
 // OTP Store for Admin Login: email -> { otp: string, expiresAt: number }
@@ -74,10 +89,18 @@ async function startServer() {
             buffer = Buffer.from(fileData, 'base64');
           }
 
+          if (!validateFileSignature(buffer, mimeType, fileName)) {
+            return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
+          }
+
           const result = await uploadFileToImagekit(buffer, fileName, mimeType);
           return res.json({ success: true, url: result.url, publicId: result.publicId });
         }
         return res.status(400).json({ success: false, message: 'No file uploaded.' });
+      }
+
+      if (!validateFileSignature(req.file.buffer, req.file.mimetype, req.file.originalname)) {
+        return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
       }
 
       const result = await uploadFileToImagekit(
