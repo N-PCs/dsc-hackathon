@@ -102,7 +102,7 @@ export default function App() {
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) {
           const txt = await res.text();
-          throw new Error(`Invalid JSON response: ${txt.slice(0,100)}`);
+          throw new Error(`Invalid JSON response: ${txt.slice(0, 100)}`);
         }
         return res.json();
       };
