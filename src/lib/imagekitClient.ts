@@ -1,7 +1,5 @@
-import path from 'path';
-
-const publicKey = import.meta.env?.VITE_IMAGEKIT_PUBLIC_KEY || process.env.IMAGEKIT_PUBLIC_KEY || '';
-const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || '';
+const publicKey = import.meta.env?.VITE_IMAGEKIT_PUBLIC_KEY || (typeof process !== 'undefined' ? process.env?.IMAGEKIT_PUBLIC_KEY : '') || '';
+const privateKey = (typeof process !== 'undefined' ? process.env?.IMAGEKIT_PRIVATE_KEY : '') || '';
 
 export async function uploadDirectToImagekit(
   file: File,
