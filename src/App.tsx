@@ -59,7 +59,8 @@ export default function App() {
           t.leader.email.toLowerCase() === email ||
           t.member2?.email?.toLowerCase() === email ||
           t.member3?.email?.toLowerCase() === email ||
-          t.member4?.email?.toLowerCase() === email
+          t.member4?.email?.toLowerCase() === email ||
+          t.member5?.email?.toLowerCase() === email
       );
       if (matchedTeam) {
         setActiveTeam(matchedTeam);
@@ -144,6 +145,7 @@ export default function App() {
       if (t.member2?.name) count++;
       if (t.member3?.name) count++;
       if (t.member4?.name) count++;
+      if (t.member5?.name) count++;
       totalParticipants += count;
 
       if (trackCounts[t.track] !== undefined) {

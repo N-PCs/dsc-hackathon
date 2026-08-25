@@ -5,12 +5,16 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowRight,
+  Calendar,
+  AlertTriangle,
+  QrCode,
 } from 'lucide-react';
 import { TrackType, Team, TeamMember } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
 import { isVITBhopalEmail } from '../lib/clerk';
 import { uploadDirectToImagekit } from '../lib/imagekitClient';
-import { QrCode } from 'lucide-react';
+
+export type MemberCategory = 'hosteller' | 'day_scholar';
 
 interface RegistrationFormProps {
   selectedTrack?: TrackType;
@@ -26,6 +30,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [teamName, setTeamName] = useState('');
   const [track, setTrack] = useState<TrackType>(selectedTrack);
   const [memberCount, setMemberCount] = useState<number>(3);
+
+  // Per-member category: hosteller (₹100) vs day_scholar (₹219 - Food Included)
+  const [memberCategories, setMemberCategories] = useState<Record<number, MemberCategory>>({
+    1: 'hosteller',
+    2: 'hosteller',
+    3: 'hosteller',
+    4: 'hosteller',
+    5: 'hosteller',
+  });
 
   const [leader, setLeader] = useState<TeamMember>({
     name: '',
@@ -58,6 +71,24 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     college: 'VIT Bhopal University',
     role: 'Backend / Cloud',
   });
+
+  const [member5, setMember5] = useState<TeamMember>({
+    name: '',
+    email: '',
+    phone: '',
+    college: 'VIT Bhopal University',
+    role: 'AI / System Engineer',
+  });
+
+  // Calculate total registration fee
+  const calculateTotalFee = () => {
+    let total = 0;
+    for (let i = 1; i <= memberCount; i++) {
+      const category = memberCategories[i] || 'hosteller';
+      total += category === 'hosteller' ? 100 : 219;
+    }
+    return total;
+  };
 
   const [transactionRef, setTransactionRef] = useState('');
   const [paymentProofUrl, setPaymentProofUrl] = useState<string>('');
@@ -134,6 +165,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         member2: memberCount >= 2 && member2.name.trim() ? member2 : undefined,
         member3: memberCount >= 3 && member3.name.trim() ? member3 : undefined,
         member4: memberCount >= 4 && member4.name.trim() ? member4 : undefined,
+        member5: memberCount >= 5 && member5.name.trim() ? member5 : undefined,
         transactionRef: transactionRef.trim(),
         paymentProofUrl: paymentProofUrl || '',
       };
@@ -185,6 +217,16 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     <div className="max-w-3xl mx-auto px-6 pt-24 pb-16">
       {/* Header */}
       <div className="mb-12">
+        {/* Deadline Notice Tag */}
+        <div className="flex items-center gap-2 mb-3 text-[12px] font-mono uppercase tracking-wider text-orange-500 font-semibold">
+          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
+          <span>Last Date to Register: 2 September 2026</span>
+          <span className="text-neutral-600 font-normal">|</span>
+          <span className="text-neutral-400 font-normal normal-case tracking-normal">
+            Registrations close strictly after deadline
+          </span>
+        </div>
+
         <span className="text-[13px] font-mono text-neutral-500 uppercase tracking-wider block mb-3">
           Team Registration
         </span>
@@ -196,7 +238,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         </h1>
         <p className="text-[14px] text-neutral-400 leading-relaxed max-w-lg">
           Team Leader must use an <span className="text-white font-semibold">@vitbhopal.ac.in</span> email. 
-          Upon admin verification, your Digital ID Pass unlocks.
+          Register your team and be part of an exciting AI-driven hackathon experience!
         </p>
         <div className="mt-4 text-[13px] text-neutral-500">
           Already registered?{' '}
@@ -266,10 +308,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
             <div>
               <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-3">
-                Team Size
+                Team Size (2-5 Members)
               </label>
               <div className="grid grid-cols-4 gap-px bg-neutral-800">
-                {[1, 2, 3, 4].map((num) => (
+                {[2, 3, 4, 5].map((num) => (
                   <button
                     key={num}
                     type="button"
@@ -281,7 +323,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     }`}
                     style={{ fontFamily: 'var(--font-heading)' }}
                   >
-                    {num === 1 ? '1 Solo' : num === 2 ? '2 Duo' : num === 3 ? '3 Trio' : '4 Squad'}
+                    {num === 2 ? '2 Duo' : num === 3 ? '3 Trio' : num === 4 ? '4 Squad' : '5 Team'}
                   </button>
                 ))}
               </div>
@@ -414,20 +456,94 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </div>
                 </div>
               )}
+
+              {memberCount >= 5 && (
+                <div>
+                  <span className="text-[11px] font-mono text-neutral-600 uppercase block mb-4">Member 05</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
+                    <input type="text" placeholder="Full Name" value={member5.name} onChange={(e) => setMember5({ ...member5, name: e.target.value })} className={memberInputClass} />
+                    <input type="email" placeholder="Email" value={member5.email} onChange={(e) => setMember5({ ...member5, email: e.target.value })} className={memberInputClass} />
+                    <input type="tel" placeholder="Phone" value={member5.phone} onChange={(e) => setMember5({ ...member5, phone: e.target.value })} className={`${memberInputClass} font-mono`} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Step 4: Payment */}
         <div>
-          <div className="flex items-baseline justify-between mb-8 pb-4 border-b border-neutral-800">
-            <h3
-              className="text-lg font-bold"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              Payment — ₹200
-            </h3>
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between mb-8 pb-4 border-b border-neutral-800 gap-2">
+            <div>
+              <h3
+                className="text-lg font-bold"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                Payment — Total ₹{calculateTotalFee()}
+              </h3>
+              <span className="text-[12px] font-mono text-neutral-400 block mt-1">
+                Hosteller: ₹100 / member · Day Scholar: ₹219 / member (Food Included)
+              </span>
+            </div>
             <span className="text-[12px] font-mono text-neutral-600">Step 4 of 4</span>
+          </div>
+
+          {/* Member Fee Category Selector — Site theme matched */}
+          <div className="mb-8 border-t border-b border-neutral-800 py-6 space-y-4">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[12px] font-mono text-neutral-500 uppercase tracking-wider">
+                Registration Fee Breakdown ({memberCount} Members)
+              </span>
+              <span className="text-[13px] font-bold text-orange-500 font-mono">
+                Total Payable: ₹{calculateTotalFee()}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: memberCount }).map((_, idx) => {
+                const mNum = idx + 1;
+                const cat = memberCategories[mNum] || 'hosteller';
+                const nameLabel =
+                  mNum === 1
+                    ? `Leader (${leader.name || 'Member 01'})`
+                    : mNum === 2
+                    ? `Member 02 (${member2.name || 'Member 02'})`
+                    : mNum === 3
+                    ? `Member 03 (${member3.name || 'Member 03'})`
+                    : mNum === 4
+                    ? `Member 04 (${member4.name || 'Member 04'})`
+                    : `Member 05 (${member5.name || 'Member 05'})`;
+
+                return (
+                  <div key={mNum} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px] border-b border-neutral-900 last:border-b-0 pb-2.5">
+                    <span className="text-neutral-300 font-mono text-xs truncate max-w-xs">{nameLabel}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMemberCategories((prev) => ({ ...prev, [mNum]: 'hosteller' }))}
+                        className={`px-3 py-1.5 text-[11px] font-mono tracking-wider uppercase transition-colors cursor-pointer border ${
+                          cat === 'hosteller'
+                            ? 'bg-orange-600 text-white font-semibold border-orange-500'
+                            : 'bg-black text-neutral-500 border-neutral-800 hover:text-neutral-300'
+                        }`}
+                      >
+                        Hosteller (₹100)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMemberCategories((prev) => ({ ...prev, [mNum]: 'day_scholar' }))}
+                        className={`px-3 py-1.5 text-[11px] font-mono tracking-wider uppercase transition-colors cursor-pointer border ${
+                          cat === 'day_scholar'
+                            ? 'bg-orange-600 text-white font-semibold border-orange-500'
+                            : 'bg-black text-neutral-500 border-neutral-800 hover:text-neutral-300'
+                        }`}
+                      >
+                        Day Scholar (₹219 - Food Included)
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -439,7 +555,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               </div>
               <div className="text-[12px] text-neutral-500 font-mono space-y-1">
                 <p>• UPI ID: <span className="text-white">dsc.origin26@upi</span></p>
-                <p>• Covers: 24H entry, cloud credits, swag kit</p>
+                <p>• Amount to Pay: <span className="text-orange-400 font-bold">₹{calculateTotalFee()}</span></p>
+                <p>• Covers: 24H entry, cloud credits, swag kit, food (for Day Scholars)</p>
               </div>
             </div>
 

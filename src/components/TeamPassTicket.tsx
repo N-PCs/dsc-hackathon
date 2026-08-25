@@ -161,7 +161,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
 
             <div>
               <span className="text-[11px] font-mono text-neutral-600 uppercase block mb-2">
-                Members ({1 + (team.member2?.name ? 1 : 0) + (team.member3?.name ? 1 : 0) + (team.member4?.name ? 1 : 0)})
+                Members ({1 + (team.member2?.name ? 1 : 0) + (team.member3?.name ? 1 : 0) + (team.member4?.name ? 1 : 0) + (team.member5?.name ? 1 : 0)})
               </span>
               <div className="flex flex-wrap gap-2">
                 <span className="text-[12px] font-mono text-neutral-300 px-3 py-1 border border-neutral-800">
@@ -180,6 +180,11 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                 {team.member4?.name && (
                   <span className="text-[12px] font-mono text-neutral-400 px-3 py-1 border border-neutral-800">
                     {team.member4.name}
+                  </span>
+                )}
+                {team.member5?.name && (
+                  <span className="text-[12px] font-mono text-neutral-400 px-3 py-1 border border-neutral-800">
+                    {team.member5.name}
                   </span>
                 )}
               </div>

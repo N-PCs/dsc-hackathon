@@ -160,6 +160,7 @@ app.post('/api/teams/register', async (req, res) => {
       member2,
       member3,
       member4,
+      member5,
       transactionRef,
       paymentProofUrl,
     } = req.body;
@@ -224,6 +225,15 @@ app.post('/api/teams/register', async (req, res) => {
             phone: member4.phone?.trim() || '',
             college: member4.college || leader.college || 'VIT Bhopal University',
             role: member4.role || 'Member',
+          }
+        : undefined,
+      member5: member5?.name?.trim()
+        ? {
+            name: member5.name.trim(),
+            email: member5.email?.trim().toLowerCase() || '',
+            phone: member5.phone?.trim() || '',
+            college: member5.college || leader.college || 'VIT Bhopal University',
+            role: member5.role || 'Member',
           }
         : undefined,
       paymentStatus: 'pending',
@@ -575,6 +585,7 @@ app.get('/api/stats', async (req, res) => {
     if (t.member2?.name) membersCount++;
     if (t.member3?.name) membersCount++;
     if (t.member4?.name) membersCount++;
+    if (t.member5?.name) membersCount++;
     totalParticipants += membersCount;
 
     if (trackCounts[t.track] !== undefined) {
@@ -603,6 +614,7 @@ app.get('/api/export-csv', async (req, res) => {
     'Registered At', 'Checked In Venue', 'Leader Name', 'Leader Email', 'Leader Phone',
     'Leader College', 'Member 2 Name', 'Member 2 Email', 'Member 2 Phone', 'Member 3 Name',
     'Member 3 Email', 'Member 3 Phone', 'Member 4 Name', 'Member 4 Email', 'Member 4 Phone',
+    'Member 5 Name', 'Member 5 Email', 'Member 5 Phone',
     'Project Title', 'Project GitHub', 'Project Presentation (PPT/PDF)', 'Total Score',
   ];
 
@@ -619,7 +631,8 @@ app.get('/api/export-csv', async (req, res) => {
     escapeCsv(t.leader.phone), escapeCsv(t.leader.college || ''), escapeCsv(t.member2?.name || ''),
     escapeCsv(t.member2?.email || ''), escapeCsv(t.member2?.phone || ''), escapeCsv(t.member3?.name || ''),
     escapeCsv(t.member3?.email || ''), escapeCsv(t.member3?.phone || ''), escapeCsv(t.member4?.name || ''),
-    escapeCsv(t.member4?.email || ''), escapeCsv(t.member4?.phone || ''), escapeCsv(t.project?.title || ''),
+    escapeCsv(t.member4?.email || ''), escapeCsv(t.member4?.phone || ''), escapeCsv(t.member5?.name || ''),
+    escapeCsv(t.member5?.email || ''), escapeCsv(t.member5?.phone || ''), escapeCsv(t.project?.title || ''),
     escapeCsv(t.project?.githubUrl || ''), escapeCsv(t.project?.presentationUrl || ''),
     escapeCsv(t.project?.score?.total || ''),
   ]);
@@ -652,6 +665,8 @@ app.get('/api/export-excel', async (req, res) => {
     'Member 3 Email': t.member3?.email || '',
     'Member 4': t.member4?.name || '',
     'Member 4 Email': t.member4?.email || '',
+    'Member 5': t.member5?.name || '',
+    'Member 5 Email': t.member5?.email || '',
     'Project Title': t.project?.title || 'Not Submitted',
     'Project GitHub': t.project?.githubUrl || '',
     'PPT/PDF Document Link': t.project?.presentationUrl || '',

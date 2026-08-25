@@ -42,7 +42,7 @@ export const HACKATHON_TRACKS: { name: TrackType; icon: string; description: str
 export const HACKATHON_RULES = [
   {
     title: 'Team Composition',
-    detail: 'Teams can have between 1 to 4 members. Cross-specialization (Data Science + Fullstack + Design) is encouraged.',
+    detail: 'Teams can have between 2 to 5 members. Cross-specialization (Data Science + Fullstack + Design) is encouraged.',
   },
   {
     title: 'Original Code & Verification',
@@ -78,7 +78,7 @@ export const HACKATHON_SCHEDULE = [
   { time: '08:30 AM', title: 'Breakfast & Final Sprint', desc: 'Morning coffee & final bug squash sprint.', phase: 'upcoming' },
   { time: '11:00 AM', title: 'CODE FREEZE & SUBMISSION DEADLINE', desc: 'Portal submissions lock strictly at 11:00 AM.', phase: 'upcoming' },
   { time: '12:00 PM', title: 'Live Pitching to Jury Panel', desc: 'Top shortlisted teams pitch live in front of the judging panel.', phase: 'upcoming' },
-  { time: '03:30 PM', title: 'Grand Awards & Closing Ceremony', desc: 'Trophies, cash prize pool of ₹1,50,000, internship offers & swag distribution.', phase: 'upcoming' },
+  { time: '03:30 PM', title: 'Grand Awards & Closing Ceremony', desc: 'Trophies, cash prize pool of ₹15,000 (Winner ₹7k, 1st Runner ₹5k, 2nd Runner ₹3k), certificates & swag distribution.', phase: 'upcoming' },
 ];
 
 export const DEFAULT_SUBMISSION_DEADLINE = '2026-08-26T11:00:00+05:30';

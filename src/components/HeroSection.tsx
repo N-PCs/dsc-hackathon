@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Calendar, AlertTriangle } from 'lucide-react';
 import { HackathonStats, TrackType } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
 import { SponsorsSection } from './SponsorsSection';
+import { PrizesSection } from './PrizesSection';
 
 interface HeroSectionProps {
   stats: HackathonStats;
@@ -89,7 +90,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const statItems = [
     { value: stats.totalParticipants || 200, suffix: '+', label: 'Hackers' },
     { value: 24, suffix: '', label: 'Hours' },
-    { value: 150000, suffix: '', label: 'In Prizes (₹)', prefix: '₹' },
+    { value: 15000, suffix: '', label: 'In Prizes (₹)', prefix: '₹' },
     { value: 6, suffix: '', label: 'Tracks' },
   ];
 
@@ -100,10 +101,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center min-h-[80vh]">
           {/* Left: Text */}
           <div className="space-y-8 pt-8 lg:pt-0">
+            {/* Registration Deadline Tag — Site theme matched */}
+            <div className="gsap-title-word flex items-center gap-2.5 text-[12px] font-mono uppercase tracking-wider text-orange-500 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
+              <span>Last Date to Register: 2 September 2026</span>
+              <span className="text-neutral-600 font-normal">|</span>
+              <span className="text-neutral-400 font-normal normal-case tracking-normal">
+                Registrations close strictly after deadline
+              </span>
+            </div>
+
             {/* Event label */}
             <div className="gsap-title-word">
               <span
-                className="text-[13px] font-mono font-medium text-neutral-500 tracking-widest uppercase"
+                className="text-[13px] font-mono font-medium text-neutral-500 tracking-widest uppercase block"
               >
                 Data Science Club · VIT Bhopal
               </span>
@@ -184,8 +195,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
       </div>
 
-      {/* Sponsors Section — Placed before Choose your arena */}
+      {/* Sponsors Section — Placed before Prizes */}
       <SponsorsSection />
+
+      {/* Prizes Section */}
+      <PrizesSection />
 
       {/* Tracks Section */}
       <div id="tracks-section" className="max-w-7xl mx-auto px-6 lg:px-8 w-full py-24">
