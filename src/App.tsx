@@ -7,6 +7,7 @@ import { RegistrationForm } from './components/RegistrationForm';
 import { TeamPassTicket } from './components/TeamPassTicket';
 import { ProjectSubmissionModal } from './components/ProjectSubmissionModal';
 import { AdminPortal } from './components/AdminPortal';
+import { JuryPortal } from './components/JuryPortal';
 import { HackathonScheduleRules } from './components/HackathonScheduleRules';
 import { TeamLoginModal } from './components/TeamLoginModal';
 import { LiveAnnouncementsBanner } from './components/LiveAnnouncementsBanner';
@@ -23,7 +24,7 @@ import { isAdminEmail } from './lib/clerk';
 export default function App() {
   const { user, isSignedIn } = useUser();
   const [activeTab, setActiveTab] = useState<
-    'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'faq'
+    'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'jury' | 'faq'
   >('home');
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
@@ -367,6 +368,14 @@ export default function App() {
                 onRefreshData={fetchTeamsAndStats}
               />
             )}
+
+            {activeTab === 'jury' && (
+              <JuryPortal
+                teams={teams}
+                onScoreProject={handleAdminScoreProject}
+                onRefreshData={fetchTeamsAndStats}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -461,14 +470,24 @@ export default function App() {
                 Register Now
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
-              <p className="text-[12px] text-neutral-600">
-                <button
-                  onClick={() => setActiveTab('admin')}
-                  className="hover:text-neutral-400 cursor-pointer transition-colors"
-                >
-                  Organiser Access →
-                </button>
-              </p>
+              <div className="space-y-1.5 text-[12px] text-neutral-600">
+                <p>
+                  <button
+                    onClick={() => setActiveTab('admin')}
+                    className="hover:text-neutral-400 cursor-pointer transition-colors"
+                  >
+                    Organiser Access →
+                  </button>
+                </p>
+                <p>
+                  <button
+                    onClick={() => setActiveTab('jury')}
+                    className="hover:text-blue-400 cursor-pointer transition-colors"
+                  >
+                    Jury Access →
+                  </button>
+                </p>
+              </div>
             </div>
           </div>
 

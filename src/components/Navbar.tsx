@@ -3,9 +3,9 @@ import { Menu, X, ArrowRight } from 'lucide-react';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 
 interface NavbarProps {
-  activeTab: 'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'faq';
+  activeTab: 'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'jury' | 'faq';
   setActiveTab: (
-    tab: 'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'faq'
+    tab: 'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'jury' | 'faq'
   ) => void;
   registeredTeamCount: number;
   hasActiveTeam: boolean;
