@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { ArrowRight, Calendar, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Search, Filter } from 'lucide-react';
 import { HackathonStats, TrackType } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
 import { SponsorsSection } from './SponsorsSection';
@@ -19,6 +19,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   const heroRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
+  const [selectedFilterTab, setSelectedFilterTab] = React.useState<string>('ALL ARENAS');
 
   // GSAP entrance animations
   useEffect(() => {
@@ -27,11 +28,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
 
-      // Stagger each word of the title
       tl.fromTo(
-        '.gsap-title-word',
-        { y: 100, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, stagger: 0.12 }
+        '.gsap-hero-title',
+        { y: 60, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.9 }
       )
         .fromTo(
           '.gsap-tagline',
@@ -46,16 +46,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           '-=0.3'
         )
         .fromTo(
-          '.gsap-hero-photo',
-          { scale: 1.1, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 1.2, ease: 'power2.out' },
-          '-=1.2'
-        )
-        .fromTo(
-          '.gsap-stat-item',
-          { y: 30, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, stagger: 0.08 },
-          '-=0.4'
+          '.gsap-hero-poster',
+          { scale: 1.05, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 1, ease: 'power2.out' },
+          '-=0.8'
         );
     }, heroRef);
 
@@ -75,7 +69,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         {
           innerText: target,
           duration: 2,
-          delay: 0.8,
+          delay: 0.5,
           ease: 'power2.out',
           snap: { innerText: 1 },
           onUpdate: function () {
@@ -88,61 +82,63 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   }, [stats]);
 
   const statItems = [
-    { value: stats.totalParticipants || 200, suffix: '+', label: 'Hackers' },
-    { value: 18, suffix: '', label: 'Hours (4-5 Sep)' },
-    { value: 15000, suffix: '', label: 'Cash Prizes (+₹50k Goodies)', prefix: '₹' },
-    { value: 6, suffix: '', label: 'Tracks' },
+    { value: stats.totalParticipants || 200, suffix: '+', label: 'HACKERS REGISTERED' },
+    { value: 18, suffix: ' HOURS', label: 'NON-STOP CODE FREEZE' },
+    { value: 15000, suffix: '', label: 'CASH PRIZES (+₹50K GOODIES)', prefix: '₹' },
+    { value: 6, suffix: ' ARENAS', label: 'INNOVATION TRACKS' },
+  ];
+
+  const filterTabs = [
+    'ALL ARENAS',
+    'AI & ML',
+    'WEB3',
+    'FINTECH',
+    'HEALTHTECH',
+    'SMART CITY',
+    'SOCIAL IMPACT'
   ];
 
   return (
-    <div id="hero" ref={heroRef} className="relative min-h-screen flex flex-col justify-center pt-16">
-      {/* Main hero content */}
+    <div id="hero" ref={heroRef} className="relative min-h-screen flex flex-col justify-center pt-24">
+      {/* Main hero catalog header section */}
       <div className="max-w-7xl mx-auto px-6 lg:px-8 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center min-h-[80vh]">
-          {/* Left: Text */}
-          <div className="space-y-8 pt-8 lg:pt-0">
-            {/* Registration Deadline Tag — Site theme matched */}
-            <div className="gsap-title-word flex flex-wrap items-center gap-2 text-[12px] font-mono uppercase tracking-wider text-orange-500 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
-              <span>4 Sep 6:00 PM – 5 Sep 12:00 PM</span>
-              <span className="text-neutral-600 font-normal">|</span>
-              <span className="text-neutral-300 font-normal normal-case tracking-normal">
-                AB02 Auditorium 1 & Auditorium 2
-              </span>
-            </div>
+        {/* Top meta tags */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-[#222222] pb-4">
+          <div className="flex items-center gap-3 font-heading text-xs md:text-sm uppercase tracking-widest text-[#FF3B00]">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FF3B00] animate-ping" />
+            <span>4 SEP 6:00 PM – 5 SEP 12:00 PM</span>
+            <span className="text-neutral-600">|</span>
+            <span className="text-neutral-300">AB02 AUDITORIUM 1 & 2</span>
+          </div>
 
-            {/* Event label */}
-            <div className="gsap-title-word">
-              <span
-                className="text-[13px] font-mono font-medium text-neutral-500 tracking-widest uppercase block"
-              >
-                Data Science Club · VIT Bhopal
-              </span>
-            </div>
+          <div className="font-heading text-xs uppercase tracking-widest text-neutral-400">
+            DATA SCIENCE CLUB · VIT BHOPAL
+          </div>
+        </div>
 
-            {/* Massive title */}
-            <div className="space-y-0 overflow-hidden">
-              <h1 className="text-[clamp(2.5rem,6vw,5.5rem)] font-bold leading-[0.95] tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                <span className="gsap-title-word block">ORIGIN</span>
-                <span className="gsap-title-word block text-orange-500">OVERNIGHT</span>
-                <span className="gsap-title-word block">HACKATHON</span>
-              </h1>
-            </div>
+        {/* Massive Catalog Style Headline & Description Box (Exact layout match to reference image 1) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end my-8">
+          {/* Huge condensed display headline */}
+          <div className="lg:col-span-8 overflow-hidden">
+            <h1 className="gsap-hero-title text-[clamp(4.5rem,14vw,11rem)] font-display uppercase tracking-tight leading-[0.85] text-white">
+              <span className="text-[#FF3B00] block">ORIGIN</span>
+              <span className="block text-white">HACKATHON</span>
+            </h1>
+          </div>
 
-            {/* Tagline */}
-            <p className="gsap-tagline text-base lg:text-lg text-neutral-400 max-w-md leading-relaxed">
-              18 hours of non-stop innovation. AB02 Auditorium 1 & Auditorium 2. Build cutting-edge projects evaluated by <span className="text-white font-semibold">Shreyians Coding Academy</span>.
+          {/* Right description block + Search widget */}
+          <div className="lg:col-span-4 space-y-6">
+            <p className="gsap-tagline text-sm text-neutral-300 leading-relaxed font-sans">
+              Explore 6 innovation arenas, compete for ₹15,000 in cash prizes and ₹50,000+ in goodies. Evaluated live by esteemed educators from <strong className="text-white">Shreyians Coding Academy</strong>.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-3 pt-2">
               <button
                 id="hero-btn-register-team"
                 onClick={() => onNavigate('register')}
                 className="gsap-cta btn-primary"
               >
-                Register Your Team
-                <ArrowRight className="w-4 h-4" />
+                REGISTER TEAM &gt;
               </button>
 
               <button
@@ -150,43 +146,134 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 onClick={() => onNavigate('schedule')}
                 className="gsap-cta btn-outline"
               >
-                View Schedule
+                VIEW SCHEDULE
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Right: Photo */}
-          <div className="gsap-hero-photo relative overflow-hidden lg:h-[70vh] h-[50vh]">
-            <img
-              src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80"
-              alt="Hackers collaborating at a workspace"
-              className="w-full h-full object-cover"
-            />
-            {/* Photo overlay text */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-              <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
-                AB02 Auditorium 1 & Auditorium 2 · VIT Bhopal Campus
+        {/* Filter Navigation Bar matching reference image catalog sub-tabs */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#222222] pt-8 pb-4 my-6">
+          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar py-1">
+            {filterTabs.map((tab, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedFilterTab(tab)}
+                className={`font-heading text-sm uppercase tracking-wider whitespace-nowrap cursor-pointer transition-all pb-1 ${selectedFilterTab === tab
+                    ? 'text-white border-b-2 border-[#FF3B00] font-bold'
+                    : 'text-neutral-400 hover:text-white'
+                  }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Hero Showcase Information Cards Grid (Images Removed for High-Contrast Info Display) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-10">
+          {/* Info Card 1 */}
+          <div className="gsap-hero-poster relative bg-[#141414] border border-[#262626] p-6 group hover:border-[#FF3B00] hover:bg-[#181818] transition-all duration-300 flex flex-col justify-between min-h-[220px]">
+            <div className="tape-strip" />
+            <div className="bookmark-tag">18 HOURS</div>
+            <div>
+              <span className="font-heading text-xs uppercase tracking-widest text-[#FF3B00] block mb-2 font-bold">
+                FLAGSHIP EVENT
+              </span>
+              <h3 className="font-display text-3xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
+                OVERNIGHT HACKATHON
+              </h3>
+              <p className="text-xs text-neutral-300 font-sans leading-relaxed">
+                4 Sep 6:00 PM – 5 Sep 12:00 PM
+              </p>
+            </div>
+            <div className="pt-4 border-t border-[#222222] mt-4">
+              <span className="font-heading text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+                AB02 AUDITORIUM 1 & 2
+              </span>
+            </div>
+          </div>
+
+          {/* Info Card 2 */}
+          <div className="gsap-hero-poster relative bg-[#141414] border border-[#262626] p-6 group hover:border-[#FF3B00] hover:bg-[#181818] transition-all duration-300 flex flex-col justify-between min-h-[220px]">
+            <div className="tape-strip-left" />
+            <div className="bookmark-tag">₹15,000</div>
+            <div>
+              <span className="font-heading text-xs uppercase tracking-widest text-emerald-400 block mb-2 font-bold">
+                CASH + GOODIES
+              </span>
+              <h3 className="font-display text-3xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
+                PRIZE POOL & REWARDS
+              </h3>
+              <p className="text-xs text-neutral-300 font-sans leading-relaxed">
+                ₹15,000 Cash Pool + ₹50,000+ Goodies
+              </p>
+            </div>
+            <div className="pt-4 border-t border-[#222222] mt-4">
+              <span className="font-heading text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+                TROPHIES, SWAG & CERTIFICATES
+              </span>
+            </div>
+          </div>
+
+          {/* Info Card 3 */}
+          <div className="gsap-hero-poster relative bg-[#141414] border border-[#262626] p-6 group hover:border-[#FF3B00] hover:bg-[#181818] transition-all duration-300 flex flex-col justify-between min-h-[220px]">
+            <div className="tape-strip" />
+            <div className="bookmark-tag bg-blue-600">OFFICIAL JURY</div>
+            <div>
+              <span className="font-heading text-xs uppercase tracking-widest text-orange-400 block mb-2 font-bold">
+                LIVE EVALUATION
+              </span>
+              <h3 className="font-display text-3xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
+                SHREYIANS ACADEMY
+              </h3>
+              <p className="text-xs text-neutral-300 font-sans leading-relaxed">
+                Judged live by industry expert educators
+              </p>
+            </div>
+            <div className="pt-4 border-t border-[#222222] mt-4">
+              <span className="font-heading text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+                100-POINT SCORING RUBRIC
+              </span>
+            </div>
+          </div>
+
+          {/* Info Card 4 */}
+          <div className="gsap-hero-poster relative bg-[#141414] border border-[#262626] p-6 group hover:border-[#FF3B00] hover:bg-[#181818] transition-all duration-300 flex flex-col justify-between min-h-[220px]">
+            <div className="tape-strip-left" />
+            <div className="bookmark-tag bg-purple-600">6 ARENAS</div>
+            <div>
+              <span className="font-heading text-xs uppercase tracking-widest text-purple-400 block mb-2 font-bold">
+                INNOVATION TRACKS
+              </span>
+              <h3 className="font-display text-3xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
+                BUILD REAL PROJECTS
+              </h3>
+              <p className="text-xs text-neutral-300 font-sans leading-relaxed">
+                AI/ML, Web3, FinTech, HealthTech & Open
+              </p>
+            </div>
+            <div className="pt-4 border-t border-[#222222] mt-4">
+              <span className="font-heading text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+                TEAMS OF 2 TO 5 MEMBERS
               </span>
             </div>
           </div>
         </div>
 
         {/* Stats strip */}
-        <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 border-t border-neutral-800 mt-12">
+        <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 border-y border-[#222222] my-12 bg-[#0E0E0E]">
           {statItems.map((item, i) => (
             <div
               key={i}
-              className="gsap-stat-item py-8 px-4 md:px-6 border-r border-neutral-800 last:border-r-0"
+              className="gsap-stat-item py-8 px-6 border-r border-[#222222] last:border-r-0"
             >
-              <div
-                className="text-3xl md:text-4xl font-bold tracking-tight"
-                style={{ fontFamily: 'var(--font-heading)' }}
-              >
-                {item.prefix && <span>{item.prefix}</span>}
+              <div className="font-display text-4xl md:text-5xl text-white tracking-wider">
+                {item.prefix && <span className="text-[#FF3B00]">{item.prefix}</span>}
                 <span data-count={item.value}>0</span>
-                {item.suffix && <span>{item.suffix}</span>}
+                {item.suffix && <span className="text-[#FF3B00]">{item.suffix}</span>}
               </div>
-              <div className="text-[13px] text-neutral-500 mt-1 font-medium">
+              <div className="font-heading text-xs text-neutral-400 mt-2 tracking-widest uppercase font-semibold">
                 {item.label}
               </div>
             </div>
@@ -200,29 +287,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Prizes Section */}
       <PrizesSection />
 
-      {/* Tracks Section */}
-      <div id="tracks-section" className="max-w-7xl mx-auto px-6 lg:px-8 w-full py-24">
+      {/* Innovation Arenas Section — Styled like comic catalog items */}
+      <div id="tracks-section" className="max-w-7xl mx-auto px-6 lg:px-8 w-full py-20 border-t border-[#222222]">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
           <div>
-            <span className="text-[13px] font-mono text-neutral-500 uppercase tracking-wider block mb-3">
-              Innovation Tracks
+            <span className="font-heading text-xs text-[#FF3B00] uppercase tracking-widest block mb-2 font-bold">
+              CATALOG OF INNOVATION ARENAS
             </span>
-            <h2
-              className="text-3xl md:text-5xl font-bold tracking-tight"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              Choose your arena.
+            <h2 className="font-display text-4xl md:text-6xl text-white uppercase tracking-wider">
+              CHOOSE YOUR ARENA.
             </h2>
           </div>
           <button
             onClick={() => onNavigate('schedule')}
-            className="text-[13px] font-medium text-orange-500 hover:text-orange-400 transition-colors cursor-pointer flex items-center gap-1"
+            className="font-heading text-sm text-[#FF3B00] hover:text-[#FF5511] transition-colors cursor-pointer flex items-center gap-1 uppercase tracking-widest font-bold"
           >
-            View judging criteria <ArrowRight className="w-3.5 h-3.5" />
+            VIEW JUDGING CRITERIA &gt;
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-neutral-800">
+        {/* Tracks Comic Catalog Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {HACKATHON_TRACKS.map((track, idx) => {
             const trackCount = stats.trackCounts[track.name] || 0;
             return (
@@ -233,30 +318,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   onSelectTrack(track.name);
                   onNavigate('register');
                 }}
-                className="bg-black p-8 text-left group cursor-pointer transition-colors hover:bg-neutral-950 flex flex-col justify-between min-h-[200px]"
+                className="bg-[#121212] border border-[#262626] p-6 text-left group cursor-pointer transition-all hover:border-[#FF3B00] hover:bg-[#181818] flex flex-col justify-between min-h-[220px] relative overflow-hidden"
               >
+                <div className="tape-strip" />
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-mono text-neutral-600 uppercase">
-                      Track {String(idx + 1).padStart(2, '0')}
+                  <div className="flex items-center justify-between mb-4 border-b border-[#222222] pb-3">
+                    <span className="font-heading text-xs text-[#FF3B00] font-bold uppercase tracking-wider">
+                      ARENA {String(idx + 1).padStart(2, '0')}
                     </span>
-                    <span className="text-[11px] font-mono text-neutral-600">
-                      {trackCount} teams
+                    <span className="font-mono text-xs text-neutral-400 uppercase">
+                      {trackCount} TEAMS
                     </span>
                   </div>
-                  <h3
-                    className="text-lg font-bold text-white group-hover:text-orange-500 transition-colors mb-3"
-                    style={{ fontFamily: 'var(--font-heading)' }}
-                  >
+                  <h3 className="font-display text-2xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
                     {track.name}
                   </h3>
-                  <p className="text-[13px] text-neutral-500 leading-relaxed">
+                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">
                     {track.description}
                   </p>
                 </div>
 
-                <div className="mt-6 flex items-center gap-2 text-[13px] font-medium text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Select track <ArrowRight className="w-3.5 h-3.5" />
+                <div className="mt-6 pt-3 border-t border-[#222222] flex items-center justify-between font-heading text-xs text-[#FF3B00] uppercase tracking-wider font-bold group-hover:translate-x-1 transition-transform">
+                  <span>SELECT THIS ARENA</span>
+                  <span>&gt;</span>
                 </div>
               </button>
             );
@@ -266,3 +350,4 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     </div>
   );
 };
+

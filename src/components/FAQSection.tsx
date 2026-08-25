@@ -82,37 +82,33 @@ export const FAQSection: React.FC = () => {
   }, []);
 
   return (
-    <section id="faq-section" ref={faqRef} className="py-24 border-t border-neutral-800">
+    <section id="faq-section" ref={faqRef} className="py-24 border-t border-[#222222]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
           {/* Left column — heading + contact */}
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-24 space-y-6">
               <div>
-                <span className="text-[13px] font-mono text-neutral-500 uppercase tracking-wider block mb-3">
-                  FAQ
+                <span className="font-heading text-xs text-[#FF3B00] uppercase tracking-widest block mb-2 font-bold">
+                  KNOWLEDGE BASE & FAQ
                 </span>
-                <h2
-                  className="text-3xl md:text-4xl font-bold tracking-tight"
-                  style={{ fontFamily: 'var(--font-heading)' }}
-                >
-                  Frequently asked questions.
+                <h2 className="font-display text-4xl md:text-5xl text-white uppercase tracking-wider">
+                  FREQUENTLY ASKED QUESTIONS.
                 </h2>
               </div>
 
-              <p className="text-[14px] text-neutral-400 leading-relaxed">
-                Everything about registration, venue logistics, 24-hour rules, 
+              <p className="text-xs text-neutral-400 font-sans leading-relaxed">
+                Everything about registration, venue logistics, 18-hour rules, 
                 payment verification, and jury evaluation.
               </p>
 
-              <div className="pt-4">
-                <p className="text-[13px] text-neutral-500 mb-3">Still have questions?</p>
+              <div className="pt-4 border-t border-[#222222]">
+                <p className="font-heading text-xs text-neutral-400 uppercase tracking-widest mb-3">STILL HAVE QUESTIONS?</p>
                 <a
                   href="mailto:dsc.origin@vitbhopal.ac.in"
-                  className="inline-flex items-center gap-2 text-[13px] font-semibold text-orange-500 hover:text-orange-400 transition-colors"
+                  className="inline-flex items-center gap-2 font-heading text-xs font-bold text-[#FF3B00] hover:text-[#FF5511] transition-colors uppercase tracking-widest"
                 >
-                  Contact DSC Support
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  CONTACT DSC SUPPORT &gt;
                 </a>
               </div>
             </div>
@@ -120,36 +116,34 @@ export const FAQSection: React.FC = () => {
 
           {/* Right column — accordion */}
           <div className="lg:col-span-8">
-            <div className="divide-y divide-neutral-800">
+            <div className="divide-y divide-[#222222]">
               {FAQ_ITEMS.map((faq) => {
                 const isOpen = openId === faq.id;
                 return (
-                  <div key={faq.id} className="gsap-faq-item">
+                  <div key={faq.id} className="gsap-faq-item bg-[#141414] border border-[#262626] mb-3 px-6 py-2 transition-all">
                     <button
                       onClick={() => setOpenId(isOpen ? null : faq.id)}
-                      className="w-full py-6 text-left flex items-start justify-between gap-6 cursor-pointer group"
+                      className="w-full py-4 text-left flex items-start justify-between gap-6 cursor-pointer group"
                     >
-                      <span
-                        className={`text-[15px] md:text-[16px] font-bold transition-colors ${
-                          isOpen ? 'text-orange-500' : 'text-white group-hover:text-neutral-300'
+                      <span className={`font-display text-xl md:text-2xl transition-colors ${
+                          isOpen ? 'text-[#FF3B00]' : 'text-white group-hover:text-[#FF3B00]'
                         }`}
-                        style={{ fontFamily: 'var(--font-heading)' }}
                       >
                         {faq.question}
                       </span>
                       <ChevronDown
-                        className={`w-5 h-5 shrink-0 text-neutral-500 transition-transform duration-300 mt-0.5 ${
-                          isOpen ? 'rotate-180' : ''
+                        className={`w-6 h-6 shrink-0 text-neutral-400 transition-transform duration-300 mt-1 ${
+                          isOpen ? 'rotate-180 text-[#FF3B00]' : ''
                         }`}
                       />
                     </button>
 
                     <div
                       className={`overflow-hidden transition-all duration-300 ${
-                        isOpen ? 'max-h-60 pb-6' : 'max-h-0'
+                        isOpen ? 'max-h-60 pb-6 border-t border-[#222222] pt-4' : 'max-h-0'
                       }`}
                     >
-                      <p className="text-[14px] text-neutral-400 leading-relaxed pr-12">
+                      <p className="text-xs text-neutral-300 font-sans leading-relaxed pr-6">
                         {faq.answer}
                       </p>
                     </div>
@@ -163,3 +157,4 @@ export const FAQSection: React.FC = () => {
     </section>
   );
 };
+
