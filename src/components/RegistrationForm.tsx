@@ -95,9 +95,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         body: formData,
       });
 
-      const data = await res.json();
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Server returned non-JSON response (${res.status})`);
+      }
+
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Image upload to Imagekit failed.');
+        throw new Error(data?.message || 'Image upload to Imagekit failed.');
       }
 
       setPaymentProofUrl(data.url);
