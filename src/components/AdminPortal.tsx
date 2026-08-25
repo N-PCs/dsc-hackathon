@@ -27,6 +27,7 @@ import {
   UserPlus,
   LogOut,
   ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { Team, Announcement, TrackType, PaymentStatus, AdminUser } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
@@ -214,132 +215,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   };
 
-  // Handle Requesting Access with Email
-  const handleRequestEmailAccess = async (targetEmail?: string) => {
-    const emailToVerify = (targetEmail || emailInput).trim().toLowerCase();
-    setAuthError('');
-    setAuthSuccessNotice('');
-
-    if (!emailToVerify || !emailToVerify.includes('@')) {
-      setAuthError('Please enter a valid official email address.');
-      return;
-    }
-
-    setIsRequestingOtp(true);
-
-    try {
-      const res = await fetch('/api/admin/auth/request-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailToVerify }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setEmailInput(emailToVerify);
-        setSentOtp(data.demoOtp || '849201');
-        setAuthStep('otp');
-        setAuthSuccessNotice(
-          `Official verification passcode dispatched to ${data.admin.email} (${data.admin.name} • ${data.admin.role}).`
-        );
-      } else {
-        // Check local whitelist if backend failed
-        const localMatch = adminWhitelist.find(
-          (a) => a.email.toLowerCase() === emailToVerify
-        );
-        if (localMatch) {
-          const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-          setEmailInput(emailToVerify);
-          setSentOtp(generatedOtp);
-          setAuthStep('otp');
-          setAuthSuccessNotice(
-            `Verification passcode sent to ${localMatch.email} (${localMatch.name} • ${localMatch.role}).`
-          );
-        } else {
-          setAuthError(
-            `Access Denied: '${emailToVerify}' is not registered in the Origin Admin Roster. Only authorized DSC executive and jury emails are permitted.`
-          );
-        }
-      }
-    } catch (err) {
-      const localMatch = adminWhitelist.find(
-        (a) => a.email.toLowerCase() === emailToVerify
-      );
-      if (localMatch) {
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        setEmailInput(emailToVerify);
-        setSentOtp(generatedOtp);
-        setAuthStep('otp');
-        setAuthSuccessNotice(
-          `Verification passcode sent to ${localMatch.email} (${localMatch.name} • ${localMatch.role}).`
-        );
-      } else {
-        setAuthError(
-          `Access Denied: '${emailToVerify}' is not authorized. Please contact DSC Lead.`
-        );
-      }
-    } finally {
-      setIsRequestingOtp(false);
-    }
-  };
-
   // Direct 1-Click Authorized Sign In for Whitelisted Email
   const handleQuickVerifiedSignIn = (admin: AdminUser) => {
     setCurrentAdmin(admin);
     localStorage.setItem('origin_active_admin', JSON.stringify(admin));
     setAuthError('');
-  };
-
-  // Handle Verify OTP
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanEmail = emailInput.trim().toLowerCase();
-    const cleanOtp = otpInput.trim();
-
-    setAuthError('');
-
-    if (!cleanOtp) {
-      setAuthError('Please enter the 6-digit verification passcode.');
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/admin/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, otp: cleanOtp }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setCurrentAdmin(data.admin);
-        localStorage.setItem('origin_active_admin', JSON.stringify(data.admin));
-      } else if (cleanOtp === sentOtp || cleanOtp === '000000' || cleanOtp === '123456') {
-        const localAdmin = adminWhitelist.find(
-          (a) => a.email.toLowerCase() === cleanEmail
-        );
-        if (localAdmin) {
-          setCurrentAdmin(localAdmin);
-          localStorage.setItem('origin_active_admin', JSON.stringify(localAdmin));
-        } else {
-          setAuthError('Unauthorized admin email.');
-        }
-      } else {
-        setAuthError(data.message || 'Invalid or expired verification passcode.');
-      }
-    } catch (err) {
-      if (cleanOtp === sentOtp || cleanOtp === '000000' || cleanOtp === '123456') {
-        const localAdmin = adminWhitelist.find(
-          (a) => a.email.toLowerCase() === cleanEmail
-        );
-        if (localAdmin) {
-          setCurrentAdmin(localAdmin);
-          localStorage.setItem('origin_active_admin', JSON.stringify(localAdmin));
-        }
-      } else {
-        setAuthError('Invalid verification passcode.');
-      }
-    }
   };
 
   // Admin Sign Out
@@ -422,7 +302,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     window.open('/api/export-excel', '_blank');
   };
 
-  // Export CSV
   const handleExportCsv = () => {
     window.open('/api/export-csv', '_blank');
   };
@@ -497,19 +376,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // ==========================================
   if (!currentAdmin) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16">
-        <div className="bg-[#111114] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden text-center">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 mb-3 shadow-lg">
+      <div className="max-w-xl mx-auto px-4 pt-28 sm:pt-32 pb-16">
+        <div className="bg-black border border-neutral-800 p-6 sm:p-8 space-y-6 shadow-2xl relative text-center">
+          <div className="w-14 h-14 bg-black border border-neutral-800 mx-auto flex items-center justify-center text-orange-500 mb-3">
             <ShieldCheck className="w-7 h-7" />
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[11px] font-bold border border-emerald-500/20">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-400 font-mono text-[11px] font-bold border border-orange-500/30 uppercase tracking-wider">
             <Shield className="w-3.5 h-3.5" />
-            <span>AUTHENTICATED ORGANIZER & JURY CONSOLE</span>
+            <span>AUTHENTICATED ORGANIZER CONSOLE</span>
           </div>
-          <h3 className="text-2xl font-serif font-bold text-white tracking-tight">
+          <h3 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             Origin '26 Executive Admin Console
           </h3>
-          <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
             Please sign in with Clerk using your authorized executive or jury email address to access administrative management tools.
           </p>
 
@@ -518,13 +397,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               appearance={{
                 elements: {
                   rootBox: 'w-full flex justify-center',
-                  card: 'bg-[#18181b] border border-white/10 shadow-2xl text-white rounded-2xl p-6',
-                  headerTitle: 'text-white font-serif font-bold',
-                  headerSubtitle: 'text-zinc-400 text-xs',
-                  socialButtonsBlockButton: 'bg-[#222227] text-white border border-white/10 hover:bg-[#2a2a30]',
-                  formButtonPrimary: 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold',
-                  formFieldInput: 'bg-[#111114] border border-white/10 text-white',
-                  footerActionLink: 'text-emerald-400 hover:text-emerald-300 font-bold',
+                  card: 'bg-black border border-neutral-800 shadow-2xl text-white p-6',
+                  headerTitle: 'text-white font-bold',
+                  headerSubtitle: 'text-neutral-400 text-xs',
+                  socialButtonsBlockButton: 'bg-black text-white border border-neutral-800 hover:bg-neutral-900',
+                  formButtonPrimary: 'bg-orange-600 hover:bg-orange-500 text-white font-mono uppercase tracking-wider font-bold border border-orange-500',
+                  formFieldInput: 'bg-black border border-neutral-800 text-white font-mono text-xs',
+                  footerActionLink: 'text-orange-400 hover:text-orange-300 font-mono font-bold',
                 },
               }}
             />
@@ -540,33 +419,32 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const totalTeams = teams.length;
   const verifiedTeams = teams.filter((t) => t.paymentStatus === 'verified').length;
   const pendingTeams = teams.filter((t) => t.paymentStatus === 'pending').length;
-  const checkedInVenue = teams.filter((t) => t.checkedInVenue).length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 space-y-8">
       {/* Top Banner with Logged-in Admin Identity */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-white/10 gap-4">
+      <div className="bg-black border border-neutral-800 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider">
-              OPERATIONS & JURY CONSOLE
+            <span className="text-xs font-mono text-orange-400 font-bold uppercase tracking-wider">
+              OPERATIONS COMMAND CONSOLE
             </span>
-            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">
+            <span className="px-2.5 py-0.5 bg-orange-500/10 text-orange-400 text-[10px] font-mono font-bold border border-orange-500/30 uppercase tracking-wider">
               {currentAdmin.role.toUpperCase()}
             </span>
-            <span className="px-2 py-0.5 rounded bg-white/5 text-zinc-300 text-[10px] font-mono border border-white/10 hidden sm:inline">
+            <span className="px-2.5 py-0.5 bg-black text-neutral-400 text-[10px] font-mono border border-neutral-800 hidden sm:inline uppercase">
               {currentAdmin.department || 'Data Science Club'}
             </span>
           </div>
-          <h2 className="text-3xl font-serif font-bold text-white mt-1">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mt-2" style={{ fontFamily: 'var(--font-heading)' }}>
             Origin Overnight Command Hub
           </h2>
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1 font-mono">
-            <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+          <div className="flex items-center gap-2 text-xs text-neutral-400 mt-1 font-mono">
+            <span className="text-orange-400 flex items-center gap-1 font-semibold">
               <UserCheck className="w-3.5 h-3.5" /> {currentAdmin.name}
             </span>
             <span>•</span>
-            <span className="text-zinc-300">{currentAdmin.email}</span>
+            <span className="text-neutral-300">{currentAdmin.email}</span>
           </div>
         </div>
 
@@ -575,10 +453,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             id="admin-btn-toggle-submissions"
             onClick={handleToggleSubmissions}
             disabled={isTogglingSubmissions}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer border ${
+            className={`px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer border ${
               isSubmissionsOpen
-                ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 border-emerald-400/50'
-                : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/40'
+                ? 'bg-orange-600 hover:bg-orange-500 text-white border-orange-500'
+                : 'bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border-rose-800'
             }`}
           >
             <Lock className="w-4 h-4" />
@@ -594,24 +472,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <button
             id="admin-btn-export-excel"
             onClick={handleExportExcel}
-            className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            className="px-4 py-2.5 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Export Excel (.xlsx)</span>
+            <FileSpreadsheet className="w-4 h-4 text-orange-500" />
+            <span>Export Excel</span>
           </button>
 
           <button
             id="admin-btn-export-csv"
             onClick={handleExportCsv}
-            className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            className="px-4 py-2.5 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4" />
+            <FileSpreadsheet className="w-4 h-4 text-orange-500" />
             <span>Export CSV</span>
           </button>
 
           <button
             onClick={handleSignOut}
-            className="px-3.5 py-2.5 rounded-xl bg-[#18181b] hover:bg-[#222227] border border-white/10 text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2.5 bg-black hover:bg-neutral-900 border border-neutral-800 text-rose-400 font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
             title="Sign out from this admin session"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -620,85 +498,85 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
-      {/* Admin Stats Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 bg-[#111114] border border-white/10 rounded-2xl">
-          <span className="text-xs text-zinc-400 font-medium">Total Registered</span>
-          <div className="text-2xl font-bold text-white font-mono mt-1">{totalTeams}</div>
+      {/* Admin Stats Bar — Dark Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-800 border border-neutral-800">
+        <div className="bg-black p-5">
+          <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Total Teams</span>
+          <div className="text-3xl font-extrabold text-white font-mono">{totalTeams}</div>
         </div>
-        <div className="p-4 bg-[#111114] border border-white/10 rounded-2xl">
-          <span className="text-xs text-emerald-400 font-medium">Verified ID Badges</span>
-          <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">{verifiedTeams}</div>
+        <div className="bg-black p-5">
+          <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Verified Badges</span>
+          <div className="text-3xl font-extrabold text-orange-500 font-mono">{verifiedTeams}</div>
         </div>
-        <div className="p-4 bg-[#111114] border border-white/10 rounded-2xl">
-          <span className="text-xs text-amber-400 font-medium">Pending Verification</span>
-          <div className="text-2xl font-bold text-amber-400 font-mono mt-1">{pendingTeams}</div>
+        <div className="bg-black p-5">
+          <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Pending Verification</span>
+          <div className="text-3xl font-extrabold text-amber-500 font-mono">{pendingTeams}</div>
         </div>
-        <div className="p-4 bg-[#111114] border border-white/10 rounded-2xl">
-          <span className="text-xs text-teal-400 font-medium">Projects Submitted</span>
-          <div className="text-2xl font-bold text-teal-300 font-mono mt-1">{submittedTeams.length}</div>
+        <div className="bg-black p-5">
+          <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Submissions</span>
+          <div className="text-3xl font-extrabold text-orange-400 font-mono">{submittedTeams.length}</div>
         </div>
       </div>
 
       {/* Navigation Subtabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto text-xs font-semibold">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-neutral-800">
         <button
           onClick={() => setAdminTab('teams')}
-          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+          className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold cursor-pointer transition-colors border ${
             adminTab === 'teams'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-orange-600 text-white border-orange-500'
+              : 'bg-black text-neutral-400 border-neutral-800 hover:text-white'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Teams & Payments ({teams.length})</span>
+          <Users className="w-4 h-4 inline mr-1.5" />
+          <span>Teams ({teams.length})</span>
         </button>
 
         <button
           onClick={() => setAdminTab('submissions')}
-          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+          className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold cursor-pointer transition-colors border ${
             adminTab === 'submissions'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-orange-600 text-white border-orange-500'
+              : 'bg-black text-neutral-400 border-neutral-800 hover:text-white'
           }`}
         >
-          <Layers className="w-4 h-4" />
+          <Layers className="w-4 h-4 inline mr-1.5" />
           <span>24H Submissions ({submittedTeams.length})</span>
         </button>
 
         <button
           onClick={() => setAdminTab('leaderboard')}
-          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+          className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold cursor-pointer transition-colors border ${
             adminTab === 'leaderboard'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-orange-600 text-white border-orange-500'
+              : 'bg-black text-neutral-400 border-neutral-800 hover:text-white'
           }`}
         >
-          <Award className="w-4 h-4" />
+          <Award className="w-4 h-4 inline mr-1.5" />
           <span>Jury Leaderboard</span>
         </button>
 
         <button
           onClick={() => setAdminTab('broadcast')}
-          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+          className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold cursor-pointer transition-colors border ${
             adminTab === 'broadcast'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-orange-600 text-white border-orange-500'
+              : 'bg-black text-neutral-400 border-neutral-800 hover:text-white'
           }`}
         >
-          <Radio className="w-4 h-4" />
+          <Radio className="w-4 h-4 inline mr-1.5" />
           <span>Live Broadcasts</span>
         </button>
 
         <button
           onClick={() => setAdminTab('access')}
-          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+          className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold cursor-pointer transition-colors border ${
             adminTab === 'access'
-              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-orange-600 text-white border-orange-500'
+              : 'bg-black text-neutral-400 border-neutral-800 hover:text-white'
           }`}
         >
-          <ShieldCheck className="w-4 h-4" />
+          <ShieldCheck className="w-4 h-4 inline mr-1.5" />
           <span>Admin Whitelist ({adminWhitelist.length})</span>
         </button>
       </div>
@@ -707,15 +585,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {adminTab === 'teams' && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#111114] p-3 rounded-2xl border border-white/10">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-black p-4 border border-neutral-800">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
               <input
                 type="text"
                 placeholder="Search Team ID, Team Name, Leader Name, Email, UTR..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#18181b] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder-zinc-500"
+                className="w-full bg-black border border-neutral-800 pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono placeholder:text-neutral-600"
               />
             </div>
 
@@ -723,7 +601,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none"
+                className="bg-black border border-neutral-800 px-3 py-2 text-xs text-white font-mono focus:border-orange-500 outline-none"
               >
                 <option value="all">All Statuses</option>
                 <option value="verified">Verified Only</option>
@@ -734,7 +612,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <select
                 value={trackFilter}
                 onChange={(e) => setTrackFilter(e.target.value)}
-                className="bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none"
+                className="bg-black border border-neutral-800 px-3 py-2 text-xs text-white font-mono focus:border-orange-500 outline-none"
               >
                 <option value="all">All Tracks</option>
                 {HACKATHON_TRACKS.map((t, idx) => (
@@ -746,10 +624,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
           </div>
 
-          {/* Table */}
-          <div className="bg-[#111114] border border-white/10 rounded-2xl overflow-x-auto">
+          {/* Table Container */}
+          <div className="bg-black border border-neutral-800 overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#18181b] text-zinc-400 font-mono uppercase text-[10px] border-b border-white/10">
+              <thead className="bg-neutral-900 text-neutral-500 font-mono uppercase text-[11px] tracking-wider border-b border-neutral-800">
                 <tr>
                   <th className="p-3.5">Team & ID</th>
                   <th className="p-3.5">Track</th>
@@ -760,39 +638,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-neutral-900 font-mono">
                 {filteredTeams.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-zinc-500 font-mono">
+                    <td colSpan={7} className="p-8 text-center text-neutral-500 font-mono">
                       No teams match the filter criteria.
                     </td>
                   </tr>
                 ) : (
                   filteredTeams.map((team) => (
-                    <tr key={team.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={team.id} className="hover:bg-neutral-950 transition-colors text-neutral-300">
                       <td className="p-3.5">
                         <div className="font-bold text-white">{team.teamName}</div>
-                        <div className="font-mono text-[10px] text-emerald-400">{team.id}</div>
+                        <div className="font-mono text-[10px] text-orange-500">{team.id}</div>
                       </td>
 
                       <td className="p-3.5">
-                        <span className="px-2 py-0.5 rounded bg-white/5 text-zinc-300 font-mono text-[10px] border border-white/10 whitespace-nowrap">
+                        <span className="px-2 py-0.5 bg-black text-neutral-400 font-mono text-[10px] border border-neutral-800 uppercase">
                           {team.track}
                         </span>
                       </td>
 
                       <td className="p-3.5">
-                        <div className="text-zinc-200 font-medium">{team.leader.name}</div>
-                        <div className="text-[11px] text-zinc-400 font-mono">{team.leader.email}</div>
-                        <div className="text-[10px] text-zinc-500 font-mono">{team.leader.phone}</div>
+                        <div className="text-white font-medium">{team.leader.name}</div>
+                        <div className="text-[11px] text-neutral-400 font-mono">{team.leader.email}</div>
+                        <div className="text-[10px] text-neutral-500 font-mono">{team.leader.phone}</div>
                       </td>
 
                       <td className="p-3.5">
-                        <div className="font-mono text-zinc-300">{team.transactionRef}</div>
+                        <div className="font-mono text-neutral-300">{team.transactionRef}</div>
                         {team.paymentProofUrl && (
                           <button
                             onClick={() => setSelectedProofTeam(team)}
-                            className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1 mt-0.5 cursor-pointer"
+                            className="text-[10px] text-orange-400 hover:underline flex items-center gap-1 mt-0.5 cursor-pointer uppercase tracking-wider"
                           >
                             <Eye className="w-3 h-3" /> View Screenshot
                           </button>
@@ -801,15 +679,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <td className="p-3.5">
                         {team.paymentStatus === 'verified' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-400 font-mono text-[10px] font-bold border border-orange-500/30 uppercase tracking-wider">
                             <CheckCircle className="w-3 h-3" /> Verified
                           </span>
                         ) : team.paymentStatus === 'pending' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-mono text-[10px] font-bold border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 font-mono text-[10px] font-bold border border-amber-500/30 uppercase tracking-wider">
                             <Clock className="w-3 h-3" /> Pending Review
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-mono text-[10px] font-bold border border-rose-500/20">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 text-rose-400 font-mono text-[10px] font-bold border border-rose-500/30 uppercase tracking-wider">
                             <XCircle className="w-3 h-3" /> Rejected
                           </span>
                         )}
@@ -824,7 +702,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                               checkedInVenue: e.target.checked,
                             })
                           }
-                          className="rounded bg-[#18181b] border-zinc-700 text-emerald-500 focus:ring-0 cursor-pointer"
+                          className="bg-black border-neutral-800 text-orange-500 focus:ring-0 cursor-pointer"
                         />
                       </td>
 
@@ -837,7 +715,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                 ticketIssued: true,
                               })
                             }
-                            className="px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-zinc-950 font-bold text-[10px] transition-all cursor-pointer"
+                            className="px-2.5 py-1 bg-orange-600 hover:bg-orange-500 text-white font-mono font-bold text-[10px] uppercase tracking-wider cursor-pointer border border-orange-500"
                             title="Verify payment and issue pass"
                           >
                             Approve
@@ -851,7 +729,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                 paymentStatus: 'rejected',
                               })
                             }
-                            className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white text-[10px] transition-all cursor-pointer"
+                            className="px-2.5 py-1 bg-black border border-neutral-800 hover:bg-rose-950 text-rose-400 font-mono font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-colors"
                             title="Reject payment"
                           >
                             Reject
@@ -864,7 +742,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                               onDeleteTeam(team.id);
                             }
                           }}
-                          className="p-1 text-zinc-500 hover:text-rose-400 cursor-pointer"
+                          className="p-1 text-neutral-500 hover:text-rose-400 cursor-pointer"
                           title="Delete team"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -882,12 +760,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* TAB 2: 24-HOUR PROJECT SUBMISSIONS */}
       {adminTab === 'submissions' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-neutral-800 border border-neutral-800">
             {submittedTeams.length === 0 ? (
-              <div className="col-span-3 py-16 text-center text-zinc-500 bg-[#111114] border border-white/10 rounded-3xl">
-                <FileText className="w-10 h-10 mx-auto text-zinc-600 mb-2" />
-                <div className="font-bold text-white">No 24H Project Submissions Yet</div>
-                <p className="text-xs text-zinc-400 mt-1">Teams will submit deliverables during the sprint.</p>
+              <div className="col-span-3 py-16 text-center text-neutral-500 bg-black">
+                <FileText className="w-10 h-10 mx-auto text-neutral-600 mb-2" />
+                <div className="font-bold text-white font-mono">No 24H Project Submissions Yet</div>
+                <p className="text-xs text-neutral-400 mt-1 font-mono">Teams will submit deliverables during the sprint.</p>
               </div>
             ) : (
               submittedTeams.map((team) => {
@@ -897,33 +775,33 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 return (
                   <div
                     key={team.id}
-                    className="bg-[#111114] border border-white/10 rounded-2xl p-5 space-y-4 hover:border-emerald-500/30 transition-all flex flex-col justify-between"
+                    className="bg-black p-6 space-y-4 hover:bg-neutral-950 transition-colors flex flex-col justify-between"
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="font-mono text-[10px] text-orange-400 font-bold px-2 py-0.5 bg-orange-500/10 border border-orange-500/30 uppercase tracking-wider">
                           {team.id}
                         </span>
                         {isScored ? (
-                          <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                          <span className="font-mono text-xs font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 border border-orange-500/30">
                             Score: {proj.score?.total}/100
                           </span>
                         ) : (
-                          <span className="font-mono text-[10px] text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/20">
+                          <span className="font-mono text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 border border-amber-500/30 uppercase tracking-wider">
                             Pending Evaluation
                           </span>
                         )}
                       </div>
 
-                      <h4 className="text-base font-serif font-bold text-white">{proj.title}</h4>
-                      <p className="text-xs text-zinc-400 italic">{proj.tagline || 'No tagline provided'}</p>
-                      <p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">{proj.solutionDescription}</p>
+                      <h4 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>{proj.title}</h4>
+                      <p className="text-xs text-neutral-400 italic">{proj.tagline || 'No tagline provided'}</p>
+                      <p className="text-xs text-neutral-300 line-clamp-3 leading-relaxed">{proj.solutionDescription}</p>
 
-                      <div className="flex flex-wrap gap-1 pt-1">
+                      <div className="flex flex-wrap gap-1 pt-1 font-mono">
                         {proj.techStack?.map((t, idx) => (
                           <span
                             key={idx}
-                            className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#18181b] border border-white/10 text-zinc-400"
+                            className="text-[10px] px-2 py-0.5 bg-black border border-neutral-800 text-neutral-400"
                           >
                             {t}
                           </span>
@@ -931,13 +809,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t border-white/10 space-y-3">
+                    <div className="pt-3 border-t border-neutral-900 space-y-3 font-mono">
                       <div className="flex items-center justify-between text-xs">
                         <a
                           href={proj.githubUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-emerald-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                          className="text-orange-500 hover:underline flex items-center gap-1 text-[11px]"
                         >
                           <Github className="w-3.5 h-3.5" /> Repository &rarr;
                         </a>
@@ -947,7 +825,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             href={proj.deploymentUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-teal-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                            className="text-emerald-400 hover:underline flex items-center gap-1 text-[11px]"
                           >
                             <Globe className="w-3.5 h-3.5" /> Live Demo &rarr;
                           </a>
@@ -956,7 +834,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <button
                         onClick={() => handleOpenScoreModal(team)}
-                        className="w-full py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-zinc-950 font-bold text-xs border border-emerald-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs uppercase tracking-wider border border-orange-500 transition-colors flex items-center justify-center gap-1.5 cursor-pointer font-mono"
                       >
                         <Award className="w-3.5 h-3.5" />
                         <span>{isScored ? 'Update Jury Score' : 'Grade / Evaluate Project'}</span>
@@ -973,9 +851,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* TAB 3: JURY LEADERBOARD */}
       {adminTab === 'leaderboard' && (
         <div className="space-y-4">
-          <div className="bg-[#111114] border border-white/10 rounded-2xl overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#18181b] text-zinc-400 font-mono uppercase text-[10px] border-b border-white/10">
+          <div className="bg-black border border-neutral-800 overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-neutral-900 text-neutral-500 uppercase text-[11px] tracking-wider border-b border-neutral-800">
                 <tr>
                   <th className="p-3.5">Rank</th>
                   <th className="p-3.5">Project & Team</th>
@@ -988,10 +866,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <th className="p-3.5 font-bold text-right">Total Score</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 font-mono">
+              <tbody className="divide-y divide-neutral-900">
                 {leaderboardTeams.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-zinc-500 font-mono">
+                    <td colSpan={9} className="p-8 text-center text-neutral-500">
                       No evaluated submissions available for the leaderboard yet.
                     </td>
                   </tr>
@@ -1000,49 +878,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     const score = team.project?.score;
 
                     return (
-                      <tr
-                        key={team.id}
-                        className={`hover:bg-white/[0.02] transition-colors ${
-                          idx === 0
-                            ? 'bg-amber-500/[0.03]'
-                            : idx === 1
-                            ? 'bg-zinc-400/[0.03]'
-                            : idx === 2
-                            ? 'bg-amber-700/[0.03]'
-                            : ''
-                        }`}
-                      >
+                      <tr key={team.id} className="hover:bg-neutral-950 transition-colors text-neutral-300">
                         <td className="p-3.5 font-bold">
-                          <span
-                            className={`w-6 h-6 rounded-full inline-flex items-center justify-center text-xs ${
-                              idx === 0
-                                ? 'bg-amber-400 text-zinc-950 shadow-md shadow-amber-400/20'
-                                : idx === 1
-                                ? 'bg-zinc-300 text-zinc-950'
-                                : idx === 2
-                                ? 'bg-amber-700 text-white'
-                                : 'text-zinc-400'
-                            }`}
-                          >
-                            {idx + 1}
+                          <span className="w-6 h-6 inline-flex items-center justify-center text-xs font-mono text-orange-400 bg-orange-500/10 border border-orange-500/30">
+                            #{idx + 1}
                           </span>
                         </td>
 
                         <td className="p-3.5">
-                          <div className="font-serif font-bold text-white text-sm">{team.project?.title}</div>
-                          <div className="text-[11px] text-zinc-400 font-sans">
+                          <div className="font-bold text-white text-sm" style={{ fontFamily: 'var(--font-heading)' }}>{team.project?.title}</div>
+                          <div className="text-[11px] text-neutral-400 font-mono">
                             {team.teamName} ({team.id})
                           </div>
                         </td>
 
-                        <td className="p-3.5 text-zinc-300">{team.track}</td>
-                        <td className="p-3.5 text-zinc-400">{score ? `${score.innovation}/20` : '-'}</td>
-                        <td className="p-3.5 text-zinc-400">{score ? `${score.technicalComplexity}/20` : '-'}</td>
-                        <td className="p-3.5 text-zinc-400">{score ? `${score.uiUx}/20` : '-'}</td>
-                        <td className="p-3.5 text-zinc-400">{score ? `${score.presentation}/20` : '-'}</td>
-                        <td className="p-3.5 text-zinc-400">{score ? `${score.impact}/20` : '-'}</td>
+                        <td className="p-3.5 text-neutral-300">{team.track}</td>
+                        <td className="p-3.5 text-neutral-400">{score ? `${score.innovation}/20` : '-'}</td>
+                        <td className="p-3.5 text-neutral-400">{score ? `${score.technicalComplexity}/20` : '-'}</td>
+                        <td className="p-3.5 text-neutral-400">{score ? `${score.uiUx}/20` : '-'}</td>
+                        <td className="p-3.5 text-neutral-400">{score ? `${score.presentation}/20` : '-'}</td>
+                        <td className="p-3.5 text-neutral-400">{score ? `${score.impact}/20` : '-'}</td>
 
-                        <td className="p-3.5 text-right font-bold text-base text-emerald-400">
+                        <td className="p-3.5 text-right font-bold text-base text-orange-400">
                           {score ? `${score.total}/100` : 'Unscored'}
                         </td>
                       </tr>
@@ -1058,31 +915,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* TAB 4: BROADCAST LIVE ANNOUNCEMENTS */}
       {adminTab === 'broadcast' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-6 bg-[#111114] border border-white/10 rounded-3xl p-6 sm:p-7 space-y-5">
+          <div className="lg:col-span-6 bg-black border border-neutral-800 p-6 sm:p-8 space-y-5">
             <div>
-              <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                <Radio className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                <Radio className="w-5 h-5 text-orange-500" />
                 <span>Send Real-Time Broadcast</span>
               </h3>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-neutral-400 mt-1 font-mono">
                 Dispatches immediately to the live ticker banner across all participant screens.
               </p>
             </div>
 
             {annSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-mono flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" />
                 <span>Broadcast message dispatched live!</span>
               </div>
             )}
 
-            <form onSubmit={handleBroadcastSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handleBroadcastSubmit} className="space-y-4 text-xs font-mono">
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Alert Category</label>
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Alert Category</label>
                 <select
                   value={annCategory}
                   onChange={(e) => setAnnCategory(e.target.value as any)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white focus:outline-none focus:border-orange-500 font-mono"
                 >
                   <option value="urgent">🚨 Urgent / Crucial Milestone</option>
                   <option value="schedule">⏰ Schedule & Deadline Alert</option>
@@ -1093,32 +950,32 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Headline</label>
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Headline</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Code Freeze in 60 Minutes!"
                   value={annTitle}
                   onChange={(e) => setAnnTitle(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white focus:outline-none focus:border-orange-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Broadcast Details</label>
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Broadcast Details</label>
                 <textarea
                   rows={3}
                   required
                   placeholder="All teams must commit repository branches and finalize demo URLs..."
                   value={annMessage}
                   onChange={(e) => setAnnMessage(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl p-3 text-white resize-none focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white resize-none focus:outline-none focus:border-orange-500 font-mono"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold font-mono text-xs uppercase tracking-wider border border-orange-500 flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>Publish Broadcast Alert</span>
@@ -1128,18 +985,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
           {/* Previous announcements stream */}
           <div className="lg:col-span-6 space-y-3">
-            <h4 className="text-sm font-serif font-bold text-white mb-2">Live Announcement Feed</h4>
+            <h4 className="text-sm font-bold text-white mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Live Announcement Feed</h4>
             {announcements.map((ann) => (
               <div
                 key={ann.id}
-                className="p-4 bg-[#111114] border border-white/10 rounded-xl space-y-1.5"
+                className="p-4 bg-black border border-neutral-800 space-y-1.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">{ann.title}</span>
-                  <span className="text-[10px] font-mono text-zinc-500">{ann.timestamp}</span>
+                  <span className="text-xs font-bold text-white font-mono">{ann.title}</span>
+                  <span className="text-[10px] font-mono text-neutral-500">{ann.timestamp}</span>
                 </div>
-                <p className="text-xs text-zinc-400 leading-relaxed">{ann.message}</p>
-                <span className="text-[10px] font-mono text-emerald-400 block pt-1">
+                <p className="text-xs text-neutral-400 leading-relaxed">{ann.message}</p>
+                <span className="text-[10px] font-mono text-orange-400 block pt-1">
                   Sent by: {ann.sender}
                 </span>
               </div>
@@ -1152,56 +1009,56 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {adminTab === 'access' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Whitelist Directory */}
-          <div className="lg:col-span-7 bg-[#111114] border border-white/10 rounded-3xl p-6 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="lg:col-span-7 bg-black border border-neutral-800 p-6 sm:p-8 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div>
-                <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <ShieldCheck className="w-5 h-5 text-orange-500" />
                   <span>Authorized Email Whitelist</span>
                 </h3>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-neutral-400 mt-1 font-mono">
                   Only email addresses listed here can access the Admin Console and Jury Evaluation sheets.
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+              <span className="text-xs font-mono font-bold text-orange-400 bg-orange-500/10 px-2.5 py-1 border border-orange-500/30 uppercase tracking-wider">
                 {adminWhitelist.length} Admins
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 font-mono">
               {adminWhitelist.map((admin) => {
                 const isSelf = currentAdmin.email.toLowerCase() === admin.email.toLowerCase();
 
                 return (
                   <div
                     key={admin.email}
-                    className="p-4 bg-[#18181b] border border-white/10 rounded-2xl flex items-center justify-between gap-4"
+                    className="p-4 bg-black border border-neutral-800 flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-mono text-sm font-bold shrink-0">
+                      <div className="w-9 h-9 bg-black border border-neutral-800 flex items-center justify-center text-orange-500 font-mono text-sm font-bold shrink-0">
                         {admin.name.charAt(0)}
                       </div>
                       <div className="truncate">
                         <div className="text-xs font-bold text-white flex items-center gap-2">
                           <span>{admin.name}</span>
                           {isSelf && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                            <span className="text-[9px] px-1.5 py-0.2 bg-orange-500/10 text-orange-400 font-mono font-bold border border-orange-500/30">
                               YOU
                             </span>
                           )}
-                          <span className="text-[10px] px-2 py-0.2 rounded bg-white/5 text-zinc-300 font-mono border border-white/10">
+                          <span className="text-[10px] px-2 py-0.2 bg-black text-neutral-400 font-mono border border-neutral-800 uppercase">
                             {admin.role}
                           </span>
                         </div>
-                        <div className="text-xs font-mono text-zinc-400 truncate">{admin.email}</div>
-                        <div className="text-[10px] text-zinc-500">{admin.department || 'Data Science Club'}</div>
+                        <div className="text-xs font-mono text-neutral-400 truncate">{admin.email}</div>
+                        <div className="text-[10px] text-neutral-500">{admin.department || 'Data Science Club'}</div>
                       </div>
                     </div>
 
                     {!isSelf && (
                       <button
                         onClick={() => handleRemoveAdmin(admin.email)}
-                        className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer"
                         title="Revoke Admin Access"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1214,19 +1071,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
 
           {/* Add New Authorized Admin Form */}
-          <div className="lg:col-span-5 bg-[#111114] border border-white/10 rounded-3xl p-6 space-y-5">
+          <div className="lg:col-span-5 bg-black border border-neutral-800 p-6 sm:p-8 space-y-5 font-mono">
             <div>
-              <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                <UserPlus className="w-5 h-5 text-orange-500" />
                 <span>Authorize New Email</span>
               </h3>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-neutral-400 mt-1 font-mono">
                 Grant executive council or jury evaluation privileges to an official email.
               </p>
             </div>
 
             {addAdminSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs flex items-center gap-2 font-mono">
                 <CheckCircle className="w-4 h-4" />
                 <span>{addAdminSuccess}</span>
               </div>
@@ -1234,35 +1091,35 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
             <form onSubmit={handleAddNewAdmin} className="space-y-4 text-xs">
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Official Email Address *</label>
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Official Email Address *</label>
                 <input
                   type="email"
                   required
                   placeholder="e.g. mentor.ai@vitbhopal.ac.in"
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Full Name *</label>
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Full Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Prof. Priya Sharma"
                   value={newAdminName}
                   onChange={(e) => setNewAdminName(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Administrative Role</label>
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Administrative Role</label>
                 <select
                   value={newAdminRole}
                   onChange={(e) => setNewAdminRole(e.target.value as any)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
                 >
                   <option value="Lead Organizer">Lead Organizer (DSC Core)</option>
                   <option value="Jury Chair">Jury Member / Evaluator</option>
@@ -1273,19 +1130,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Department / Organization</label>
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Department / Organization</label>
                 <input
                   type="text"
                   placeholder="e.g. Data Science Club or Dept of AI"
                   value={newAdminDept}
                   onChange={(e) => setNewAdminDept(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold font-mono text-xs uppercase tracking-wider border border-orange-500 flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Email to Authorized Whitelist</span>
@@ -1298,44 +1155,44 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* POPUP 1: PAYMENT PROOF SCREENSHOT VIEWER MODAL */}
       {selectedProofTeam && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#111114] border border-white/10 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="bg-black border border-neutral-800 max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div>
-                <h4 className="text-base font-serif font-bold text-white">Payment Screenshot & UTR</h4>
-                <p className="text-xs text-zinc-400">
+                <h4 className="text-base font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>Payment Screenshot & UTR</h4>
+                <p className="text-xs text-neutral-400 font-mono mt-0.5">
                   {selectedProofTeam.teamName} ({selectedProofTeam.id})
                 </p>
               </div>
               <button
                 onClick={() => setSelectedProofTeam(null)}
-                className="text-zinc-400 hover:text-white text-xs p-1 cursor-pointer"
+                className="text-neutral-400 hover:text-white text-xs px-3 py-1 bg-black border border-neutral-800 cursor-pointer font-mono uppercase"
               >
                 ✕ Close
               </button>
             </div>
 
-            <div className="bg-[#18181b] p-3 rounded-xl text-xs font-mono space-y-1 border border-white/10">
+            <div className="bg-black p-3 text-xs font-mono space-y-1 border border-neutral-800">
               <div>
-                Transaction Ref: <span className="text-emerald-400 font-bold">{selectedProofTeam.transactionRef}</span>
+                Transaction Ref: <span className="text-orange-400 font-bold">{selectedProofTeam.transactionRef}</span>
               </div>
               <div>Leader: {selectedProofTeam.leader.name} ({selectedProofTeam.leader.phone})</div>
             </div>
 
             {selectedProofTeam.paymentProofUrl ? (
-              <div className="max-h-72 overflow-auto rounded-xl border border-white/10 flex justify-center bg-black/40 p-2">
+              <div className="max-h-72 overflow-auto border border-neutral-800 flex justify-center bg-black p-2">
                 <img
                   src={selectedProofTeam.paymentProofUrl}
                   alt="Payment Proof"
-                  className="max-h-64 object-contain rounded-lg"
+                  className="max-h-64 object-contain"
                 />
               </div>
             ) : (
-              <div className="py-8 text-center text-zinc-500 text-xs">
+              <div className="py-8 text-center text-neutral-500 text-xs font-mono">
                 No screenshot file was uploaded. Verified via direct UTR ref.
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-2 font-mono">
               <button
                 onClick={() => {
                   onUpdateTeamStatus(selectedProofTeam.id, {
@@ -1343,7 +1200,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   });
                   setSelectedProofTeam(null);
                 }}
-                className="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 rounded-xl text-xs font-bold cursor-pointer"
+                className="px-4 py-2 bg-black border border-neutral-800 hover:bg-rose-950 text-rose-400 text-xs font-bold uppercase cursor-pointer"
               >
                 Reject Proof
               </button>
@@ -1356,7 +1213,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   });
                   setSelectedProofTeam(null);
                 }}
-                className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white border border-orange-500 text-xs font-bold uppercase tracking-wider cursor-pointer"
               >
                 Approve & Issue ID Badge
               </button>
@@ -1368,27 +1225,27 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* POPUP 2: JURY RUBRIC SCORING MODAL */}
       {selectedScoringTeam && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#111114] border border-white/10 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="bg-black border border-neutral-800 max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div>
-                <h4 className="text-base font-serif font-bold text-white">Jury Evaluation Sheet</h4>
-                <p className="text-xs text-zinc-400">
+                <h4 className="text-base font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>Jury Evaluation Sheet</h4>
+                <p className="text-xs text-neutral-400 font-mono mt-0.5">
                   {selectedScoringTeam.project?.title} • {selectedScoringTeam.teamName}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedScoringTeam(null)}
-                className="text-zinc-400 hover:text-white text-xs p-1 cursor-pointer"
+                className="text-neutral-400 hover:text-white text-xs px-3 py-1 bg-black border border-neutral-800 cursor-pointer font-mono uppercase"
               >
                 ✕ Close
               </button>
             </div>
 
-            <form onSubmit={handleSaveScore} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveScore} className="space-y-4 text-xs font-mono">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-300 font-semibold mb-1">
-                    Innovation & Concept (/20)
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
+                    Innovation (/20)
                   </label>
                   <input
                     type="number"
@@ -1396,13 +1253,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     max="20"
                     value={scores.innovation}
                     onChange={(e) => setScores({ ...scores, innovation: Number(e.target.value) })}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-300 font-semibold mb-1">
-                    Technical Depth (/20)
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
+                    Tech Depth (/20)
                   </label>
                   <input
                     type="number"
@@ -1410,13 +1267,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     max="20"
                     value={scores.technicalComplexity}
                     onChange={(e) => setScores({ ...scores, technicalComplexity: Number(e.target.value) })}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-300 font-semibold mb-1">
-                    UI/UX & Execution (/20)
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
+                    UI/UX (/20)
                   </label>
                   <input
                     type="number"
@@ -1424,13 +1281,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     max="20"
                     value={scores.uiUx}
                     onChange={(e) => setScores({ ...scores, uiUx: Number(e.target.value) })}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-300 font-semibold mb-1">
-                    Presentation & Pitch (/20)
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
+                    Presentation (/20)
                   </label>
                   <input
                     type="number"
@@ -1438,14 +1295,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     max="20"
                     value={scores.presentation}
                     onChange={(e) => setScores({ ...scores, presentation: Number(e.target.value) })}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">
-                  Practical Impact & Feasibility (/20)
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
+                  Impact & Feasibility (/20)
                 </label>
                 <input
                   type="number"
@@ -1453,12 +1310,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   max="20"
                   value={scores.impact}
                   onChange={(e) => setScores({ ...scores, impact: Number(e.target.value) })}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-lg p-2 text-white font-mono"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-300 font-semibold mb-1">
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
                   Jury Feedback / Recommendations
                 </label>
                 <textarea
@@ -1466,28 +1323,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   value={scores.feedback}
                   onChange={(e) => setScores({ ...scores, feedback: e.target.value })}
                   placeholder="Outstanding work on the model quantization..."
-                  className="w-full bg-[#18181b] border border-white/10 rounded-lg p-2 text-white resize-none placeholder-zinc-500"
+                  className="w-full bg-black border border-neutral-800 p-2.5 text-white resize-none placeholder:text-neutral-600 focus:border-orange-500 outline-none"
                 />
               </div>
 
-              <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between font-mono">
-                <span className="text-emerald-300 font-bold">TOTAL SCORE:</span>
+              <div className="p-3.5 bg-orange-500/10 border border-orange-500/30 flex items-center justify-between font-mono">
+                <span className="text-orange-400 font-bold uppercase tracking-wider text-[11px]">TOTAL SCORE:</span>
                 <span className="text-base font-extrabold text-white">
                   {scores.innovation + scores.technicalComplexity + scores.uiUx + scores.presentation + scores.impact} / 100
                 </span>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-3 pt-2 font-mono">
                 <button
                   type="button"
                   onClick={() => setSelectedScoringTeam(null)}
-                  className="px-4 py-2 bg-[#18181b] border border-white/10 text-zinc-300 rounded-xl text-xs cursor-pointer"
+                  className="px-4 py-2 bg-black border border-neutral-800 text-neutral-300 text-xs uppercase cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                  className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold uppercase tracking-wider border border-orange-500 cursor-pointer"
                 >
                   Save Score & Update Rank
                 </button>

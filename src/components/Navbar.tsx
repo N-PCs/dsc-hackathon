@@ -94,25 +94,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           }`}
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 md:h-24 flex items-center justify-between">
-          {/* Logo — DSC Logo + Text */}
+          {/* Logo — DSC Logo + Origin Logo */}
           <button
             onClick={() => {
               setActiveTab('home');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2.5 cursor-pointer group"
           >
             <img
               src="/DSClogo.png"
               alt="Data Science Club Logo"
-              className="h-12 md:h-16 w-auto object-contain group-hover:scale-105 transition-transform"
+              className="h-9 md:h-12 w-auto object-contain group-hover:scale-105 transition-transform"
             />
-            <div className="flex items-center gap-0.5">
-              <span className="text-xl md:text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                ORIGIN
-              </span>
-              <span className="w-2 h-2 rounded-full bg-orange-600 mt-2 group-hover:scale-125 transition-transform" />
-            </div>
+            <img
+              src="/origin-logo.png"
+              alt="ORIGIN Hackathon Logo"
+              className="h-20 md:h-20 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
           </button>
 
           {/* Desktop nav links */}

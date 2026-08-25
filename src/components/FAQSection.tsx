@@ -13,13 +13,13 @@ const FAQ_ITEMS: FAQItem[] = [
     id: 'faq-1',
     question: 'Who is eligible to participate?',
     answer:
-      'Undergraduate and postgraduate students from any recognized university or college (including VIT Bhopal and external institutes) are eligible. Teams can consist of 1 to 4 members. Solo builders are welcome.',
+      'Undergraduate and postgraduate students from any recognized university or college (including VIT Bhopal and external institutes) are eligible. Teams must consist of 2 to 5 members. Last date to register is 2 September 2026.',
   },
   {
     id: 'faq-2',
     question: 'What is the registration fee and team size?',
     answer:
-      'Teams can consist of 1 to 4 members. The registration fee is ₹200 per team, covering venue access, 24-hour Wi-Fi, compute credits, meals, snacks, and official DSC swag kits.',
+      'Teams must consist of 2 to 5 members. Registration fee is ₹100 per member for Hostellers and ₹219 per member for Day Scholars (Food Included). Registrations close strictly on 2 September 2026.',
   },
   {
     id: 'faq-3',
@@ -31,7 +31,7 @@ const FAQ_ITEMS: FAQItem[] = [
     id: 'faq-4',
     question: 'What happens during the 24-hour sprint?',
     answer:
-      'The hackathon kicks off at 12:00 PM with problem statement releases, followed by intensive hacking, live mentor check-ins, midnight snacks and chill zones, final code freeze at 11:00 AM, and live jury pitching.',
+      'The hackathon kicks off with problem statement releases, followed by intensive hacking, live mentor check-ins, midnight snacks and chill zones, final code freeze, and live jury pitching.',
   },
   {
     id: 'faq-5',
@@ -49,7 +49,7 @@ const FAQ_ITEMS: FAQItem[] = [
     id: 'faq-7',
     question: 'How does payment verification work?',
     answer:
-      'After submitting your UPI UTR reference and receipt screenshot during registration, DSC Admins verify the transaction and issue your official Digital ID Pass with QR code for gate check-in and food coupons.',
+      'After submitting your UPI UTR reference and receipt screenshot during registration (calculated based on Hosteller ₹100/member vs Day Scholar ₹219/member with food), DSC Admins verify the transaction and issue your Digital ID Pass.',
   },
   {
     id: 'faq-8',

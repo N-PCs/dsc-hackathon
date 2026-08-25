@@ -5,7 +5,6 @@ import { ArrowRight } from 'lucide-react';
 interface Sponsor {
   name: string;
   category: 'title' | 'gold' | 'community';
-  tagline: string;
   logo?: string;
 }
 
@@ -31,14 +30,17 @@ const SPONSORS: Sponsor[] = [
   {
     name: 'Sheryians Coding School',
     category: 'title',
-    tagline: 'Official Upskilling & Coding Education Partner',
     logo: '/sponsors/Sheryians logo white.png',
   },
   {
     name: 'Too Yumm!',
     category: 'title',
-    tagline: 'Official Munchies & Energy Partner',
     logo: '/sponsors/tooyumm.png',
+  },
+  {
+    name: 'Kavita Sales',
+    category: 'title',
+    logo: '/kavitasales.png',
   },
 ];
 
@@ -82,7 +84,7 @@ export const SponsorsSection: React.FC = () => {
         </div>
 
         {/* Title Sponsors — Side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-neutral-800 mb-10 md:mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-neutral-800 mb-10 md:mb-16">
           {titleSponsors.map((sponsor, idx) => (
             <div
               key={idx}
@@ -113,10 +115,9 @@ export const SponsorsSection: React.FC = () => {
                 >
                   {sponsor.name}
                 </h3>
-                <p className="text-xs sm:text-[14px] text-neutral-500 leading-relaxed">{sponsor.tagline}</p>
               </div>
               <div className="mt-4 sm:mt-6 text-[10px] sm:text-[11px] font-mono text-orange-500 font-semibold uppercase tracking-wider">
-                Official Title Partner
+                Official Sponsors
               </div>
             </div>
           ))}

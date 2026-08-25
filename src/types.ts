@@ -49,6 +49,7 @@ export interface Team {
   member2?: TeamMember;
   member3?: TeamMember;
   member4?: TeamMember;
+  member5?: TeamMember;
   paymentStatus: PaymentStatus;
   paymentProofUrl?: string; // base64 or receipt image URL
   transactionRef: string;
