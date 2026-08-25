@@ -19,8 +19,11 @@ import {
   addAnnouncementDB,
   getSubmissionStatusDB,
   setSubmissionStatusDB,
+  isTransactionRefUsed,
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
+import { getSubmissionDeadline, isDeadlinePassed } from './src/lib/deadline';
+
 
 // Configure Multer for file uploads (10MB size limit)
 const storage = multer.memoryStorage();
@@ -176,6 +179,17 @@ async function startServer() {
         });
       }
 
+      // Check if transactionRef is already used
+      if (transactionRef && transactionRef.trim() !== '') {
+        const isUsed = await isTransactionRefUsed(transactionRef);
+        if (isUsed) {
+          return res.status(400).json({
+            success: false,
+            message: 'This UTR/transaction reference has already been used by another team. Please provide a valid, unique UTR.',
+          });
+        }
+      }
+
       // Generate unique ID & 4-digit PIN access code
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       const teamId = `ORIGIN-${randomNum}`;
@@ -243,8 +257,17 @@ async function startServer() {
     }
   });
 
-  // Update Project Submission (Gated: Team must be verified by Admin)
+  // Update Project Submission (Gated: Team must be verified by Admin & within Deadline)
   app.put('/api/teams/:id/project', async (req, res) => {
+    // STRICT LOCK: Reject late submissions after official deadline
+    const deadline = getSubmissionDeadline();
+    if (isDeadlinePassed(deadline)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Submission deadline has passed. Submissions are permanently closed.',
+      });
+    }
+
     const isSubmissionsOpen = await getSubmissionStatusDB();
     if (!isSubmissionsOpen) {
       return res.status(403).json({
@@ -252,6 +275,7 @@ async function startServer() {
         message: 'Project submissions are currently closed by the Admin! Submissions will open when enabled by the organizers.',
       });
     }
+
 
     const team = await findTeamById(req.params.id);
 
@@ -498,8 +522,17 @@ async function startServer() {
   // SUBMISSIONS TOGGLE API
   app.get('/api/admin/submissions-status', async (req, res) => {
     const submissionsOpen = await getSubmissionStatusDB();
-    res.json({ success: true, submissionsOpen });
+    const deadline = getSubmissionDeadline();
+    const deadlinePassed = isDeadlinePassed(deadline);
+    res.json({
+      success: true,
+      submissionsOpen,
+      deadline,
+      isDeadlinePassed: deadlinePassed,
+      serverTime: new Date().toISOString(),
+    });
   });
+
 
   app.post('/api/admin/submissions-toggle', async (req, res) => {
     const { submissionsOpen } = req.body;

@@ -171,6 +171,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Submission Gate state
   const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(false);
+  const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
+  const [submissionDeadline, setSubmissionDeadline] = useState('');
   const [isTogglingSubmissions, setIsTogglingSubmissions] = useState(false);
 
   // Fetch submission status and whitelist from backend
@@ -180,9 +182,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       .then((data) => {
         if (data.success) {
           setIsSubmissionsOpen(data.submissionsOpen);
+          if (data.deadline) setSubmissionDeadline(data.deadline);
+          if (typeof data.isDeadlinePassed === 'boolean') setIsDeadlinePassed(data.isDeadlinePassed);
         }
       })
       .catch(() => {});
+
 
     fetch('/api/admin/whitelist')
       .then((res) => res.json())
@@ -449,6 +454,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {isDeadlinePassed && (
+            <span className="px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-mono text-xs font-semibold flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-rose-400" />
+              <span>Deadline Passed (Backend Locked)</span>
+            </span>
+          )}
+
           <button
             id="admin-btn-toggle-submissions"
             onClick={handleToggleSubmissions}
@@ -468,6 +480,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 : 'Submissions: CLOSED (Click to Open)'}
             </span>
           </button>
+
 
           <button
             id="admin-btn-export-excel"

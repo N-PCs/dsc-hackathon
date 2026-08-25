@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import React, { StrictMode, Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import App from './App.tsx';

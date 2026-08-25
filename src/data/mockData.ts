@@ -81,6 +81,9 @@ export const HACKATHON_SCHEDULE = [
   { time: '03:30 PM', title: 'Grand Awards & Closing Ceremony', desc: 'Trophies, cash prize pool of ₹15,000 (Winner ₹7k, 1st Runner ₹5k, 2nd Runner ₹3k), certificates & swag distribution.', phase: 'upcoming' },
 ];
 
+export const DEFAULT_SUBMISSION_DEADLINE = '2026-08-26T11:00:00+05:30';
+
 export const INITIAL_ANNOUNCEMENTS: Announcement[] = [];
 
 export const INITIAL_TEAMS: Team[] = [];
+
