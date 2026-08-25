@@ -722,8 +722,20 @@ async function startServer() {
     });
   });
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`ORIGIN Hackathon Portal running at http://localhost:${PORT}`);
+  });
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[Port Warning] Port ${PORT} is busy. Trying http://localhost:${Number(PORT) + 1}...`);
+      const nextPort = Number(PORT) + 1;
+      app.listen(nextPort, () => {
+        console.log(`ORIGIN Hackathon Portal running at http://localhost:${nextPort}`);
+      });
+    } else {
+      console.error('[Server Error]', err);
+    }
   });
 }
 
