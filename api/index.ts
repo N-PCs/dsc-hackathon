@@ -21,6 +21,7 @@ import { uploadFileToImagekit } from '../server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from '../src/lib/deadline';
 import { validateFileSignature } from '../src/lib/fileValidation';
 
+import 'dotenv/config';
 
 const storage = multer.memoryStorage();
 
