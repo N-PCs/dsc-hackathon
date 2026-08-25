@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --accent: #ff5500;
-  --accent-light: #ff7733;
-  --black: #080C14;
+  --accent: #FF3B00;
+  --accent-light: #FF5511;
+  --accent-dark: #D93200;
+  --black: #0A0A0A;
   --white: #FFFFFF;
   --gray-50: #FAFAFA;
   --gray-100: #F5F5F5;
@@ -15,9 +16,11 @@
   --gray-700: #404040;
   --gray-800: #262626;
   --gray-900: #171717;
-  --gray-950: #0A0A0A;
+  --gray-950: #0D0D0D;
 
-  --font-heading: 'Space Grotesk', sans-serif;
+  --font-display: 'Bebas Neue', 'Oswald', sans-serif;
+  --font-heading: 'Oswald', 'Bebas Neue', sans-serif;
+  --font-subheading: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
@@ -41,14 +44,88 @@ h3,
 h4,
 h5,
 h6 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.font-heading {
   font-family: var(--font-heading);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
 }
 
 ::selection {
   background-color: var(--accent);
   color: var(--white);
+}
+
+/* Tape effect graphic for poster cards */
+.tape-strip {
+  position: absolute;
+  top: -10px;
+  right: 20px;
+  width: 70px;
+  height: 22px;
+  background-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transform: rotate(-6deg);
+  z-index: 20;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+
+.tape-strip-left {
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  width: 70px;
+  height: 22px;
+  background-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transform: rotate(5deg);
+  z-index: 20;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+
+/* Bookmark tag ribbon for cards */
+.bookmark-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: var(--accent);
+  color: #fff;
+  padding: 4px 10px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  z-index: 15;
+  box-shadow: 0 4px 12px rgba(255, 59, 0, 0.4);
+}
+
+/* Torn paper edge SVG divider */
+.torn-paper-edge {
+  width: 100%;
+  height: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1200 40' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,40 L0,15 Q30,5 60,18 T120,10 T180,22 T240,8 T300,25 T360,12 T420,28 T480,10 T540,24 T600,8 T660,22 T720,12 T780,26 T840,9 T900,22 T960,14 T1020,28 T1080,10 T1140,20 T1200,12 L1200,40 Z' fill='%200b0b0b'%3E%3C/path%3E%3C/svg%3E");
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 /* Full-viewport section snapping */
@@ -70,12 +147,12 @@ h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gray-800);
-  border-radius: 3px;
+  background: #333333;
+  border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-600);
+  background: var(--accent);
 }
 
 /* Smooth scroll from Lenis */
@@ -94,14 +171,14 @@ html.lenis body {
 
 /* Utility: accent border left */
 .border-accent-left {
-  border-left: 3px solid var(--accent);
+  border-left: 4px solid var(--accent);
 }
 
 /* Clean input underline style */
 .input-underline {
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--gray-700);
+  border-bottom: 2px solid var(--gray-700);
   border-radius: 0;
   padding: 12px 0;
   font-size: 14px;
@@ -124,45 +201,69 @@ html.lenis body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 32px;
+  padding: 12px 28px;
   background-color: var(--accent);
   color: var(--white);
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 14px;
-  letter-spacing: -0.01em;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(255, 59, 0, 0.3);
 }
 
 .btn-primary:hover {
   background-color: var(--accent-light);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 59, 0, 0.45);
 }
 
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: translateY(0);
 }
 
 .btn-outline {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 32px;
+  padding: 12px 28px;
   background-color: transparent;
   color: var(--white);
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 14px;
-  letter-spacing: -0.01em;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   border: 1px solid var(--gray-700);
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .btn-outline:hover {
-  border-color: var(--white);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-pill {
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background-color: var(--accent);
   color: var(--white);
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+  background-color: var(--accent-light);
 }
 
 /* Number counter animation helper */
@@ -186,5 +287,5 @@ html.lenis body {
 .section-divider {
   width: 100%;
   height: 1px;
-  background-color: var(--gray-800);
+  background-color: #222222;
 }

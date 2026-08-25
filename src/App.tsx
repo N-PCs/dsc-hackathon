@@ -93,7 +93,7 @@ export default function App() {
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) {
           const txt = await res.text();
-          throw new Error(`Invalid JSON response: ${txt.slice(0,100)}`);
+          throw new Error(`Invalid JSON response: ${txt.slice(0, 100)}`);
         }
         return res.json();
       };
@@ -386,42 +386,48 @@ export default function App() {
         }}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-neutral-800 py-16 mt-24">
+      {/* Comic Book Torn Paper Edge Divider before Footer */}
+      <div className="torn-paper-edge" />
+
+      {/* Global Footer */}
+      <footer className="bg-[#0A0A0A] border-t border-[#222222] py-16 text-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
-            {/* Brand */}
-            <div className="md:col-span-4">
-              <div className="flex items-center gap-0.5 mb-4">
-                <span
-                  className="text-lg font-bold tracking-tight"
-                  style={{ fontFamily: 'var(--font-heading)' }}
-                >
-                  ORIGIN
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5" />
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+            {/* Logo + Desc */}
+            <div className="md:col-span-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/DSClogo.png"
+                  alt="Data Science Club Logo"
+                  className="h-10 w-auto object-contain"
+                />
+                <img
+                  src="/origin-logo.png"
+                  alt="ORIGIN Logo"
+                  className="h-16 w-auto object-contain"
+                />
               </div>
-              <p className="text-[13px] text-neutral-500 leading-relaxed max-w-xs">
-                The flagship 24-hour overnight hackathon organized by the 
+              <p className="text-xs text-neutral-400 font-sans leading-relaxed max-w-xs">
+                The flagship 18-hour overnight hackathon organized by the
                 Data Science Club at VIT Bhopal University.
               </p>
             </div>
 
             {/* Quick links */}
             <div className="md:col-span-2">
-              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
-                Event
+              <span className="font-heading text-xs text-[#FF3B00] uppercase tracking-widest block mb-4 font-bold">
+                EVENT
               </span>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
-                  { label: 'Overview', tab: 'home' as const },
-                  { label: 'Schedule', tab: 'schedule' as const },
+                  { label: 'OVERVIEW', tab: 'home' as const },
+                  { label: 'SCHEDULE', tab: 'schedule' as const },
                   { label: 'FAQ', tab: 'faq' as const },
                 ].map((link) => (
                   <button
                     key={link.tab}
                     onClick={() => setActiveTab(link.tab)}
-                    className="block text-[13px] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                    className="block font-heading text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer uppercase tracking-wider"
                   >
                     {link.label}
                   </button>
@@ -430,19 +436,19 @@ export default function App() {
             </div>
 
             <div className="md:col-span-2">
-              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
-                Participate
+              <span className="font-heading text-xs text-[#FF3B00] uppercase tracking-widest block mb-4 font-bold">
+                PARTICIPATE
               </span>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
-                  { label: 'Register Team', tab: 'register' as const },
-                  { label: 'Digital ID Pass', tab: 'team' as const },
-                  { label: 'Submit Project', tab: 'submit' as const },
+                  { label: 'REGISTER TEAM', tab: 'register' as const },
+                  { label: 'DIGITAL ID PASS', tab: 'team' as const },
+                  { label: 'SUBMIT PROJECT', tab: 'submit' as const },
                 ].map((link) => (
                   <button
                     key={link.tab}
                     onClick={() => setActiveTab(link.tab)}
-                    className="block text-[13px] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                    className="block font-heading text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer uppercase tracking-wider"
                   >
                     {link.label}
                   </button>
@@ -452,43 +458,42 @@ export default function App() {
 
             {/* CTA */}
             <div className="md:col-span-4">
-              <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider block mb-4">
-                Ready to build?
+              <span className="font-heading text-xs text-neutral-400 uppercase tracking-widest block mb-4 font-bold">
+                READY TO BUILD?
               </span>
               <button
                 onClick={() => setActiveTab('register')}
-                className="btn-primary text-[13px] mb-6"
+                className="btn-primary text-xs mb-6"
               >
-                Register Now
-                <ArrowRight className="w-3.5 h-3.5" />
+                REGISTER TEAM NOW &gt;
               </button>
-              <div className="space-y-1.5 text-[12px] text-neutral-600">
+              <div className="space-y-2 font-heading text-xs text-neutral-500 uppercase tracking-wider">
                 <p>
                   <button
                     onClick={() => setActiveTab('admin')}
-                    className="hover:text-neutral-400 cursor-pointer transition-colors"
+                    className="hover:text-white cursor-pointer transition-colors"
                   >
-                    Organiser Access →
+                    ORGANISER PORTAL ACCESS &gt;
                   </button>
                 </p>
                 <p>
                   <button
                     onClick={() => setActiveTab('jury')}
-                    className="hover:text-orange-400 cursor-pointer transition-colors"
+                    className="hover:text-[#FF3B00] cursor-pointer transition-colors"
                   >
-                    Jury Access →
+                    JURY EVALUATION PORTAL &gt;
                   </button>
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-16 pt-6 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span className="text-[12px] text-neutral-600">
-              © 2026 Data Science Club, VIT Bhopal University
+          <div className="mt-16 pt-6 border-t border-[#222222] flex flex-col sm:flex-row items-center justify-between gap-4 font-heading text-xs text-neutral-500 uppercase tracking-wider">
+            <span>
+              © 2026 DATA SCIENCE CLUB, VIT BHOPAL UNIVERSITY
             </span>
-            <span className="text-[12px] text-neutral-700 font-mono">
-              24H Code Freeze Protocol
+            <span className="text-[#FF3B00]">
+              18H CODE FREEZE PROTOCOL
             </span>
           </div>
         </div>

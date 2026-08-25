@@ -75,54 +75,59 @@ async function startServer() {
   // ==========================================
   // MEDIA & FILE UPLOAD ROUTE (CLOUDINARY)
   // ==========================================
-  app.post('/api/upload', upload.single('file'), async (req, res) => {
-    try {
-      if (!req.file) {
-        // If uploaded as base64 in body
-        if (req.body.fileData) {
-          const { fileData, fileName = 'upload.png', mimeType = 'image/png' } = req.body;
-          const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-          let buffer: Buffer;
-          if (matches && matches.length === 3) {
-            buffer = Buffer.from(matches[2], 'base64');
-          } else {
-            buffer = Buffer.from(fileData, 'base64');
-          }
+  app.post('/api/upload', (req, res) => {
+    upload.single('file')(req, res, async (multerErr: any) => {
+      if (multerErr) {
+        console.error('[Multer Upload Error]:', multerErr);
+        return res.status(400).json({
+          success: false,
+          message: multerErr.message || 'File upload error.',
+        });
+      }
 
-          if (!validateFileSignature(buffer, mimeType, fileName)) {
-            return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
-          }
+      try {
+        if (!req.file) {
+          if (req.body && req.body.fileData) {
+            const { fileData, fileName = 'upload.png', mimeType = 'image/png' } = req.body;
+            const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            let buffer: Buffer;
+            if (matches && matches.length === 3) {
+              buffer = Buffer.from(matches[2], 'base64');
+            } else {
+              buffer = Buffer.from(fileData, 'base64');
+            }
 
-          const result = await uploadFileToImagekit(buffer, fileName, mimeType);
-          return res.json({ success: true, url: result.url, publicId: result.publicId });
+            if (!validateFileSignature(buffer, mimeType, fileName)) {
+              return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
+            }
+
+            const result = await uploadFileToImagekit(buffer, fileName, mimeType);
+            return res.json({ success: true, url: result.url, publicId: result.publicId });
+          }
+          return res.status(400).json({ success: false, message: 'No file provided in request.' });
         }
-        return res.status(400).json({ success: false, message: 'No file uploaded.' });
+
+        const result = await uploadFileToImagekit(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype
+        );
+
+        return res.json({
+          success: true,
+          url: result.url,
+          publicId: result.publicId,
+          filename: req.file.originalname,
+          size: req.file.size,
+        });
+      } catch (err: any) {
+        console.error('[API /upload error]:', err);
+        return res.status(400).json({
+          success: false,
+          message: err.message || 'File upload failed.',
+        });
       }
-
-      if (!validateFileSignature(req.file.buffer, req.file.mimetype, req.file.originalname)) {
-        return res.status(400).json({ success: false, message: 'Invalid file signature or type mismatch.' });
-      }
-
-      const result = await uploadFileToImagekit(
-        req.file.buffer,
-        req.file.originalname,
-        req.file.mimetype
-      );
-
-      res.json({
-        success: true,
-        url: result.url,
-        publicId: result.publicId,
-        filename: req.file.originalname,
-        size: req.file.size,
-      });
-    } catch (err: any) {
-      console.error('[API /upload error]:', err);
-      res.status(400).json({
-        success: false,
-        message: err.message || 'File upload failed. Ensure file is within 10MB limit.',
-      });
-    }
+    });
   });
 
   // ==========================================

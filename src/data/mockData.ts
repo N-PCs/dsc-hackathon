@@ -46,39 +46,33 @@ export const HACKATHON_RULES = [
   },
   {
     title: 'Original Code & Verification',
-    detail: 'All project code must be authored during the 24-hour hackathon window. Open-source libraries and APIs are permitted with proper attribution.',
+    detail: 'All project code must be authored during the 18-hour hackathon window (4 Sep 6:00 PM – 5 Sep 12:00 PM). Open-source libraries and APIs are permitted with proper attribution.',
   },
   {
     title: 'Mandatory Deliverables',
     detail: 'Teams must submit: Public GitHub repository with README, Live working demo / deployment URL, and a 3-minute pitch deck (PDF/PPT).',
   },
   {
-    title: 'On-Site / Overnight Attendance',
-    detail: 'All team members must carry their verified Digital ID Badge and government/college ID card for physical gate pass and food token distribution.',
+    title: 'On-Site Attendance',
+    detail: 'All team members must carry their verified Digital ID Badge and college ID card for venue entry at AB02 Auditorium 1 & Auditorium 2.',
   },
   {
-    title: 'Mentoring Checkpoints',
-    detail: 'Attendance at Mentoring Round 1 (Hour 06) and Mentoring Round 2 (Hour 14) is mandatory for jury evaluation bonus points.',
+    title: 'Mentoring & Evaluation',
+    detail: 'Live pitch presentations and evaluation will take place between 9:00 AM – 11:00 AM on 5 September by Shreyians Coding Academy judges.',
   },
   {
     title: 'Code of Conduct & Ethics',
-    detail: 'Zero tolerance for plagiarism, harassment, or unethical AI scraping. Respect fellow hackers, mentors, and lab infrastructure.',
+    detail: 'Zero tolerance for plagiarism, harassment, or unethical AI scraping. Respect fellow hackers, mentors, and venue infrastructure.',
   },
 ];
 
 export const HACKATHON_SCHEDULE = [
-  { time: '09:00 AM', title: 'Check-in & Digital Badge Scan', desc: 'Arrive at Tech Block Auditorium, collect hacker kits & verify passes.', phase: 'past' },
-  { time: '10:30 AM', title: 'Opening Ceremony & Track Briefing', desc: 'Keynote by DSC Lead, Problem statements reveal & Mentor introductions.', phase: 'past' },
-  { time: '11:00 AM', title: 'HACKING COMMENCES (Hour 0)', desc: '24-hour sprint begins! Cloud credits activated.', phase: 'active' },
-  { time: '02:00 PM', title: 'Lunch & Quick Sync', desc: 'Fuel up at cafeteria. DSC Helpdesk available.', phase: 'upcoming' },
-  { time: '05:30 PM', title: 'Mentoring Round 1 (Idea & Arch)', desc: 'Industry mentors review system architectures & data pipelines.', phase: 'upcoming' },
-  { time: '09:00 PM', title: 'Dinner & Midnight Energy Snacks', desc: 'Dinner served followed by RedBull & coffee station open all night.', phase: 'upcoming' },
-  { time: '01:30 AM', title: 'Midnight Gaming & Mini-Challenges', desc: 'Relax with quick CS:GO / Mario Kart mini-tournaments.', phase: 'upcoming' },
-  { time: '06:00 AM', title: 'Mentoring Round 2 (Code & MVP)', desc: 'Mock jury trial run and deployment assistance.', phase: 'upcoming' },
-  { time: '08:30 AM', title: 'Breakfast & Final Sprint', desc: 'Morning coffee & final bug squash sprint.', phase: 'upcoming' },
-  { time: '11:00 AM', title: 'CODE FREEZE & SUBMISSION DEADLINE', desc: 'Portal submissions lock strictly at 11:00 AM.', phase: 'upcoming' },
-  { time: '12:00 PM', title: 'Live Pitching to Jury Panel', desc: 'Top shortlisted teams pitch live in front of the judging panel.', phase: 'upcoming' },
-  { time: '03:30 PM', title: 'Grand Awards & Closing Ceremony', desc: 'Trophies, cash prize pool of ₹15,000 (Winner ₹7k, 1st Runner ₹5k, 2nd Runner ₹3k), certificates & swag distribution.', phase: 'upcoming' },
+  { time: '6:00 – 6:30 PM', title: 'Inauguration', desc: 'Opening ceremony, keynotes, and welcoming all participants at AB02 Auditorium 1 & 2.', phase: 'past' },
+  { time: '6:30 PM', title: 'Problem Statement Reveal', desc: 'Official release of innovation track problem statements and hacking kick-off.', phase: 'active' },
+  { time: '7:30 – 8:30 PM', title: 'Dinner Break', desc: 'Dinner break for all registered hackers and mentors.', phase: 'upcoming' },
+  { time: '8:30 PM – 9:00 AM', title: 'Development & Hacking', desc: 'Overnight 12.5-hour continuous hacking sprint. Mentors, coffee, and energy stations active.', phase: 'upcoming' },
+  { time: '9:00 – 11:00 AM', title: 'Evaluation', desc: 'Live team demos and evaluation by Shreyians Coding Academy judges.', phase: 'upcoming' },
+  { time: '11:00 AM – 12:00 PM', title: 'Prize Distribution & Closing', desc: 'Grand awards ceremony, trophy distribution (₹15,000 cash pool + ₹50,000+ goodies), and wrap-up.', phase: 'upcoming' },
 ];
 
 export const DEFAULT_SUBMISSION_DEADLINE = '2026-08-26T11:00:00+05:30';
