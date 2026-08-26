@@ -289,3 +289,87 @@ html.lenis body {
   height: 1px;
   background-color: #222222;
 }
+
+/* ─────────────────────────────────────────────
+   CLERK THEME OVERRIDES (Dark & Neon Orange)
+   ───────────────────────────────────────────── */
+.cl-modalContent,
+.cl-card {
+  background-color: #0D0D0D !important;
+  border: 1px solid #262626 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75) !important;
+}
+
+.cl-socialButtonsBlockButton {
+  background-color: #171717 !important;
+  border: 1px solid #262626 !important;
+  color: #FFFFFF !important;
+  transition: all 0.2s ease !important;
+}
+
+.cl-socialButtonsBlockButton:hover {
+  background-color: #262626 !important;
+  border-color: #FF3B00 !important;
+}
+
+/* Force "Continue with Google" text to pure crisp white */
+.cl-socialButtonsBlockButton,
+.cl-socialButtonsBlockButton *,
+.cl-socialButtonsBlockButtonText,
+.cl-socialButtonsBlockButtonText *,
+.cl-socialButtonsBlockButton__google,
+.cl-socialButtonsBlockButton__google *,
+button[data-provider="google"],
+button[data-provider="google"] * {
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.cl-formButtonPrimary {
+  background-color: #FF3B00 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: none !important;
+  box-shadow: 0 4px 14px 0 rgba(255, 59, 0, 0.39) !important;
+  transition: all 0.2s ease !important;
+}
+
+.cl-formButtonPrimary:hover {
+  background-color: #FF5511 !important;
+  box-shadow: 0 6px 20px rgba(255, 59, 0, 0.5) !important;
+}
+
+.cl-formFieldInput {
+  background-color: #171717 !important;
+  border: 1px solid #262626 !important;
+  color: #FFFFFF !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: #FF3B00 !important;
+  box-shadow: 0 0 0 1px #FF3B00 !important;
+}
+
+.cl-footerActionLink {
+  color: #FF3B00 !important;
+  font-weight: 600 !important;
+}
+
+.cl-footerActionLink:hover {
+  color: #FF5511 !important;
+}
+
+.cl-dividerLine {
+  background-color: #262626 !important;
+}
+
+.cl-dividerText {
+  color: #737373 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+}
