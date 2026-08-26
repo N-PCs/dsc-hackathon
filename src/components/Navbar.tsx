@@ -35,13 +35,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navLinks = [
     { id: 'home' as const, label: 'MAIN', scrollTo: 'hero' },
     { id: 'home' as const, label: 'SPONSORS', scrollTo: 'sponsors' },
-    { id: 'home' as const, label: 'ARENAS', scrollTo: 'tracks-section' },
     { id: 'home' as const, label: 'SCHEDULE', scrollTo: 'timeline-section' },
     { id: 'home' as const, label: 'FAQ', scrollTo: 'faq-section' },
   ];
 
   // Active section scroll detection
   useEffect(() => {
+    if (activeTab === 'schedule') {
+      setActiveSection('SCHEDULE');
+      return;
+    }
+    if (activeTab === 'faq') {
+      setActiveSection('FAQ');
+      return;
+    }
     if (activeTab !== 'home') {
       setActiveSection('');
       return;
@@ -50,42 +57,54 @@ export const Navbar: React.FC<NavbarProps> = ({
     const sections = [
       { id: 'hero', label: 'MAIN' },
       { id: 'sponsors', label: 'SPONSORS' },
-      { id: 'tracks-section', label: 'ARENAS' },
       { id: 'timeline-section', label: 'SCHEDULE' },
       { id: 'faq-section', label: 'FAQ' },
     ];
 
     const handleScroll = () => {
-      const scrollPos = window.scrollY + 200; // Offset for navbar height
+      const navbarHeight = hasAnnouncement ? 120 : 80;
+      const scrollPos = window.scrollY + navbarHeight + 40;
+
+      let currentActive = 'MAIN';
 
       for (const section of sections) {
         const el = document.getElementById(section.id);
         if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPos >= top && scrollPos < top + height) {
-            setActiveSection(section.label);
-            break;
+          const top = el.getBoundingClientRect().top + window.scrollY;
+          if (scrollPos >= top) {
+            currentActive = section.label;
           }
         }
       }
+
+      setActiveSection(currentActive);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Init
+    handleScroll(); // Init check
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [activeTab]);
+  }, [activeTab, hasAnnouncement]);
 
   const handleNavClick = (link: typeof navLinks[0]) => {
     setMobileOpen(false);
-    setActiveTab(link.id);
+    setActiveSection(link.label);
+
+    if (activeTab !== link.id) {
+      setActiveTab(link.id);
+    }
+
     setTimeout(() => {
       const el = document.getElementById(link.scrollTo);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
+        const navbarHeight = hasAnnouncement ? 120 : 80;
+        const targetTop = el.getBoundingClientRect().top + window.scrollY - navbarHeight;
+        window.scrollTo({
+          top: Math.max(0, targetTop),
+          behavior: 'smooth',
+        });
       }
-    }, 50);
+    }, 80);
   };
 
   return (
@@ -102,6 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => {
               setActiveTab('home');
+              setActiveSection('MAIN');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="flex items-center gap-3 cursor-pointer group"
@@ -121,13 +141,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Desktop nav links — Comic catalog style uppercase tabs with red-orange underline */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link, i) => {
-              const isActive = activeTab === 'home' && activeSection === link.label;
+              const isActive =
+                (activeTab === 'home' && activeSection === link.label) ||
+                (link.label === 'SCHEDULE' && activeTab === 'schedule') ||
+                (link.label === 'FAQ' && activeTab === 'faq');
               return (
                 <button
                   key={i}
                   onClick={() => handleNavClick(link)}
-                  className={`font-heading text-[15px] tracking-widest uppercase transition-all cursor-pointer relative py-1 ${isActive
-                    ? 'text-[#FF3B00] font-bold border-b-2 border-[#FF3B00]'
+                  className={`font-heading text-[15px] tracking-widest uppercase transition-all duration-200 cursor-pointer relative py-1 ${isActive
+                    ? 'text-[#FF3B00] font-bold border-b-2 border-[#FF3B00] drop-shadow-[0_2px_8px_rgba(255,59,0,0.4)]'
                     : 'text-neutral-300 hover:text-white'
                     }`}
                 >
@@ -141,8 +164,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-4">
             {hasActiveTeam && (
               <button
-                onClick={() => setActiveTab('team')}
-                className="hidden sm:inline-flex font-heading text-[14px] tracking-wider text-neutral-300 hover:text-[#FF3B00] transition-colors cursor-pointer uppercase"
+                onClick={() => {
+                  setActiveTab('team');
+                  setActiveSection('');
+                }}
+                className={`hidden sm:inline-flex font-heading text-[14px] tracking-wider transition-colors cursor-pointer uppercase ${activeTab === 'team' ? 'text-[#FF3B00] font-bold' : 'text-neutral-300 hover:text-[#FF3B00]'
+                  }`}
               >
                 My Pass
               </button>
@@ -180,7 +207,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-1 text-white cursor-pointer"
+              className="md:hidden p-1 text-[#FFFFFF] cursor-pointer"
             >
               {mobileOpen ? <X className="w-6 h-6 text-[#FF3B00]" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -195,15 +222,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="fixed inset-0 z-40 bg-[#0A0A0A] px-6 md:hidden overflow-y-auto"
         >
           <nav className="flex flex-col gap-2">
-            {navLinks.map((link, i) => (
-              <button
-                key={i}
-                onClick={() => handleNavClick(link)}
-                className="text-left font-display text-3xl text-white py-3 border-b border-[#222222] cursor-pointer hover:text-[#FF3B00] transition-colors"
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link, i) => {
+              const isActive =
+                (activeTab === 'home' && activeSection === link.label) ||
+                (link.label === 'SCHEDULE' && activeTab === 'schedule') ||
+                (link.label === 'FAQ' && activeTab === 'faq');
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleNavClick(link)}
+                  className={`text-left font-display text-3xl py-3 border-b border-[#222222] cursor-pointer transition-all ${isActive
+                    ? 'text-[#FF3B00] font-bold border-l-4 border-l-[#FF3B00] pl-3'
+                    : 'text-white hover:text-[#FF3B00]'
+                    }`}
+                >
+                  {link.label}
+                </button>
+              );
+            })}
             <button
               onClick={() => { window.open(EXTERNAL_REGISTRATION_URL, '_blank'); setMobileOpen(false); }}
               className="text-left font-display text-3xl text-[#FF3B00] py-3 border-b border-[#222222] cursor-pointer"
@@ -212,14 +248,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             {hasActiveTeam && (
               <button
-                onClick={() => { setActiveTab('team'); setMobileOpen(false); }}
+                onClick={() => { setActiveTab('team'); setActiveSection(''); setMobileOpen(false); }}
                 className="text-left font-display text-3xl text-neutral-400 py-3 border-b border-[#222222] cursor-pointer"
               >
                 MY DIGITAL PASS
               </button>
             )}
             <button
-              onClick={() => { setActiveTab('submit'); setMobileOpen(false); }}
+              onClick={() => { setActiveTab('submit'); setActiveSection(''); setMobileOpen(false); }}
               className="text-left font-display text-3xl text-neutral-400 py-3 border-b border-[#222222] cursor-pointer"
             >
               SUBMIT PROJECT

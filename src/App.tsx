@@ -14,6 +14,7 @@ import { LiveAnnouncementsBanner } from './components/LiveAnnouncementsBanner';
 import { SponsorsSection } from './components/SponsorsSection';
 import { FAQSection } from './components/FAQSection';
 import { BackgroundVeins } from './components/BackgroundVeins';
+import { LoadingScreen } from './components/LoadingScreen';
 import { Team, Announcement, HackathonStats, TrackType, PaymentStatus } from './types';
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS, EXTERNAL_REGISTRATION_URL } from './data/mockData';
 import { ArrowRight } from 'lucide-react';
@@ -350,6 +351,9 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen bg-black text-white flex flex-col">
+      {/* Fiery Loading Screen */}
+      <LoadingScreen />
+
       {/* Background Veins Canvas */}
       <BackgroundVeins />
 

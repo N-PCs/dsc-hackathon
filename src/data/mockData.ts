@@ -69,13 +69,13 @@ export const HACKATHON_RULES = [
   },
 ];
 
-export const HACKATHON_SCHEDULE = [
-  { time: '6:00 – 6:30 PM', title: 'Inauguration', desc: 'Opening ceremony, keynotes, and welcoming all participants at AB02 Auditorium 1 & 2.', phase: 'past' },
-  { time: '6:30 PM', title: 'Problem Statement Reveal', desc: 'Official release of innovation track problem statements and hacking kick-off.', phase: 'active' },
-  { time: '7:30 – 8:30 PM', title: 'Dinner Break', desc: 'Dinner break for all registered hackers and mentors.', phase: 'upcoming' },
-  { time: '8:30 PM – 9:00 AM', title: 'Development & Hacking', desc: 'Overnight 12.5-hour continuous hacking sprint. Mentors, coffee, and energy stations active.', phase: 'upcoming' },
-  { time: '9:00 – 11:00 AM', title: 'Evaluation', desc: 'Live team demos and evaluation by Sheryians Coding Academy judges.', phase: 'upcoming' },
-  { time: '11:00 AM – 12:00 PM', title: 'Prize Distribution & Closing', desc: 'Grand awards ceremony, trophy distribution (₹15,000 cash pool + ₹50,000+ goodies), and wrap-up.', phase: 'upcoming' },
+export const HACKATHON_SCHEDULE = [{ time: '5:00 – 5:30 PM', title: 'Venue Door Open for participants', desc: 'Venue door will open for participants, check-in, and seating at AB02 Auditorium 1 & Auditorium 2.', phase: 'past' },
+{ time: '6:00 – 6:30 PM', title: 'Inauguration', desc: 'Opening ceremony, keynotes, and welcoming all participants at AB02 Auditorium 1 & 2.', phase: 'past' },
+{ time: '6:30 PM', title: 'Problem Statement Reveal', desc: 'Official release of innovation track problem statements and hacking kick-off.', phase: 'active' },
+{ time: '7:30 – 8:30 PM', title: 'Dinner Break', desc: 'Dinner break for all registered hackers and mentors.', phase: 'upcoming' },
+{ time: '8:30 PM – 9:00 AM', title: 'Development & Hacking', desc: 'Overnight 12.5-hour continuous hacking sprint. Mentors, coffee, and energy stations active.', phase: 'upcoming' },
+{ time: '9:00 – 11:00 AM', title: 'Evaluation', desc: 'Live team demos and evaluation by Sheryians Coding Academy judges.', phase: 'upcoming' },
+{ time: '11:00 AM – 12:00 PM', title: 'Prize Distribution & Closing', desc: 'Grand awards ceremony, trophy distribution (₹15,000 cash pool + ₹50,000+ goodies), and wrap-up.', phase: 'upcoming' },
 ];
 
 export const DEFAULT_SUBMISSION_DEADLINE = '2026-08-26T11:00:00+05:30';

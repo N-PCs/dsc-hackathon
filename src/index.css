@@ -372,4 +372,13 @@ button[data-provider="google"] * {
   font-size: 0.75rem !important;
   text-transform: uppercase !important;
   letter-spacing: 0.1em !important;
+}
+
+@keyframes stripe {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 32px 0;
+  }
 }

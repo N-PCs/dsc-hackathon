@@ -87,7 +87,7 @@ export const HackathonScheduleRules: React.FC = () => {
                 </div>
                 <div className="flex justify-between py-3 border-b border-[#222222]">
                   <span className="text-neutral-400">VENUE</span>
-                  <span className="text-white font-bold">AB02 AUD 1 & AUD 2</span>
+                  <span className="text-white font-bold">AB02 AUDI 1 & AUDI 2</span>
                 </div>
               </div>
             </div>

@@ -19,7 +19,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   const heroRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
-  const [selectedFilterTab, setSelectedFilterTab] = React.useState<string>('ALL ARENAS');
 
   // GSAP entrance animations
   useEffect(() => {
@@ -82,13 +81,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   }, [stats]);
 
   const statItems = [
-    { value: stats.totalParticipants || 200, suffix: '+', label: 'HACKERS REGISTERED' },
-    { value: 18, suffix: ' HOURS', label: 'NON-STOP CODE FREEZE' },
-    { value: 15000, suffix: '', label: 'CASH PRIZES (+₹50K GOODIES)', prefix: '₹' },
-    { value: 6, suffix: ' ARENAS', label: 'INNOVATION TRACKS' },
+    { value: stats.totalParticipants || 200, suffix: '+', label: 'HACKERS REGISTERED', prefix: '', isText: false, text: '' },
+    { value: 18, suffix: ' HOURS', label: 'NON-STOP CODE FREEZE', prefix: '', isText: false, text: '' },
+    { value: 15000, suffix: '', label: 'CASH PRIZES (+₹50K GOODIES)', prefix: '₹', isText: false, text: '' },
+    { value: 0, suffix: '', label: 'PROBLEM STATEMENTS', prefix: '', isText: true, text: 'THEMES WILL BE REVEALED SOON' },
   ];
-
-
 
   return (
     <div id="hero" ref={heroRef} className="relative min-h-screen flex flex-col justify-center pt-24">
@@ -121,7 +118,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Right description block + Search widget */}
           <div className="lg:col-span-4 space-y-6">
             <p className="gsap-tagline text-sm text-neutral-300 leading-relaxed font-sans">
-              Explore 6 innovation arenas, compete for ₹15,000 in cash prizes and ₹50,000+ in goodies. Evaluated live by esteemed educators from <strong className="text-white">Sheryians Coding Academy</strong>.
+              Themes will be revealed on the day of the hackathon. Compete for ₹15,000 in cash prizes and ₹50,000+ in goodies, evaluated live by esteemed educators from <strong className="text-white">Sheryians Coding Academy</strong>.
             </p>
 
             <div className="flex items-center gap-3 pt-2">
@@ -215,16 +212,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Info Card 4 */}
           <div className="gsap-hero-poster relative bg-[#141414] border border-[#262626] p-6 group hover:border-[#FF3B00] hover:bg-[#181818] transition-all duration-300 flex flex-col justify-between min-h-[220px]">
             <div className="tape-strip-left" />
-            <div className="bookmark-tag bg-purple-600">6 ARENAS</div>
+            <div className="bookmark-tag bg-purple-600">REVEALED ON DAY 1</div>
             <div>
               <span className="font-heading text-xs uppercase tracking-widest text-purple-400 block mb-2 font-bold">
-                INNOVATION TRACKS
+                PROBLEM STATEMENTS
               </span>
               <h3 className="font-display text-3xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
-                BUILD REAL PROJECTS
+                THEMES REVEALED SOON
               </h3>
               <p className="text-xs text-neutral-300 font-sans leading-relaxed">
-                AI/ML, Web3, FinTech, HealthTech & Open
+                Problem statements & themes will be revealed live during the hackathon!
               </p>
             </div>
             <div className="pt-4 border-t border-[#222222] mt-4">
@@ -240,13 +237,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {statItems.map((item, i) => (
             <div
               key={i}
-              className="gsap-stat-item py-8 px-6 border-r border-[#222222] last:border-r-0"
+              className="gsap-stat-item py-8 px-6 border-r border-[#222222] last:border-r-0 flex flex-col justify-center"
             >
-              <div className="font-display text-4xl md:text-5xl text-white tracking-wider">
-                {item.prefix && <span className="text-[#FF3B00]">{item.prefix}</span>}
-                <span data-count={item.value}>0</span>
-                {item.suffix && <span className="text-[#FF3B00]">{item.suffix}</span>}
-              </div>
+              {item.isText ? (
+                <div className="font-display text-xl md:text-2xl text-[#FF3B00] tracking-wider uppercase leading-tight py-1 font-bold">
+                  {item.text}
+                </div>
+              ) : (
+                <div className="font-display text-4xl md:text-5xl text-white tracking-wider">
+                  {item.prefix && <span className="text-[#FF3B00]">{item.prefix}</span>}
+                  <span data-count={item.value}>0</span>
+                  {item.suffix && <span className="text-[#FF3B00]">{item.suffix}</span>}
+                </div>
+              )}
               <div className="font-heading text-xs text-neutral-400 mt-2 tracking-widest uppercase font-semibold">
                 {item.label}
               </div>
