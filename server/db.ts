@@ -1,5 +1,6 @@
 import { Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../src/types.js';
+import { getCachedData, setCachedData, invalidateCache, CACHE_KEYS } from './redis.js';
 
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 console.log('[DEBUG] DATABASE_URL loaded:', connectionString ? `${connectionString.slice(0, 25)}...` : 'UNDEFINED');
@@ -149,14 +150,31 @@ export async function initDatabase() {
 }
 
 export async function getAllTeams(): Promise<Team[]> {
+  // 1. Try Neon DB
   if (useNeon && pool) {
     try {
       const res = await pool.query('SELECT data FROM teams ORDER BY ctid DESC');
-      return res.rows.map((r) => r.data as Team);
+      const teams = res.rows.map((r) => r.data as Team);
+      if (teams && teams.length > 0) {
+        // Cache to Redis asynchronously (non-blocking)
+        setCachedData(CACHE_KEYS.TEAMS, teams).catch(() => {});
+        localTeams = teams;
+        return teams;
+      }
     } catch (err) {
       handleDBError(err, 'fetching teams');
+      console.warn('[NeonDB -> Redis Fallback] Neon DB query failed/timed out. Trying Redis cache...');
     }
   }
+
+  // 2. Fallback to Redis Cache buffer
+  const cached = await getCachedData<Team[]>(CACHE_KEYS.TEAMS);
+  if (cached && Array.isArray(cached) && cached.length > 0) {
+    console.log(`[Upstash Redis] Successfully served ${cached.length} teams from cache buffer.`);
+    localTeams = cached;
+    return cached;
+  }
+
   return localTeams;
 }
 
@@ -203,6 +221,8 @@ export async function saveNewTeam(team: Team): Promise<Team> {
     }
   }
   localTeams.unshift(team);
+  // Invalidate and refresh cache
+  await invalidateCache(CACHE_KEYS.TEAMS);
   return team;
 }
 
@@ -238,6 +258,8 @@ export async function updateTeam(team: Team): Promise<Team> {
   if (idx !== -1) {
     localTeams[idx] = team;
   }
+  // Invalidate cache
+  await invalidateCache(CACHE_KEYS.TEAMS);
   return team;
 }
 
@@ -251,6 +273,8 @@ export async function deleteTeamById(id: string): Promise<boolean> {
     }
   }
   localTeams = localTeams.filter((t) => t.id.toUpperCase() !== cleanId);
+  // Invalidate cache
+  await invalidateCache(CACHE_KEYS.TEAMS);
   return true;
 }
 
@@ -274,10 +298,20 @@ export async function getAuthorizedAdminsDB(): Promise<AdminUser[]> {
           addedAt: r.added_at,
         });
       }
+      const adminList = Array.from(mergedMap.values());
+      setCachedData(CACHE_KEYS.ADMINS, adminList).catch(() => {});
+      return adminList;
     } catch (err) {
       handleDBError(err, 'fetching admins');
     }
   }
+
+  // Fallback to Redis
+  const cachedAdmins = await getCachedData<AdminUser[]>(CACHE_KEYS.ADMINS);
+  if (cachedAdmins && Array.isArray(cachedAdmins) && cachedAdmins.length > 0) {
+    return cachedAdmins;
+  }
+
   return Array.from(mergedMap.values());
 }
 
@@ -296,6 +330,7 @@ export async function addAdminDB(admin: AdminUser): Promise<AdminUser[]> {
   if (!localAdmins.some((a) => a.email.toLowerCase() === admin.email.toLowerCase())) {
     localAdmins.push(admin);
   }
+  await invalidateCache(CACHE_KEYS.ADMINS);
   return localAdmins;
 }
 
@@ -309,6 +344,7 @@ export async function removeAdminDB(email: string): Promise<AdminUser[]> {
     }
   }
   localAdmins = localAdmins.filter((a) => a.email.toLowerCase() !== clean);
+  await invalidateCache(CACHE_KEYS.ADMINS);
   return localAdmins;
 }
 
@@ -316,7 +352,7 @@ export async function getAnnouncementsDB(): Promise<Announcement[]> {
   if (useNeon && pool) {
     try {
       const res = await pool.query('SELECT id, title, message, category, timestamp, sender FROM announcements ORDER BY id DESC');
-      return res.rows.map((r) => ({
+      const annList = res.rows.map((r) => ({
         id: r.id,
         title: r.title,
         message: r.message,
@@ -324,10 +360,19 @@ export async function getAnnouncementsDB(): Promise<Announcement[]> {
         timestamp: r.timestamp,
         sender: r.sender,
       }));
+      setCachedData(CACHE_KEYS.ANNOUNCEMENTS, annList).catch(() => {});
+      return annList;
     } catch (err) {
       handleDBError(err, 'fetching announcements');
     }
   }
+
+  // Fallback to Redis
+  const cachedAnn = await getCachedData<Announcement[]>(CACHE_KEYS.ANNOUNCEMENTS);
+  if (cachedAnn && Array.isArray(cachedAnn) && cachedAnn.length > 0) {
+    return cachedAnn;
+  }
+
   return localAnnouncements;
 }
 
@@ -339,12 +384,20 @@ export async function getSubmissionStatusDB(): Promise<boolean> {
     try {
       const res = await pool.query("SELECT value FROM settings WHERE key = 'submissions_open'");
       if (res.rows.length > 0) {
-        return res.rows[0].value === 'true';
+        const val = res.rows[0].value === 'true';
+        setCachedData(CACHE_KEYS.SUBMISSION_STATUS, val).catch(() => {});
+        return val;
       }
     } catch (err) {
       handleDBError(err, 'fetching submission status');
     }
   }
+
+  const cachedStatus = await getCachedData<boolean>(CACHE_KEYS.SUBMISSION_STATUS);
+  if (cachedStatus !== null && cachedStatus !== undefined) {
+    return Boolean(cachedStatus);
+  }
+
   return localSubmissionsOpen;
 }
 
@@ -361,6 +414,7 @@ export async function setSubmissionStatusDB(isOpen: boolean): Promise<boolean> {
       handleDBError(err, 'updating submission status');
     }
   }
+  await setCachedData(CACHE_KEYS.SUBMISSION_STATUS, isOpen);
   return localSubmissionsOpen;
 }
 
@@ -369,12 +423,20 @@ export async function getRegistrationStatusDB(): Promise<boolean> {
     try {
       const res = await pool.query("SELECT value FROM settings WHERE key = 'registrations_open'");
       if (res.rows.length > 0) {
-        return res.rows[0].value === 'true';
+        const val = res.rows[0].value === 'true';
+        setCachedData(CACHE_KEYS.REGISTRATION_STATUS, val).catch(() => {});
+        return val;
       }
     } catch (err) {
       handleDBError(err, 'fetching registration status');
     }
   }
+
+  const cachedStatus = await getCachedData<boolean>(CACHE_KEYS.REGISTRATION_STATUS);
+  if (cachedStatus !== null && cachedStatus !== undefined) {
+    return Boolean(cachedStatus);
+  }
+
   return localRegistrationsOpen;
 }
 
@@ -391,6 +453,7 @@ export async function setRegistrationStatusDB(isOpen: boolean): Promise<boolean>
       handleDBError(err, 'updating registration status');
     }
   }
+  await setCachedData(CACHE_KEYS.REGISTRATION_STATUS, isOpen);
   return localRegistrationsOpen;
 }
 
@@ -407,6 +470,7 @@ export async function addAnnouncementDB(ann: Announcement): Promise<Announcement
     }
   }
   localAnnouncements.unshift(ann);
+  await invalidateCache(CACHE_KEYS.ANNOUNCEMENTS);
   return ann;
 }
 
@@ -419,6 +483,7 @@ export async function deleteAnnouncementDB(id: string): Promise<boolean> {
     }
   }
   localAnnouncements = localAnnouncements.filter((a) => a.id !== id);
+  await invalidateCache(CACHE_KEYS.ANNOUNCEMENTS);
   return true;
 }
 
@@ -452,5 +517,7 @@ export async function clearAllDataDB(): Promise<boolean> {
       handleDBError(err, 'clearing all data');
     }
   }
+  await invalidateCache(CACHE_KEYS.TEAMS);
+  await invalidateCache(CACHE_KEYS.ANNOUNCEMENTS);
   return true;
 }

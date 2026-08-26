@@ -105,19 +105,32 @@ export default function App() {
         fetch('/api/announcements').then(safeJson),
       ]);
 
-      if (teamsRes.success && teamsRes.teams) {
-        setTeams(teamsRes.teams);
-        if (activeTeam) {
+      if (teamsRes.success && Array.isArray(teamsRes.teams)) {
+        setTeams((prev) => {
+          // If the backend returns valid teams, or if we have no prior state, update
+          if (teamsRes.teams.length > 0 || prev.length === 0) {
+            return teamsRes.teams;
+          }
+          // Prevent wiping existing UI state on transient backend hiccups
+          return prev;
+        });
+
+        if (activeTeam && teamsRes.teams.length > 0) {
           const updatedActive = teamsRes.teams.find((t: Team) => t.id === activeTeam.id);
           if (updatedActive) setActiveTeam(updatedActive);
         }
       }
 
-      if (annRes.success && annRes.announcements) {
-        setAnnouncements(annRes.announcements);
+      if (annRes.success && Array.isArray(annRes.announcements)) {
+        setAnnouncements((prev) => {
+          if (annRes.announcements.length > 0 || prev.length === 0) {
+            return annRes.announcements;
+          }
+          return prev;
+        });
       }
     } catch (err) {
-      console.warn('Using local in-memory dataset');
+      console.warn('[Data Sync] Background polling failed, preserving current view state.');
     }
   };
 
