@@ -4,7 +4,10 @@ import { ClerkProvider } from '@clerk/clerk-react';
 import App from './App.tsx';
 import './index.css';
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_Y2VydGFpbi1oYWdmaXNoLTM1MjEuY2xlcmsuYWNjb3VudHMuZGV2JA';
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+if (!PUBLISHABLE_KEY) {
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY environment variable');
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
