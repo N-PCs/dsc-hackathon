@@ -8,6 +8,10 @@
   },
   "rewrites": [
     {
+      "source": "/__clerk/(.*)",
+      "destination": "/__clerk/$1"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
     },
