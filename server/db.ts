@@ -1,5 +1,5 @@
 import { Pool } from '@neondatabase/serverless';
-import { Team, Announcement, AdminUser } from '../src/types';
+import { Team, Announcement, AdminUser } from '../src/types.js';
 
 
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
@@ -150,7 +150,11 @@ export async function findTeamById(idOrEmail: string): Promise<Team | null> {
     teams.find(
       (t) =>
         t.id.toLowerCase() === clean ||
-        t.leader.email.toLowerCase() === clean
+        t.leader.email.toLowerCase() === clean ||
+        t.member2?.email?.toLowerCase() === clean ||
+        t.member3?.email?.toLowerCase() === clean ||
+        t.member4?.email?.toLowerCase() === clean ||
+        t.member5?.email?.toLowerCase() === clean
     ) || null
   );
 }
