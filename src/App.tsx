@@ -71,7 +71,7 @@ export default function App() {
 
   // Sync Clerk authenticated user with their registered team pass
   useEffect(() => {
-    if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
+    if (isSignedIn && user?.primaryEmailAddress?.emailAddress && teams.length > 0) {
       const email = user.primaryEmailAddress.emailAddress.toLowerCase();
 
       const matchedTeam = teams.find(
@@ -86,21 +86,9 @@ export default function App() {
         setActiveTeam(matchedTeam);
         localStorage.setItem('origin_active_team_id', matchedTeam.id);
         localStorage.setItem('origin_active_team_data', JSON.stringify(matchedTeam));
-      } else {
-        // Query backend directly by email in case teams list is still syncing
-        fetch(`/api/teams/${encodeURIComponent(email)}`)
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data) => {
-            if (data?.success && data?.team) {
-              setActiveTeam(data.team);
-              localStorage.setItem('origin_active_team_id', data.team.id);
-              localStorage.setItem('origin_active_team_data', JSON.stringify(data.team));
-            }
-          })
-          .catch(() => {});
       }
     }
-  }, [isSignedIn, user, teams]);
+  }, [isSignedIn, user?.primaryEmailAddress?.emailAddress, teams]);
 
   // Load active team from localStorage on initial load / teams update
   useEffect(() => {
