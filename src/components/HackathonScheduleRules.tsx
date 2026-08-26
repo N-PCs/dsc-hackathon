@@ -75,7 +75,7 @@ export const HackathonScheduleRules: React.FC = () => {
               <div className="space-y-3 pt-2 font-heading text-xs uppercase tracking-wider">
                 <div className="flex justify-between py-3 border-b border-[#222222]">
                   <span className="text-neutral-400">OFFICIAL JUDGES</span>
-                  <span className="text-[#FF3B00] font-bold">SHREYIANS CODING ACADEMY</span>
+                  <span className="text-[#FF3B00] font-bold">SHERYIANS CODING ACADEMY</span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-[#222222]">
                   <span className="text-neutral-400">WI-FI & POWER</span>

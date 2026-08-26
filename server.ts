@@ -88,7 +88,7 @@ async function startServer() {
   app.use('/uploads', express.static(distUploads));
 
   // ==========================================
-  // MEDIA & FILE UPLOAD ROUTE (CLOUDINARY)
+  // MEDIA & FILE UPLOAD ROUTE (IMAGEKIT)
   // ==========================================
   app.post('/api/upload', async (req, res) => {
     // 1. Handle direct JSON Base64 upload (if sent as application/json body)
@@ -264,30 +264,30 @@ async function startServer() {
         },
         member2: member2?.name?.trim()
           ? {
-              name: member2.name.trim(),
-              email: member2.email?.trim().toLowerCase() || '',
-              phone: member2.phone?.trim() || '',
-              college: member2.college || leader.college || 'VIT Bhopal University',
-              role: member2.role || 'Member',
-            }
+            name: member2.name.trim(),
+            email: member2.email?.trim().toLowerCase() || '',
+            phone: member2.phone?.trim() || '',
+            college: member2.college || leader.college || 'VIT Bhopal University',
+            role: member2.role || 'Member',
+          }
           : undefined,
         member3: member3?.name?.trim()
           ? {
-              name: member3.name.trim(),
-              email: member3.email?.trim().toLowerCase() || '',
-              phone: member3.phone?.trim() || '',
-              college: member3.college || leader.college || 'VIT Bhopal University',
-              role: member3.role || 'Member',
-            }
+            name: member3.name.trim(),
+            email: member3.email?.trim().toLowerCase() || '',
+            phone: member3.phone?.trim() || '',
+            college: member3.college || leader.college || 'VIT Bhopal University',
+            role: member3.role || 'Member',
+          }
           : undefined,
         member4: member4?.name?.trim()
           ? {
-              name: member4.name.trim(),
-              email: member4.email?.trim().toLowerCase() || '',
-              phone: member4.phone?.trim() || '',
-              college: member4.college || leader.college || 'VIT Bhopal University',
-              role: member4.role || 'Member',
-            }
+            name: member4.name.trim(),
+            email: member4.email?.trim().toLowerCase() || '',
+            phone: member4.phone?.trim() || '',
+            college: member4.college || leader.college || 'VIT Bhopal University',
+            role: member4.role || 'Member',
+          }
           : undefined,
         paymentStatus: 'pending', // Locked until Admin verifies
         paymentProofUrl: paymentProofUrl || '',

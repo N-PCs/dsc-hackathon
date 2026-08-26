@@ -71,7 +71,7 @@ export const HACKATHON_SCHEDULE = [
   { time: '6:30 PM', title: 'Problem Statement Reveal', desc: 'Official release of innovation track problem statements and hacking kick-off.', phase: 'active' },
   { time: '7:30 – 8:30 PM', title: 'Dinner Break', desc: 'Dinner break for all registered hackers and mentors.', phase: 'upcoming' },
   { time: '8:30 PM – 9:00 AM', title: 'Development & Hacking', desc: 'Overnight 12.5-hour continuous hacking sprint. Mentors, coffee, and energy stations active.', phase: 'upcoming' },
-  { time: '9:00 – 11:00 AM', title: 'Evaluation', desc: 'Live team demos and evaluation by Shreyians Coding Academy judges.', phase: 'upcoming' },
+  { time: '9:00 – 11:00 AM', title: 'Evaluation', desc: 'Live team demos and evaluation by Sheryians Coding Academy judges.', phase: 'upcoming' },
   { time: '11:00 AM – 12:00 PM', title: 'Prize Distribution & Closing', desc: 'Grand awards ceremony, trophy distribution (₹15,000 cash pool + ₹50,000+ goodies), and wrap-up.', phase: 'upcoming' },
 ];
 

@@ -160,10 +160,10 @@ export const PrizesSection: React.FC = () => {
                 OFFICIAL JURY PANEL
               </div>
               <h4 className="font-display text-2xl text-white mb-1">
-                SHREYIANS CODING ACADEMY
+                SHERYIANS CODING ACADEMY
               </h4>
               <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-                Expert evaluation and live pitch feedback conducted by esteemed industry educators from Shreyians Coding Academy.
+                Expert evaluation and live pitch feedback conducted by esteemed industry educators from Sheryians Coding Academy.
               </p>
             </div>
           </div>

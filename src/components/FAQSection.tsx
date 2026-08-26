@@ -37,7 +37,7 @@ const FAQ_ITEMS: FAQItem[] = [
     id: 'faq-5',
     question: 'Who are the official judges and evaluation criteria?',
     answer:
-      'Official evaluation is conducted by Shreyians Coding Academy judges. Projects are scored out of 100 points across 5 pillars (20 pts each): Innovation & Originality, Technical Complexity, UI/UX Design, Pitch & Demo Execution, and Real-World Impact.',
+      'Official evaluation is conducted by Sheryians Coding Academy judges. Projects are scored out of 100 points across 5 pillars (20 pts each): Innovation & Originality, Technical Complexity, UI/UX Design, Pitch & Demo Execution, and Real-World Impact.',
   },
   {
     id: 'faq-6',
@@ -98,7 +98,7 @@ export const FAQSection: React.FC = () => {
               </div>
 
               <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-                Everything about registration, venue logistics, 18-hour rules, 
+                Everything about registration, venue logistics, 18-hour rules,
                 payment verification, and jury evaluation.
               </p>
 
@@ -125,23 +125,20 @@ export const FAQSection: React.FC = () => {
                       onClick={() => setOpenId(isOpen ? null : faq.id)}
                       className="w-full py-4 text-left flex items-start justify-between gap-6 cursor-pointer group"
                     >
-                      <span className={`font-display text-xl md:text-2xl transition-colors ${
-                          isOpen ? 'text-[#FF3B00]' : 'text-white group-hover:text-[#FF3B00]'
+                      <span className={`font-display text-xl md:text-2xl transition-colors ${isOpen ? 'text-[#FF3B00]' : 'text-white group-hover:text-[#FF3B00]'
                         }`}
                       >
                         {faq.question}
                       </span>
                       <ChevronDown
-                        className={`w-6 h-6 shrink-0 text-neutral-400 transition-transform duration-300 mt-1 ${
-                          isOpen ? 'rotate-180 text-[#FF3B00]' : ''
-                        }`}
+                        className={`w-6 h-6 shrink-0 text-neutral-400 transition-transform duration-300 mt-1 ${isOpen ? 'rotate-180 text-[#FF3B00]' : ''
+                          }`}
                       />
                     </button>
 
                     <div
-                      className={`overflow-hidden transition-all duration-300 ${
-                        isOpen ? 'max-h-60 pb-6 border-t border-[#222222] pt-4' : 'max-h-0'
-                      }`}
+                      className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-60 pb-6 border-t border-[#222222] pt-4' : 'max-h-0'
+                        }`}
                     >
                       <p className="text-xs text-neutral-300 font-sans leading-relaxed pr-6">
                         {faq.answer}

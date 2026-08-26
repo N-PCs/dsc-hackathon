@@ -121,7 +121,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Right description block + Search widget */}
           <div className="lg:col-span-4 space-y-6">
             <p className="gsap-tagline text-sm text-neutral-300 leading-relaxed font-sans">
-              Explore 6 innovation arenas, compete for ₹15,000 in cash prizes and ₹50,000+ in goodies. Evaluated live by esteemed educators from <strong className="text-white">Shreyians Coding Academy</strong>.
+              Explore 6 innovation arenas, compete for ₹15,000 in cash prizes and ₹50,000+ in goodies. Evaluated live by esteemed educators from <strong className="text-white">Sheryians Coding Academy</strong>.
             </p>
 
             <div className="flex items-center gap-3 pt-2">
@@ -199,7 +199,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 LIVE EVALUATION
               </span>
               <h3 className="font-display text-3xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
-                SHREYIANS ACADEMY
+                SHERYIANS ACADEMY
               </h3>
               <p className="text-xs text-neutral-300 font-sans leading-relaxed">
                 Judged live by industry expert educators
@@ -261,66 +261,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Prizes Section */}
       <PrizesSection />
 
-      {/* Innovation Arenas Section — Styled like comic catalog items */}
-      <div id="tracks-section" className="max-w-7xl mx-auto px-6 lg:px-8 w-full py-20 border-t border-[#222222]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
-          <div>
-            <span className="font-heading text-xs text-[#FF3B00] uppercase tracking-widest block mb-2 font-bold">
-              CATALOG OF INNOVATION ARENAS
-            </span>
-            <h2 className="font-display text-4xl md:text-6xl text-white uppercase tracking-wider">
-              CHOOSE YOUR ARENA.
-            </h2>
-          </div>
-          <button
-            onClick={() => onNavigate('schedule')}
-            className="font-heading text-sm text-[#FF3B00] hover:text-[#FF5511] transition-colors cursor-pointer flex items-center gap-1 uppercase tracking-widest font-bold"
-          >
-            VIEW JUDGING CRITERIA &gt;
-          </button>
-        </div>
-
-        {/* Tracks Comic Catalog Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {HACKATHON_TRACKS.map((track, idx) => {
-            const trackCount = stats.trackCounts[track.name] || 0;
-            return (
-              <button
-                key={idx}
-                id={`track-card-${idx}`}
-                onClick={() => {
-                  onSelectTrack(track.name);
-                  onNavigate('register');
-                }}
-                className="bg-[#121212] border border-[#262626] p-6 text-left group cursor-pointer transition-all hover:border-[#FF3B00] hover:bg-[#181818] flex flex-col justify-between min-h-[220px] relative overflow-hidden"
-              >
-                <div className="tape-strip" />
-                <div>
-                  <div className="flex items-center justify-between mb-4 border-b border-[#222222] pb-3">
-                    <span className="font-heading text-xs text-[#FF3B00] font-bold uppercase tracking-wider">
-                      ARENA {String(idx + 1).padStart(2, '0')}
-                    </span>
-                    <span className="font-mono text-xs text-neutral-400 uppercase">
-                      {trackCount} TEAMS
-                    </span>
-                  </div>
-                  <h3 className="font-display text-2xl text-white group-hover:text-[#FF3B00] transition-colors mb-2">
-                    {track.name}
-                  </h3>
-                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">
-                    {track.description}
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-3 border-t border-[#222222] flex items-center justify-between font-heading text-xs text-[#FF3B00] uppercase tracking-wider font-bold group-hover:translate-x-1 transition-transform">
-                  <span>SELECT THIS ARENA</span>
-                  <span>&gt;</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };
