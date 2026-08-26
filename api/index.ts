@@ -19,6 +19,8 @@ import {
   setSubmissionStatusDB,
   getRegistrationStatusDB,
   setRegistrationStatusDB,
+  isTransactionRefUsed,
+  clearAllDataDB,
 } from '../server/db.js';
 import { uploadFileToImagekit } from '../server/imagekit.js';
 import { getSubmissionDeadline, isDeadlinePassed } from '../src/lib/deadline.js';
@@ -231,6 +233,17 @@ app.post('/api/teams/register', async (req, res) => {
         message: 'Team with this leader email is already registered!',
         team: existingTeam,
       });
+    }
+
+    // Check if transactionRef is already used
+    if (transactionRef && transactionRef.trim() !== '') {
+      const isUsed = await isTransactionRefUsed(transactionRef);
+      if (isUsed) {
+        return res.status(400).json({
+          success: false,
+          message: 'This UTR/transaction reference has already been used by another team. Please provide a valid, unique UTR.',
+        });
+      }
     }
 
     const randomNum = Math.floor(1000 + Math.random() * 9000);

@@ -6,7 +6,7 @@ export async function uploadFileToImagekit(
   fileBuffer: Buffer,
   originalFilename: string,
   mimeType: string,
-  folder = 'origin-hackathon'
+  folder = '/origin-hackathon'
 ): Promise<{ url: string; publicId: string; format: string }> {
   // Validate File Size Limit (10MB)
   if (fileBuffer.length > MAX_FILE_SIZE) {
@@ -16,18 +16,19 @@ export async function uploadFileToImagekit(
   const isImage = mimeType ? mimeType.startsWith('image/') : true;
   const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
 
+  const base64Str = fileBuffer.toString('base64');
+  const dataUri = `data:${mimeType || 'application/octet-stream'};base64,${base64Str}`;
+
   if (!privateKey) {
     console.warn('[Imagekit Warning] IMAGEKIT_PRIVATE_KEY is missing. Using Data URL fallback.');
     try {
       const fileExt = path.extname(originalFilename) || (isImage ? '.png' : '.pdf');
-      const base64Str = fileBuffer.toString('base64');
-      const dataUrl = `data:${mimeType || 'application/octet-stream'};base64,${base64Str}`;
       const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
 
       console.log(`[Storage Fallback] Created Data URL: (${(fileBuffer.length / 1024).toFixed(1)} KB)`);
 
       return {
-        url: dataUrl,
+        url: dataUri,
         publicId: filename,
         format: fileExt.replace('.', ''),
       };
@@ -40,22 +41,22 @@ export async function uploadFileToImagekit(
   const endpoint = `https://upload.imagekit.io/api/v1/files/upload`;
   const authHeader = 'Basic ' + Buffer.from(privateKey + ':').toString('base64');
 
-  const base64Str = fileBuffer.toString('base64');
-  const dataUri = `data:${mimeType || 'application/octet-stream'};base64,${base64Str}`;
+  // Format folder to always start with / (required by ImageKit)
+  const normalizedFolder = folder.startsWith('/') ? folder : `/${folder}`;
 
   try {
+    const form = new FormData();
+    form.append('file', dataUri);
+    form.append('fileName', originalFilename || `upload_${Date.now()}.${isImage ? 'png' : 'pdf'}`);
+    form.append('folder', normalizedFolder);
+    form.append('useUniqueFileName', 'true');
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         Authorization: authHeader,
       },
-      body: JSON.stringify({
-        file: dataUri,
-        fileName: originalFilename,
-        folder: folder,
-        useUniqueFileName: true,
-      }),
+      body: form,
     });
 
     if (!response.ok) {
@@ -76,10 +77,9 @@ export async function uploadFileToImagekit(
     console.error('[Imagekit] Upload error, falling back to Data URL:', err.message);
     try {
       const fileExt = path.extname(originalFilename) || (isImage ? '.png' : '.pdf');
-      const dataUrl = `data:${mimeType || 'application/octet-stream'};base64,${base64Str}`;
       const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
       return {
-        url: dataUrl,
+        url: dataUri,
         publicId: filename,
         format: fileExt.replace('.', ''),
       };

@@ -29,11 +29,29 @@ export default function App() {
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [activeTeam, setActiveTeam] = useState<Team | null>(null);
+  const [activeTeam, setActiveTeam] = useState<Team | null>(() => {
+    try {
+      const savedData = localStorage.getItem('origin_active_team_data');
+      if (savedData) {
+        return JSON.parse(savedData) as Team;
+      }
+    } catch (_e) {}
+    return null;
+  });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedTrackForReg, setSelectedTrackForReg] = useState<TrackType>('AI & Machine Learning');
 
   const hasActiveAnnouncement = announcements.length > 0 && !bannerDismissed;
+
+  // Persist active team changes to localStorage
+  useEffect(() => {
+    if (activeTeam) {
+      try {
+        localStorage.setItem('origin_active_team_id', activeTeam.id);
+        localStorage.setItem('origin_active_team_data', JSON.stringify(activeTeam));
+      } catch (_e) {}
+    }
+  }, [activeTeam]);
 
   // Lenis smooth scrolling
   useEffect(() => {
@@ -51,11 +69,10 @@ export default function App() {
     return () => lenis.destroy();
   }, []);
 
-  // Sync Clerk authenticated user
+  // Sync Clerk authenticated user with their registered team pass
   useEffect(() => {
     if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
       const email = user.primaryEmailAddress.emailAddress.toLowerCase();
-
 
       const matchedTeam = teams.find(
         (t) =>
@@ -68,19 +85,33 @@ export default function App() {
       if (matchedTeam) {
         setActiveTeam(matchedTeam);
         localStorage.setItem('origin_active_team_id', matchedTeam.id);
+        localStorage.setItem('origin_active_team_data', JSON.stringify(matchedTeam));
+      } else {
+        // Query backend directly by email in case teams list is still syncing
+        fetch(`/api/teams/${encodeURIComponent(email)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.success && data?.team) {
+              setActiveTeam(data.team);
+              localStorage.setItem('origin_active_team_id', data.team.id);
+              localStorage.setItem('origin_active_team_data', JSON.stringify(data.team));
+            }
+          })
+          .catch(() => {});
       }
     }
   }, [isSignedIn, user, teams]);
 
-  // Load active team from localStorage
+  // Load active team from localStorage on initial load / teams update
   useEffect(() => {
     (window as any).setActiveTabGlobal = setActiveTab;
     try {
       const savedTeamId = localStorage.getItem('origin_active_team_id');
       if (savedTeamId && teams.length > 0) {
-        const found = teams.find((t) => t.id === savedTeamId);
+        const found = teams.find((t) => t.id.toUpperCase() === savedTeamId.toUpperCase());
         if (found) {
           setActiveTeam(found);
+          localStorage.setItem('origin_active_team_data', JSON.stringify(found));
         }
       }
     } catch (e) {
@@ -106,28 +137,36 @@ export default function App() {
       ]);
 
       if (teamsRes.success && Array.isArray(teamsRes.teams)) {
-        setTeams((prev) => {
-          // If the backend returns valid teams, or if we have no prior state, update
-          if (teamsRes.teams.length > 0 || prev.length === 0) {
-            return teamsRes.teams;
-          }
-          // Prevent wiping existing UI state on transient backend hiccups
-          return prev;
-        });
+        setTeams(teamsRes.teams);
 
-        if (activeTeam && teamsRes.teams.length > 0) {
-          const updatedActive = teamsRes.teams.find((t: Team) => t.id === activeTeam.id);
-          if (updatedActive) setActiveTeam(updatedActive);
+        // Keep activeTeam synced with latest backend status
+        const savedTeamId = localStorage.getItem('origin_active_team_id') || activeTeam?.id;
+        const clerkEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
+
+        let freshTeam: Team | undefined;
+        if (savedTeamId) {
+          freshTeam = teamsRes.teams.find((t: Team) => t.id.toUpperCase() === savedTeamId.toUpperCase());
+        }
+        if (!freshTeam && clerkEmail) {
+          freshTeam = teamsRes.teams.find(
+            (t: Team) =>
+              t.leader.email.toLowerCase() === clerkEmail ||
+              t.member2?.email?.toLowerCase() === clerkEmail ||
+              t.member3?.email?.toLowerCase() === clerkEmail ||
+              t.member4?.email?.toLowerCase() === clerkEmail ||
+              t.member5?.email?.toLowerCase() === clerkEmail
+          );
+        }
+
+        if (freshTeam) {
+          setActiveTeam(freshTeam);
+          localStorage.setItem('origin_active_team_id', freshTeam.id);
+          localStorage.setItem('origin_active_team_data', JSON.stringify(freshTeam));
         }
       }
 
       if (annRes.success && Array.isArray(annRes.announcements)) {
-        setAnnouncements((prev) => {
-          if (annRes.announcements.length > 0 || prev.length === 0) {
-            return annRes.announcements;
-          }
-          return prev;
-        });
+        setAnnouncements(annRes.announcements);
       }
     } catch (err) {
       console.warn('[Data Sync] Background polling failed, preserving current view state.');
@@ -189,12 +228,15 @@ export default function App() {
     setTeams((prev) => [newTeam, ...prev.filter((t) => t.id !== newTeam.id)]);
     setActiveTeam(newTeam);
     localStorage.setItem('origin_active_team_id', newTeam.id);
+    localStorage.setItem('origin_active_team_data', JSON.stringify(newTeam));
     setActiveTab('team');
   };
 
   const handleProjectSubmitted = (updatedTeam: Team) => {
     setTeams((prev) => prev.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
     setActiveTeam(updatedTeam);
+    localStorage.setItem('origin_active_team_id', updatedTeam.id);
+    localStorage.setItem('origin_active_team_data', JSON.stringify(updatedTeam));
   };
 
   const getAdminHeaders = () => {

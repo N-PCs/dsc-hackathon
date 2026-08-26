@@ -7,13 +7,14 @@
 ![Vite](https://img.shields.io/badge/Vite-6.0-333333?style=for-the-badge&logo=vite&logoColor=white&labelColor=646CFF)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-333333?style=for-the-badge&logo=tailwindcss&logoColor=white&labelColor=06B6D4)
 ![Neon](https://img.shields.io/badge/Neon-Postgres-333333?style=for-the-badge&logo=postgresql&logoColor=white&labelColor=00E599)
+![Upstash Redis](https://img.shields.io/badge/Upstash-Redis-333333?style=for-the-badge&logo=redis&logoColor=white&labelColor=FF4438)
 ![Clerk](https://img.shields.io/badge/Clerk-Auth-333333?style=for-the-badge&logo=clerk&logoColor=white&labelColor=6C47FF)
 ![ImageKit](https://img.shields.io/badge/ImageKit-Upload-333333?style=for-the-badge&logo=imagekit&logoColor=white&labelColor=1A1A1A)
 ![Vercel](https://img.shields.io/badge/Vercel-Deploy-333333?style=for-the-badge&logo=vercel&logoColor=white&labelColor=000000)
 
 <br />
 
-A production-grade, highly scalable hackathon management portal built for **Origin Hackathon** (Data Science Club). Built with React 19 + TypeScript on the frontend and Express + Neon Serverless PostgreSQL on the backend, featuring strict binary magic-byte file signature validation, UTR duplicate prevention, whitelisted admin OTP authentication, dual-gated project submissions, live organizer broadcasts, and CSV/Excel exports.
+A production-grade, highly scalable hackathon management portal built for **Origin Hackathon** (Data Science Club). Built with React 19 + TypeScript on the frontend and Express + Neon Serverless PostgreSQL + Upstash Redis caching buffer on the backend, featuring strict binary magic-byte file signature validation, UTR duplicate prevention, whitelisted admin OTP authentication, dual-gated project submissions, live organizer broadcasts, and CSV/Excel exports.
 
 </div>
 
@@ -22,8 +23,9 @@ A production-grade, highly scalable hackathon management portal built for **Orig
 ## 🌟 Key Features
 
 - **Team Registration & Validation** — Register teams with up to 5 members across 6 hackathon tracks. Features strict duplicate leader email detection and unique UTR/transaction reference enforcement.
+- **High-Throughput Upstash Redis Caching** — Dual-layer caching strategy with sub-millisecond retrieval of teams, whitelist, announcements, and submission locks, backed by atomic cache invalidation upon state changes.
 - **Binary Signature File Uploads** — Secure uploading via ImageKit with client-side and server-side magic-byte binary signature inspection (JPEG, PNG, WEBP, GIF, PDF, PPTX up to 10MB).
-- **Team Access & Pass Portal** — Unique `ORIGIN-XXXX` ID generation with 4-digit security PIN. Event passes and submission features unlock dynamically once payment status is marked `verified` by organizers.
+- **Team Access & Pass Portal** — Unique `ORIGIN-XXXX` ID generation with 4-digit security PIN. Event passes and submission features unlock dynamically once payment status is marked `verified` by organizers, persisted seamlessly across browser refreshes.
 - **Whitelisted Admin OTP Command Hub** — Secure passcode verification restricted strictly to authorized organizer email addresses. Complete dashboard for checking venue attendance, reviewing payment proofs, and whitelist management.
 - **Dual-Gated Project Submissions** — Project submissions require **(1)** verified team status, **(2)** active global submissions window toggle, and **(3)** submission before the official hackathon deadline.
 - **Jury Evaluation & Scoring System** — Multi-criteria evaluation rubric (Innovation, Technical Complexity, UI/UX, Presentation, Impact - max 50 points) with automated total calculation and feedback recording.
@@ -60,6 +62,10 @@ flowchart TD
         O["/api/export-csv & /api/export-excel"]
     end
 
+    subgraph Cache ["High-Speed Caching Layer"]
+        S[("Upstash Redis Cache Buffer")]
+    end
+
     subgraph Data ["Persistence & Storage Layer"]
         P[("Neon Serverless PostgreSQL DB")]
         Q["ImageKit Cloud Media CDN"]
@@ -71,13 +77,15 @@ flowchart TD
     E -->|"Valid Magic Bytes"| F
     F -->|"Unique UTR & Email"| I
     I -->|"Insert Team Record (Pending Status)"| P
+    P -->|"Invalidate & Refresh Cache"| S
     I -->|"Fallback if DB Offline"| R
     A -->|"Attach Proof (Image/PDF/PPT)"| J
-    J -->|"Upload Buffer"| Q
+    J -->|"Upload Multipart Form Buffer"| Q
     Q -->|"Return Hosted Media URL"| I
 
     %% Team Access Flow
-    B -->|"2. Enter ID/Email + PIN"| P
+    B -->|"2. Fast Pass Lookup"| S
+    S -.->|"Cache Miss / Direct Query"| P
     P -->|"Return Team State & Pass Access"| B
 
     %% Admin Flow
@@ -86,7 +94,7 @@ flowchart TD
     K -->|"Generate & Verify 6-Digit OTP"| C
     C -->|"Verify Payment & Unlock Pass"| P
     C -->|"Global Submissions Toggle"| M
-    M -->|"Update Settings Table"| P
+    M -->|"Update DB & Redis Buffer"| S
     C -->|"Score Projects & Post Broadcasts"| N
     C -->|"Export Dataset"| O
 
@@ -94,16 +102,19 @@ flowchart TD
     D -->|"4. Submit GitHub Repo & Slide Deck"| H
     H -->|"Verified & Window Open & In Deadline"| L
     L -->|"Update Team Project Payload"| P
+    P -->|"Sync to Redis Cache"| S
 
     %% Styling
     classDef client fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
     classDef security fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fff;
     classDef backend fill:#18181b,stroke:#f97316,stroke-width:2px,color:#fff;
+    classDef cache fill:#3b0764,stroke:#c084fc,stroke-width:2px,color:#fff;
     classDef data fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
 
     class A,B,C,D client;
     class E,F,G,H security;
     class I,J,K,L,M,N,O backend;
+    class S cache;
     class P,Q,R data;
 ```
 
@@ -115,7 +126,7 @@ flowchart TD
 | :--- | :---: | :--- | :--- |
 | `/api/health` | `GET` | Public | System status and timestamp |
 | `/api/stats` | `GET` | Public | Aggregated hackathon metrics and track breakdown |
-| `/api/teams` | `GET` | Public | Fetch team listing |
+| `/api/teams` | `GET` | Public / Cached | Fetch team listing (Served via Redis + Neon DB) |
 | `/api/teams/:id` | `GET` | Public | Fetch team profile by ID or email |
 | `/api/teams/register` | `POST` | Signature & UTR | Register team, validate UTR & upload payment proof |
 | `/api/auth/team-login` | `POST` | PIN Code | Authenticate team access with PIN |
@@ -141,10 +152,11 @@ DSC-Hackathon/
 │   └── index.ts            # Vercel serverless Express API handler
 ├── server/
 │   ├── db.ts               # Neon PostgreSQL queries & schema initialization
+│   ├── redis.ts            # Upstash Redis caching client & buffer keys
 │   └── imagekit.ts         # ImageKit SDK & REST upload adapter
 ├── src/
 │   ├── components/         # Navigation, RegistrationForm, ProjectSubmissionModal, AdminPortal
-│   ├── lib/                # fileValidation (magic bytes), deadline, clerk auth
+│   ├── lib/                # fileValidation (magic bytes), deadline, clerk auth, imagekitClient
 │   ├── types.ts            # TypeScript definitions (Team, Project, Score, AdminUser)
 │   ├── App.tsx             # Root layout & page router
 │   └── main.tsx            # Application entrypoint
@@ -165,6 +177,7 @@ DSC-Hackathon/
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) + Custom CSS | High-contrast dark comic book theme |
 | **Backend** | [Express 4](https://expressjs.com/) | RESTful API routes & serverless function core |
 | **Database** | [Neon Postgres](https://neon.tech/) | Serverless PostgreSQL database |
+| **Caching** | [Upstash Redis](https://upstash.com/) | Sub-millisecond serverless Redis cache buffer |
 | **Media Storage** | [ImageKit CDN](https://imagekit.io/) | Cloud media upload, signature verification, & hosting |
 | **Authentication** | [Clerk Auth](https://clerk.com/) + Internal Admin OTP | Identity management & whitelisted OTP auth |
 | **Deployment** | [Vercel](https://vercel.com/) | Continuous integration & serverless hosting |
@@ -191,12 +204,16 @@ Create a `.env` file in the root directory:
 # Neon Database Connection
 DATABASE_URL=postgresql://user:password@ep-instance.neon.tech/neondb?sslmode=require
 
+# Upstash Redis Cache (Optional / Configured)
+UPSTASH_REDIS_REST_URL=https://your-upstash-redis-url.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+
 # ImageKit Integration
 IMAGEKIT_PUBLIC_KEY=public_key_here
 IMAGEKIT_PRIVATE_KEY=private_key_here
 IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_endpoint
 
-# Clerk Authentication (Optional / Configured)
+# Clerk Authentication
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_clerk_key
 CLERK_SECRET_KEY=sk_test_clerk_key
 ```
@@ -217,4 +234,3 @@ npm run lint
 ## 📄 License
 
 Licensed under the [MIT License](LICENSE). Built for **Origin Hackathon** by **Data Science Club (DSC)**.
-

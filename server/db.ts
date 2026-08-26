@@ -155,12 +155,10 @@ export async function getAllTeams(): Promise<Team[]> {
     try {
       const res = await pool.query('SELECT data FROM teams ORDER BY ctid DESC');
       const teams = res.rows.map((r) => r.data as Team);
-      if (teams && teams.length > 0) {
-        // Cache to Redis asynchronously (non-blocking)
-        setCachedData(CACHE_KEYS.TEAMS, teams).catch(() => {});
-        localTeams = teams;
-        return teams;
-      }
+      // Cache to Redis asynchronously (non-blocking)
+      setCachedData(CACHE_KEYS.TEAMS, teams).catch(() => {});
+      localTeams = teams;
+      return teams;
     } catch (err) {
       handleDBError(err, 'fetching teams');
       console.warn('[NeonDB -> Redis Fallback] Neon DB query failed/timed out. Trying Redis cache...');
@@ -169,8 +167,8 @@ export async function getAllTeams(): Promise<Team[]> {
 
   // 2. Fallback to Redis Cache buffer
   const cached = await getCachedData<Team[]>(CACHE_KEYS.TEAMS);
-  if (cached && Array.isArray(cached) && cached.length > 0) {
-    console.log(`[Upstash Redis] Successfully served ${cached.length} teams from cache buffer.`);
+  if (cached && Array.isArray(cached)) {
+    console.log(`[Upstash Redis] Served ${cached.length} teams from cache buffer.`);
     localTeams = cached;
     return cached;
   }
@@ -179,8 +177,33 @@ export async function getAllTeams(): Promise<Team[]> {
 }
 
 export async function findTeamById(idOrEmail: string): Promise<Team | null> {
-  const teams = await getAllTeams();
+  if (!idOrEmail) return null;
   const clean = idOrEmail.trim().toLowerCase();
+  const cleanUpper = idOrEmail.trim().toUpperCase();
+
+  // Try direct fast lookup from Neon DB
+  if (useNeon && pool) {
+    try {
+      const res = await pool.query(
+        `SELECT data FROM teams 
+         WHERE UPPER(id) = $1 
+            OR LOWER(data->'leader'->>'email') = $2 
+            OR LOWER(data->'member2'->>'email') = $2 
+            OR LOWER(data->'member3'->>'email') = $2 
+            OR LOWER(data->'member4'->>'email') = $2 
+            OR LOWER(data->'member5'->>'email') = $2 
+         LIMIT 1`,
+        [cleanUpper, clean]
+      );
+      if (res.rows.length > 0 && res.rows[0].data) {
+        return res.rows[0].data as Team;
+      }
+    } catch (err) {
+      handleDBError(err, 'findTeamById');
+    }
+  }
+
+  const teams = await getAllTeams();
   return (
     teams.find(
       (t) =>
@@ -199,7 +222,20 @@ export async function saveNewTeam(team: Team): Promise<Team> {
     try {
       await pool.query(
         `INSERT INTO teams (id, team_name, access_code, track, payment_status, payment_proof_url, transaction_ref, registered_at, checked_in_venue, ticket_issued, notes, amount_paid, data)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         ON CONFLICT (id) DO UPDATE SET
+           team_name = EXCLUDED.team_name,
+           access_code = EXCLUDED.access_code,
+           track = EXCLUDED.track,
+           payment_status = EXCLUDED.payment_status,
+           payment_proof_url = EXCLUDED.payment_proof_url,
+           transaction_ref = EXCLUDED.transaction_ref,
+           registered_at = EXCLUDED.registered_at,
+           checked_in_venue = EXCLUDED.checked_in_venue,
+           ticket_issued = EXCLUDED.ticket_issued,
+           notes = EXCLUDED.notes,
+           amount_paid = EXCLUDED.amount_paid,
+           data = EXCLUDED.data`,
         [
           team.id,
           team.teamName,
@@ -216,11 +252,14 @@ export async function saveNewTeam(team: Team): Promise<Team> {
           JSON.stringify(team),
         ]
       );
-    } catch (err) {
+      console.log(`[NeonDB] Team saved successfully: ${team.id} (${team.teamName})`);
+    } catch (err: any) {
       handleDBError(err, 'inserting team');
+      console.error('[NeonDB Critical Error] Failed to persist team:', err?.message || err);
+      throw new Error(`Database error: Failed to save team to Neon DB (${err?.message || 'DB query error'})`);
     }
   }
-  localTeams.unshift(team);
+  localTeams = [team, ...localTeams.filter((t) => t.id.toUpperCase() !== team.id.toUpperCase())];
   // Invalidate and refresh cache
   await invalidateCache(CACHE_KEYS.TEAMS);
   return team;
@@ -250,13 +289,17 @@ export async function updateTeam(team: Team): Promise<Team> {
           team.id,
         ]
       );
-    } catch (err) {
+      console.log(`[NeonDB] Team updated successfully: ${team.id}`);
+    } catch (err: any) {
       handleDBError(err, 'updating team');
+      throw new Error(`Database error: Failed to update team in Neon DB (${err?.message || 'DB query error'})`);
     }
   }
   const idx = localTeams.findIndex((t) => t.id.toUpperCase() === team.id.toUpperCase());
   if (idx !== -1) {
     localTeams[idx] = team;
+  } else {
+    localTeams.push(team);
   }
   // Invalidate cache
   await invalidateCache(CACHE_KEYS.TEAMS);

@@ -1,12 +1,12 @@
 # 🏛️ System Architecture & Scale Documentation
 
-This document describes the end-to-end technical architecture, security model, database schema, and serverless execution topology of the **Origin Hackathon Portal**.
+This document describes the end-to-end technical architecture, security model, database schema, caching strategy, and serverless execution topology of the **Origin Hackathon Portal**.
 
 ---
 
 ## 1. High-Level Architecture
 
-The platform follows a modern serverless JAMstack topology:
+The platform follows a modern serverless JAMstack topology with dual-layer persistence and caching:
 
 ```
 ┌───────────────────────────────────────────────────────────┐
@@ -24,21 +24,41 @@ The platform follows a modern serverless JAMstack topology:
 │  - UTR / Transaction Ref Deduplication                    │
 │  - Whitelisted Admin OTP Verification                     │
 │  - Dual-Gated Project Submission Engine                   │
-└──────────────┬──────────────────────────────┬─────────────┘
-               │                              │
-               ▼                              ▼
-┌──────────────────────────────┐ ┌──────────────────────────┐
-│ Neon Serverless PostgreSQL   │ │ ImageKit Cloud Media CDN │
-│ - Teams Table (JSONB)        │ │ - Proof Screenshots      │
-│ - Admin Users Table          │ │ - Presentation Decks     │
-│ - Announcements Table        │ │ - Architecture Diagrams  │
-│ - Settings Table             │ └──────────────────────────┘
-└──────────────────────────────┘
+└──────┬──────────────────────┬──────────────────────┬──────┘
+       │                      │                      │
+       ▼                      ▼                      ▼
+┌───────────────────┐  ┌───────────────────┐  ┌──────────────────────────┐
+│ Upstash Redis     │  │ Neon Serverless   │  │ ImageKit Cloud Media CDN │
+│ Cache Buffer      │  │ PostgreSQL DB     │  │ - Proof Screenshots      │
+│ - Sub-ms Reads    │  │ - Authoritative   │  │ - Presentation Decks     │
+│ - Live Poll Sync  │  │   Postgres Store  │  │ - Architecture Diagrams  │
+│ - Auto Invalidate │  │ - JSONB Document  │  └──────────────────────────┘
+└───────────────────┘  └───────────────────┘
 ```
 
 ---
 
-## 2. Security & Validation Framework
+## 2. Caching Architecture (Upstash Redis Buffer)
+
+To support high-concurrency real-time polling (e.g. all participant passes and admin monitoring dashboards polling every 5 seconds) without overloading serverless database connection limits, the backend implements an **Upstash Redis Cache Layer** with active cache invalidation.
+
+### Cache Keys & Strategy
+
+| Cache Key | Data Cached | TTL / Invalidation Policy |
+| :--- | :--- | :--- |
+| `origin:teams:all` | Complete hydrated array of registered teams | Invalidated on `saveNewTeam`, `updateTeam`, `deleteTeam`, and `clearAllData` |
+| `origin:admins:whitelist` | Authorized admin users whitelist | Invalidated on `addAdmin`, `removeAdmin` |
+| `origin:announcements:all` | Broadcast announcements feed | Invalidated on `addAnnouncement`, `deleteAnnouncement` |
+| `origin:settings:submissions` | Boolean flag for global submissions window | Updated atomically on `setSubmissionStatusDB` |
+| `origin:settings:registrations`| Boolean flag for global registrations window | Updated atomically on `setRegistrationStatusDB` |
+
+### Read/Write Invalidation Flow
+1. **Reads**: The backend attempts to read from the authoritative Neon DB connection. The result is asynchronously cached into Upstash Redis. If the DB encounters cold-start latency, the Upstash Redis buffer instantly serves the warm cached dataset.
+2. **Writes**: Updates write directly to Neon PostgreSQL (`ON CONFLICT DO UPDATE`). Upon write confirmation, the corresponding Redis cache key is invalidated or refreshed so all subsequent read requests immediately reflect fresh state.
+
+---
+
+## 3. Security & Validation Framework
 
 ### A. Binary Signature (Magic Bytes) File Validation
 To prevent extension spoofing or malicious payload execution via file uploads, the server inspects the initial byte sequences (magic bytes) of uploaded buffers:
@@ -53,9 +73,9 @@ To prevent extension spoofing or malicious payload execution via file uploads, t
 | **PPT / PPTX**| `application/vnd.ms-powerpoint`, `application/vnd.openxmlformats...` | `D0 CF 11 E0` (OLE) or `50 4B 03 04` (ZIP/OOXML) |
 
 ### B. Unique UTR & Transaction Deduplication
-Payment transaction references (UTR numbers) are indexed with a `UNIQUE` constraint in the database. Before inserting a team record:
+Payment transaction references (UTR numbers) are verified in PostgreSQL before team insertion:
 1. The server queries `SELECT id FROM teams WHERE LOWER(transaction_ref) = LOWER($1)`.
-2. If already registered, returns HTTP 400 with message: *"This UTR/transaction reference has already been used by another team."*
+2. If already registered, returns HTTP 400: *"This UTR/transaction reference has already been used by another team."*
 
 ### C. Whitelisted Admin OTP Authentication
 Admin privileges are restricted to designated executive council emails:
@@ -71,7 +91,7 @@ Project submissions (`PUT /api/teams/:id/project`) enforce three concurrent lock
 
 ---
 
-## 3. Database Schema (Neon PostgreSQL)
+## 4. Database Schema (Neon PostgreSQL)
 
 ```sql
 -- Teams table storing primary team record and JSON payload
@@ -82,11 +102,12 @@ CREATE TABLE IF NOT EXISTS teams (
   track VARCHAR(100) NOT NULL,
   payment_status VARCHAR(50) DEFAULT 'pending',
   payment_proof_url TEXT,
-  transaction_ref VARCHAR(100) UNIQUE,
+  transaction_ref VARCHAR(100),
   registered_at VARCHAR(100),
   checked_in_venue BOOLEAN DEFAULT FALSE,
   ticket_issued BOOLEAN DEFAULT FALSE,
   notes TEXT,
+  amount_paid INTEGER DEFAULT 150,
   data JSONB NOT NULL
 );
 
@@ -109,72 +130,12 @@ CREATE TABLE IF NOT EXISTS announcements (
   sender VARCHAR(100)
 );
 
--- Global app settings (e.g. submissions_open)
+-- Global app settings (e.g. submissions_open, registrations_open)
 CREATE TABLE IF NOT EXISTS settings (
   key VARCHAR(100) PRIMARY KEY,
   value TEXT NOT NULL
 );
 ```
-
----
-
-## 4. API Endpoint Contract Details
-
-### Team Registration (`POST /api/teams/register`)
-- **Request Body**:
-  ```json
-  {
-    "teamName": "Data Titans",
-    "track": "AI & Machine Learning",
-    "leader": {
-      "name": "Aarav Sharma",
-      "email": "aarav.24bce10000@vitbhopal.ac.in",
-      "phone": "9876543210",
-      "college": "VIT Bhopal University"
-    },
-    "transactionRef": "UTR9876543210",
-    "paymentProofUrl": "https://ik.imagekit.io/..."
-  }
-  ```
-- **Response (201 Created)**:
-  ```json
-  {
-    "success": true,
-    "message": "Team registered! Access is currently pending admin verification.",
-    "team": {
-      "id": "ORIGIN-8412",
-      "accessCode": "4921",
-      "paymentStatus": "pending"
-    }
-  }
-  ```
-
-### Project Evaluation (`POST /api/teams/:id/score`)
-- **Request Body**:
-  ```json
-  {
-    "innovation": 9,
-    "technicalComplexity": 8,
-    "uiUx": 9,
-    "presentation": 8,
-    "impact": 9,
-    "feedback": "Outstanding technical depth and slick user UI!"
-  }
-  ```
-- **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "message": "Project score saved.",
-    "team": {
-      "project": {
-        "score": {
-          "total": 43
-        }
-      }
-    }
-  }
-  ```
 
 ---
 
@@ -184,4 +145,5 @@ In production on Vercel:
 - Frontend static assets are served via Vercel Edge Network.
 - Express server routes in `api/index.ts` run as serverless functions.
 - Database connection pooling is handled by `@neondatabase/serverless` over WebSocket/HTTP.
-- Media uploads stream to ImageKit REST endpoints via serverless buffer memory.
+- Upstash Redis handles high-speed distributed cache buffering.
+- Media uploads stream to ImageKit REST endpoints via serverless buffer memory and multipart form data.
