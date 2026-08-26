@@ -1,5 +1,8 @@
 import { Team, Announcement, TrackType } from '../types';
 
+export const EXTERNAL_REGISTRATION_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLSdE-ru_d41tfCA_KMdyWwsH95k0InD9TCLpGVJ8CYt5RE14xg/viewform';
+
 export const HACKATHON_TRACKS: { name: TrackType; icon: string; description: string; color: string }[] = [
   {
     name: 'AI & Machine Learning',

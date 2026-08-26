@@ -15,7 +15,7 @@ import { SponsorsSection } from './components/SponsorsSection';
 import { FAQSection } from './components/FAQSection';
 import { BackgroundVeins } from './components/BackgroundVeins';
 import { Team, Announcement, HackathonStats, TrackType, PaymentStatus } from './types';
-import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from './data/mockData';
+import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS, EXTERNAL_REGISTRATION_URL } from './data/mockData';
 import { ArrowRight } from 'lucide-react';
 
 import { useUser } from '@clerk/clerk-react';
@@ -393,12 +393,25 @@ export default function App() {
             )}
 
             {activeTab === 'register' && (
-              <TeamPassTicket
-                team={activeTeam}
-                onNavigateToSubmit={() => setActiveTab('submit')}
-                onSwitchTeamLogin={() => setIsLoginModalOpen(true)}
-                onRefreshTeamData={fetchTeamsAndStats}
-              />
+              <div className="max-w-xl mx-auto px-4 pt-32 pb-16 text-center">
+                <div className="bg-black border border-neutral-800 p-8 space-y-6 shadow-2xl">
+                  <span className="px-2.5 py-0.5 bg-orange-500/10 border border-orange-500/30 text-orange-400 font-mono text-[10px] font-bold uppercase tracking-wider inline-block">
+                    EXTERNAL REGISTRATION
+                  </span>
+                  <h3 className="text-3xl font-bold text-white tracking-tight font-heading">
+                    Register for ORIGIN Hackathon
+                  </h3>
+                  <p className="text-xs text-neutral-400 font-mono leading-relaxed max-w-md mx-auto">
+                    Registration for ORIGIN '26 is hosted on Google Forms. Click below to open the official registration form in a new tab.
+                  </p>
+                  <button
+                    onClick={() => window.open(EXTERNAL_REGISTRATION_URL, '_blank')}
+                    className="px-8 py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-mono text-xs uppercase tracking-wider font-bold border border-orange-500 flex items-center justify-center gap-2 mx-auto transition-colors cursor-pointer"
+                  >
+                    <span>OPEN REGISTRATION FORM &gt;</span>
+                  </button>
+                </div>
+              </div>
             )}
 
             {activeTab === 'team' && (
@@ -457,7 +470,12 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Team Login Modal */}
+      {/* ============================================================================
+        * SPECIAL IDENTIFIER: TEAM LOGIN MODAL COMPONENT (TEMPORARILY UNMOUNTED/DISABLED)
+        * All team login modal functionality and authentication handlers are preserved here.
+        * To re-enable Team Login Modal UI rendering, uncomment the component below.
+        * ============================================================================ */}
+      {/*
       <TeamLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
@@ -467,9 +485,10 @@ export default function App() {
           setActiveTab('team');
         }}
         onNavigateToRegister={() => {
-          setActiveTab('team');
+          window.open(EXTERNAL_REGISTRATION_URL, '_blank');
         }}
       />
+      */}
 
       {/* Comic Book Torn Paper Edge Divider before Footer */}
       <div className="torn-paper-edge" />
@@ -547,7 +566,7 @@ export default function App() {
                 READY TO BUILD?
               </span>
               <button
-                onClick={() => setActiveTab('register')}
+                onClick={() => window.open(EXTERNAL_REGISTRATION_URL, '_blank')}
                 className="btn-primary text-xs mb-6"
               >
                 REGISTER TEAM NOW &gt;
