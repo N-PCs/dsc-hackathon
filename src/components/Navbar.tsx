@@ -11,6 +11,7 @@ interface NavbarProps {
   hasActiveTeam: boolean;
   isAdmin: boolean;
   onOpenLogin: () => void;
+  hasAnnouncement?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   hasActiveTeam,
   onOpenLogin,
+  hasAnnouncement = false,
 }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -88,7 +90,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+        style={{ top: hasAnnouncement ? '40px' : '0px' }}
+        className={`fixed left-0 right-0 z-50 transition-all duration-300 ${scrolled
           ? 'bg-[#0A0A0A]/95 backdrop-blur-md border-b border-[#222222]'
           : 'bg-[#0A0A0A]/80 backdrop-blur-sm border-b border-[#1A1A1A]'
           }`}
@@ -186,7 +189,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-[#0A0A0A] pt-24 px-6 md:hidden">
+        <div
+          style={{ paddingTop: hasAnnouncement ? '8rem' : '6rem' }}
+          className="fixed inset-0 z-40 bg-[#0A0A0A] px-6 md:hidden overflow-y-auto"
+        >
           <nav className="flex flex-col gap-2">
             {navLinks.map((link, i) => (
               <button

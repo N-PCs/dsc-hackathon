@@ -28,9 +28,12 @@ export default function App() {
   >('home');
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [activeTeam, setActiveTeam] = useState<Team | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedTrackForReg, setSelectedTrackForReg] = useState<TrackType>('AI & Machine Learning');
+
+  const hasActiveAnnouncement = announcements.length > 0 && !bannerDismissed;
 
   // Lenis smooth scrolling
   useEffect(() => {
@@ -118,8 +121,13 @@ export default function App() {
     }
   };
 
+  // Periodic polling so all admin consoles stay synced in real-time with backend/database
   useEffect(() => {
     fetchTeamsAndStats();
+    const interval = setInterval(() => {
+      fetchTeamsAndStats();
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Calculate live statistics
@@ -278,6 +286,18 @@ export default function App() {
     }
   };
 
+  const handleAdminDeleteAnnouncement = async (announcementId: string) => {
+    setAnnouncements((prev) => prev.filter((a) => a.id !== announcementId));
+    try {
+      await fetch(`/api/announcements/${announcementId}`, {
+        method: 'DELETE',
+        headers: { ...getAdminHeaders() },
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Scroll to top on tab change for dedicated sub-views
   useEffect(() => {
     if (activeTab !== 'home') {
@@ -291,7 +311,10 @@ export default function App() {
       <BackgroundVeins />
 
       {/* Announcements */}
-      <LiveAnnouncementsBanner announcements={announcements} />
+      <LiveAnnouncementsBanner
+        announcements={announcements}
+        onDismiss={() => setBannerDismissed(true)}
+      />
 
       {/* Navbar */}
       <Navbar
@@ -301,10 +324,11 @@ export default function App() {
         hasActiveTeam={!!activeTeam}
         isAdmin={activeTab === 'admin'}
         onOpenLogin={() => setIsLoginModalOpen(true)}
+        hasAnnouncement={hasActiveAnnouncement}
       />
 
       {/* Main content */}
-      <main className="flex-1">
+      <main className={`flex-1 transition-all duration-300 ${hasActiveAnnouncement ? 'pt-10' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -373,6 +397,7 @@ export default function App() {
                 onScoreProject={handleAdminScoreProject}
                 onDeleteTeam={handleAdminDeleteTeam}
                 onSendAnnouncement={handleAdminSendAnnouncement}
+                onDeleteAnnouncement={handleAdminDeleteAnnouncement}
                 onRefreshData={fetchTeamsAndStats}
               />
             )}

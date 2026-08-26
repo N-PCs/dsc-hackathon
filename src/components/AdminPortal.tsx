@@ -85,6 +85,7 @@ interface AdminPortalProps {
   onScoreProject: (teamId: string, score: { innovation: number; technicalComplexity: number; uiUx: number; presentation: number; impact: number; feedback: string }) => void;
   onDeleteTeam: (teamId: string) => void;
   onSendAnnouncement: (title: string, message: string, category: 'urgent' | 'schedule' | 'food' | 'mentorship' | 'general') => void;
+  onDeleteAnnouncement?: (announcementId: string) => void;
   onRefreshData: () => void;
 }
 
@@ -95,6 +96,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onScoreProject,
   onDeleteTeam,
   onSendAnnouncement,
+  onDeleteAnnouncement,
   onRefreshData,
 }) => {
   const { user: clerkUser, isSignedIn: isClerkSignedIn } = useUser();
@@ -172,11 +174,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [annCategory, setAnnCategory] = useState<'urgent' | 'schedule' | 'food' | 'mentorship' | 'general'>('general');
   const [annSuccess, setAnnSuccess] = useState(false);
 
-  // Submission Gate state
+  // Submission & Registration Gate state
   const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(false);
+  const [isRegistrationsOpen, setIsRegistrationsOpen] = useState(true);
   const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
   const [submissionDeadline, setSubmissionDeadline] = useState('');
   const [isTogglingSubmissions, setIsTogglingSubmissions] = useState(false);
+  const [isTogglingRegistrations, setIsTogglingRegistrations] = useState(false);
 
   // Fetch submission status and whitelist from backend
   useEffect(() => {
@@ -187,6 +191,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           setIsSubmissionsOpen(data.submissionsOpen);
           if (data.deadline) setSubmissionDeadline(data.deadline);
           if (typeof data.isDeadlinePassed === 'boolean') setIsDeadlinePassed(data.isDeadlinePassed);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/admin/registrations-status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && typeof data.registrationsOpen === 'boolean') {
+          setIsRegistrationsOpen(data.registrationsOpen);
         }
       })
       .catch(() => {});
@@ -252,6 +265,32 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       alert('Failed to toggle submission status.');
     } finally {
       setIsTogglingSubmissions(false);
+    }
+  };
+
+  const handleToggleRegistrations = async () => {
+    if (!currentAdmin) return;
+    const nextState = !isRegistrationsOpen;
+    setIsTogglingRegistrations(true);
+    try {
+      const res = await fetch('/api/admin/registrations-toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-email': currentAdmin.email,
+        },
+        body: JSON.stringify({ registrationsOpen: nextState }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsRegistrationsOpen(data.registrationsOpen);
+      } else {
+        alert(data.message || 'Failed to toggle registration status.');
+      }
+    } catch (err) {
+      alert('Failed to toggle registration status.');
+    } finally {
+      setIsTogglingRegistrations(false);
     }
   };
 
@@ -408,6 +447,25 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const handleExportCsv = () => {
     window.open('/api/export-csv', '_blank');
   };
+
+  // Helper to calculate total registration fee paid / due for a team
+  const calcTeamFee = (t: Team) => {
+    if (typeof t.amountPaid === 'number' && t.amountPaid > 0) return t.amountPaid;
+    let fee = 0;
+    const members = [t.leader, t.member2, t.member3, t.member4, t.member5];
+    members.forEach((m) => {
+      if (m && m.name) {
+        fee += m.residentialStatus === 'Day Scholar' ? 219 : 100;
+      }
+    });
+    return fee || 100;
+  };
+
+  const verifiedEarnings = teams
+    .filter((t) => t.paymentStatus === 'verified')
+    .reduce((sum, t) => sum + calcTeamFee(t), 0);
+
+  const potentialEarnings = teams.reduce((sum, t) => sum + calcTeamFee(t), 0);
 
   // Filtered teams
   const filteredTeams = teams.filter((team) => {
@@ -588,6 +646,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           )}
 
           <button
+            id="admin-btn-toggle-registrations"
+            onClick={handleToggleRegistrations}
+            disabled={isTogglingRegistrations}
+            className={`px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer border ${
+              isRegistrationsOpen
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500'
+                : 'bg-rose-950/80 hover:bg-rose-900 text-rose-200 border-rose-700'
+            }`}
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>
+              {isTogglingRegistrations
+                ? 'Updating...'
+                : isRegistrationsOpen
+                ? 'Registrations: OPEN (Click to Stop)'
+                : 'Registrations: STOPPED (Click to Open)'}
+            </span>
+          </button>
+
+          <button
             id="admin-btn-toggle-submissions"
             onClick={handleToggleSubmissions}
             disabled={isTogglingSubmissions}
@@ -638,7 +716,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       </div>
 
       {/* Admin Stats Bar — Dark Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-800 border border-neutral-800">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-neutral-800 border border-neutral-800">
         <div className="bg-black p-5">
           <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Total Teams</span>
           <div className="text-3xl font-extrabold text-white font-mono">{totalTeams}</div>
@@ -648,8 +726,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="text-3xl font-extrabold text-orange-500 font-mono">{verifiedTeams}</div>
         </div>
         <div className="bg-black p-5">
-          <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Pending Verification</span>
+          <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Pending Review</span>
           <div className="text-3xl font-extrabold text-amber-500 font-mono">{pendingTeams}</div>
+        </div>
+        <div className="bg-black p-5 border-l border-neutral-800 bg-emerald-950/20">
+          <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider block mb-1 font-bold">Live Verified Revenue</span>
+          <div className="text-3xl font-extrabold text-emerald-400 font-mono">₹{verifiedEarnings.toLocaleString('en-IN')}</div>
+          <span className="text-[10px] font-mono text-neutral-400 block mt-0.5">Potential: ₹{potentialEarnings.toLocaleString('en-IN')}</span>
         </div>
         <div className="bg-black p-5">
           <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Submissions</span>
@@ -799,9 +882,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       </td>
 
                       <td className="p-3.5">
-                        <div className="text-white font-medium">{team.leader.name}</div>
+                        <div className="text-white font-medium flex items-center gap-1.5 flex-wrap">
+                          <span>{team.leader.name}</span>
+                          {team.leader.registrationNumber && (
+                            <span className="text-[9px] text-orange-400 font-mono font-normal bg-orange-500/10 px-1 py-0.2 border border-orange-500/20">
+                              {team.leader.registrationNumber}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-neutral-400 font-mono">{team.leader.email}</div>
-                        <div className="text-[10px] text-neutral-500 font-mono">{team.leader.phone}</div>
+                        <div className="text-[10px] text-neutral-500 font-mono flex items-center gap-1 flex-wrap mt-0.5">
+                          <span>{team.leader.phone}</span>
+                          {team.leader.residentialStatus && (
+                            <span className="text-[9px] text-neutral-400 border border-neutral-800 px-1 py-0.2 uppercase">
+                              {team.leader.residentialStatus}
+                            </span>
+                          )}
+                          {team.leader.messName && (
+                            <span className="text-[9px] text-amber-400/90 border border-amber-500/20 px-1 py-0.2">
+                              {team.leader.messName}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="p-3.5">
@@ -818,7 +920,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <td className="p-3.5">
                         {team.paymentStatus === 'verified' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-400 font-mono text-[10px] font-bold border border-orange-500/30 uppercase tracking-wider">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/30 uppercase tracking-wider">
                             <CheckCircle className="w-3 h-3" /> Verified
                           </span>
                         ) : team.paymentStatus === 'pending' ? (
@@ -830,6 +932,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             <XCircle className="w-3 h-3" /> Rejected
                           </span>
                         )}
+                        <div className="font-bold text-white font-mono mt-1 text-xs flex items-center gap-1">
+                          <span className="text-orange-400">₹{calcTeamFee(team)}</span>
+                          <span className="text-[9px] text-neutral-500 uppercase font-normal">paid</span>
+                        </div>
                       </td>
 
                       <td className="p-3.5">
@@ -1125,21 +1231,47 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           {/* Previous announcements stream */}
           <div className="lg:col-span-6 space-y-3">
             <h4 className="text-sm font-bold text-white mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Live Announcement Feed</h4>
-            {announcements.map((ann) => (
-              <div
-                key={ann.id}
-                className="p-4 bg-black border border-neutral-800 space-y-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white font-mono">{ann.title}</span>
-                  <span className="text-[10px] font-mono text-neutral-500">{ann.timestamp}</span>
-                </div>
-                <p className="text-xs text-neutral-400 leading-relaxed">{ann.message}</p>
-                <span className="text-[10px] font-mono text-orange-400 block pt-1">
-                  Sent by: {ann.sender}
-                </span>
+            {announcements.length === 0 ? (
+              <div className="p-6 bg-black border border-neutral-800 text-center text-xs font-mono text-neutral-500">
+                No active announcements published.
               </div>
-            ))}
+            ) : (
+              announcements.map((ann) => (
+                <div
+                  key={ann.id}
+                  className="p-4 bg-black border border-neutral-800 space-y-1.5 relative group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-white font-mono">{ann.title}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-neutral-500">{ann.timestamp}</span>
+                      {onDeleteAnnouncement && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete announcement "${ann.title}"?`)) {
+                              onDeleteAnnouncement(ann.id);
+                            }
+                          }}
+                          className="text-neutral-500 hover:text-red-400 p-1 transition-colors cursor-pointer"
+                          title="Delete announcement"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-400 leading-relaxed">{ann.message}</p>
+                  <div className="flex items-center justify-between text-[10px] font-mono pt-1">
+                    <span className="text-orange-400">
+                      Sent by: {ann.sender}
+                    </span>
+                    <span className="text-neutral-600 uppercase">
+                      Category: {ann.category}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

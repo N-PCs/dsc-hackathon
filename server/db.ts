@@ -132,10 +132,8 @@ export async function initDatabase() {
 export async function getAllTeams(): Promise<Team[]> {
   if (useNeon && pool) {
     try {
-      const res = await pool.query('SELECT data FROM teams ORDER BY registered_at DESC');
-      if (res.rows.length > 0) {
-        return res.rows.map((r) => r.data as Team);
-      }
+      const res = await pool.query('SELECT data FROM teams ORDER BY ctid DESC');
+      return res.rows.map((r) => r.data as Team);
     } catch (err) {
       console.error('[NeonDB] Error fetching teams:', err);
     }
@@ -199,7 +197,7 @@ export async function updateTeam(team: Team): Promise<Team> {
           ticket_issued = $4, 
           notes = $5, 
           data = $6 
-         WHERE id = $7`,
+         WHERE UPPER(id) = UPPER($7)`,
         [
           team.paymentStatus,
           team.paymentProofUrl || '',
@@ -289,16 +287,14 @@ export async function getAnnouncementsDB(): Promise<Announcement[]> {
   if (useNeon && pool) {
     try {
       const res = await pool.query('SELECT id, title, message, category, timestamp, sender FROM announcements ORDER BY id DESC');
-      if (res.rows.length > 0) {
-        return res.rows.map((r) => ({
-          id: r.id,
-          title: r.title,
-          message: r.message,
-          category: r.category,
-          timestamp: r.timestamp,
-          sender: r.sender,
-        }));
-      }
+      return res.rows.map((r) => ({
+        id: r.id,
+        title: r.title,
+        message: r.message,
+        category: r.category,
+        timestamp: r.timestamp,
+        sender: r.sender,
+      }));
     } catch (err) {
       console.error('[NeonDB] Error fetching announcements:', err);
     }
@@ -307,6 +303,7 @@ export async function getAnnouncementsDB(): Promise<Announcement[]> {
 }
 
 let localSubmissionsOpen = false;
+let localRegistrationsOpen = true;
 
 export async function getSubmissionStatusDB(): Promise<boolean> {
   if (useNeon && pool) {
@@ -338,6 +335,36 @@ export async function setSubmissionStatusDB(isOpen: boolean): Promise<boolean> {
   return localSubmissionsOpen;
 }
 
+export async function getRegistrationStatusDB(): Promise<boolean> {
+  if (useNeon && pool) {
+    try {
+      const res = await pool.query("SELECT value FROM settings WHERE key = 'registrations_open'");
+      if (res.rows.length > 0) {
+        return res.rows[0].value === 'true';
+      }
+    } catch (err) {
+      console.error('[NeonDB] Error fetching registration status:', err);
+    }
+  }
+  return localRegistrationsOpen;
+}
+
+export async function setRegistrationStatusDB(isOpen: boolean): Promise<boolean> {
+  localRegistrationsOpen = isOpen;
+  if (useNeon && pool) {
+    try {
+      await pool.query(
+        `INSERT INTO settings (key, value) VALUES ('registrations_open', $1)
+         ON CONFLICT (key) DO UPDATE SET value = $1`,
+        [String(isOpen)]
+      );
+    } catch (err) {
+      console.error('[NeonDB] Error updating registration status:', err);
+    }
+  }
+  return localRegistrationsOpen;
+}
+
 export async function addAnnouncementDB(ann: Announcement): Promise<Announcement> {
   if (useNeon && pool) {
     try {
@@ -352,6 +379,18 @@ export async function addAnnouncementDB(ann: Announcement): Promise<Announcement
   }
   localAnnouncements.unshift(ann);
   return ann;
+}
+
+export async function deleteAnnouncementDB(id: string): Promise<boolean> {
+  if (useNeon && pool) {
+    try {
+      await pool.query('DELETE FROM announcements WHERE id = $1', [id]);
+    } catch (err) {
+      console.error('[NeonDB] Error deleting announcement:', err);
+    }
+  }
+  localAnnouncements = localAnnouncements.filter((a) => a.id !== id);
+  return true;
 }
 
 export async function isTransactionRefUsed(ref: string): Promise<boolean> {

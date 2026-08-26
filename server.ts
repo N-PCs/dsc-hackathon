@@ -17,8 +17,11 @@ import {
   removeAdminDB,
   getAnnouncementsDB,
   addAnnouncementDB,
+  deleteAnnouncementDB,
   getSubmissionStatusDB,
   setSubmissionStatusDB,
+  getRegistrationStatusDB,
+  setRegistrationStatusDB,
   isTransactionRefUsed,
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
@@ -204,6 +207,14 @@ async function startServer() {
   // Register New Team (Initial Status: Pending / Locked until Admin verification)
   app.post('/api/teams/register', async (req, res) => {
     try {
+      const isRegistrationsOpen = await getRegistrationStatusDB();
+      if (!isRegistrationsOpen) {
+        return res.status(403).json({
+          success: false,
+          message: 'Registrations are currently closed by the organizers. New team registrations are temporarily stopped.',
+        });
+      }
+
       const {
         teamName,
         track,
@@ -211,6 +222,7 @@ async function startServer() {
         member2,
         member3,
         member4,
+        member5,
         transactionRef,
         paymentProofUrl,
       } = req.body;
@@ -261,6 +273,9 @@ async function startServer() {
           phone: leader.phone.trim(),
           college: leader.college || 'VIT Bhopal University',
           role: leader.role || 'Team Lead',
+          registrationNumber: leader.registrationNumber?.trim() || '',
+          residentialStatus: leader.residentialStatus || 'Hosteller',
+          messName: leader.messName || 'Anchor (Boys)',
         },
         member2: member2?.name?.trim()
           ? {
@@ -269,6 +284,9 @@ async function startServer() {
             phone: member2.phone?.trim() || '',
             college: member2.college || leader.college || 'VIT Bhopal University',
             role: member2.role || 'Member',
+            registrationNumber: member2.registrationNumber?.trim() || '',
+            residentialStatus: member2.residentialStatus || 'Hosteller',
+            messName: member2.messName || 'Anchor (Boys)',
           }
           : undefined,
         member3: member3?.name?.trim()
@@ -278,6 +296,9 @@ async function startServer() {
             phone: member3.phone?.trim() || '',
             college: member3.college || leader.college || 'VIT Bhopal University',
             role: member3.role || 'Member',
+            registrationNumber: member3.registrationNumber?.trim() || '',
+            residentialStatus: member3.residentialStatus || 'Hosteller',
+            messName: member3.messName || 'Anchor (Boys)',
           }
           : undefined,
         member4: member4?.name?.trim()
@@ -287,11 +308,35 @@ async function startServer() {
             phone: member4.phone?.trim() || '',
             college: member4.college || leader.college || 'VIT Bhopal University',
             role: member4.role || 'Member',
+            registrationNumber: member4.registrationNumber?.trim() || '',
+            residentialStatus: member4.residentialStatus || 'Hosteller',
+            messName: member4.messName || 'Anchor (Boys)',
+          }
+          : undefined,
+        member5: member5?.name?.trim()
+          ? {
+            name: member5.name.trim(),
+            email: member5.email?.trim().toLowerCase() || '',
+            phone: member5.phone?.trim() || '',
+            college: member5.college || leader.college || 'VIT Bhopal University',
+            role: member5.role || 'Member',
+            registrationNumber: member5.registrationNumber?.trim() || '',
+            residentialStatus: member5.residentialStatus || 'Hosteller',
+            messName: member5.messName || 'Anchor (Boys)',
           }
           : undefined,
         paymentStatus: 'pending', // Locked until Admin verifies
         paymentProofUrl: paymentProofUrl || '',
         transactionRef: transactionRef ? transactionRef.trim() : `TXN-${Date.now().toString().slice(-6)}`,
+        amountPaid: typeof req.body.amountPaid === 'number' && req.body.amountPaid > 0
+          ? req.body.amountPaid
+          : (
+            (leader.residentialStatus === 'Day Scholar' ? 219 : 100) +
+            (member2?.name ? (member2.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+            (member3?.name ? (member3.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+            (member4?.name ? (member4.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+            (member5?.name ? (member5.residentialStatus === 'Day Scholar' ? 219 : 100) : 0)
+          ),
         registeredAt: new Date().toLocaleString('en-US', {
           dateStyle: 'medium',
           timeStyle: 'short',
@@ -432,13 +477,17 @@ async function startServer() {
       return res.status(404).json({ success: false, message: 'Team not found.' });
     }
 
-    const { paymentStatus, checkedInVenue, ticketIssued, notes } = req.body;
+    const { paymentStatus, checkedInVenue, ticketIssued, notes, amountPaid } = req.body;
 
     if (paymentStatus) {
       team.paymentStatus = paymentStatus;
       if (paymentStatus === 'verified') {
         team.ticketIssued = true; // Unlock Team Pass / Ticket
       }
+    }
+
+    if (typeof amountPaid === 'number') {
+      team.amountPaid = amountPaid;
     }
 
     if (typeof checkedInVenue === 'boolean') {
@@ -659,6 +708,29 @@ async function startServer() {
     });
   });
 
+  // REGISTRATIONS TOGGLE API
+  app.get('/api/admin/registrations-status', async (req, res) => {
+    const registrationsOpen = await getRegistrationStatusDB();
+    res.json({
+      success: true,
+      registrationsOpen,
+      serverTime: new Date().toISOString(),
+    });
+  });
+
+  app.post('/api/admin/registrations-toggle', requireAdminAuth, async (req, res) => {
+    const { registrationsOpen } = req.body;
+    if (typeof registrationsOpen !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'registrationsOpen boolean property required.' });
+    }
+    const updated = await setRegistrationStatusDB(registrationsOpen);
+    res.json({
+      success: true,
+      registrationsOpen: updated,
+      message: `Team registrations are now ${updated ? 'OPEN' : 'CLOSED'}.`,
+    });
+  });
+
   // Announcements API
   app.get('/api/announcements', async (req, res) => {
     const announcements = await getAnnouncementsDB();
@@ -682,6 +754,15 @@ async function startServer() {
 
     await addAnnouncementDB(newAnn);
     res.status(201).json({ success: true, announcement: newAnn });
+  });
+
+  app.delete('/api/announcements/:id', requireAdminAuth, async (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'Announcement ID required.' });
+    }
+    await deleteAnnouncementDB(id);
+    res.json({ success: true, message: 'Announcement deleted successfully.' });
   });
 
   // Hackathon Overall Statistics
@@ -738,22 +819,36 @@ async function startServer() {
       'Track',
       'Access Code',
       'Payment Status',
+      'Amount Paid (₹)',
       'Transaction Ref',
       'Registered At',
       'Checked In Venue',
       'Leader Name',
       'Leader Email',
       'Leader Phone',
-      'Leader College',
+      'Leader Reg No',
+      'Leader Status',
+      'Leader Mess',
       'Member 2 Name',
       'Member 2 Email',
-      'Member 2 Phone',
+      'Member 2 Reg No',
+      'Member 2 Status',
+      'Member 2 Mess',
       'Member 3 Name',
       'Member 3 Email',
-      'Member 3 Phone',
+      'Member 3 Reg No',
+      'Member 3 Status',
+      'Member 3 Mess',
       'Member 4 Name',
       'Member 4 Email',
-      'Member 4 Phone',
+      'Member 4 Reg No',
+      'Member 4 Status',
+      'Member 4 Mess',
+      'Member 5 Name',
+      'Member 5 Email',
+      'Member 5 Reg No',
+      'Member 5 Status',
+      'Member 5 Mess',
       'Project Title',
       'Project GitHub',
       'Project Presentation (PPT/PDF)',
@@ -772,22 +867,42 @@ async function startServer() {
       escapeCsv(t.track),
       escapeCsv(t.accessCode),
       escapeCsv(t.paymentStatus),
+      escapeCsv(t.amountPaid || (
+        (t.leader.residentialStatus === 'Day Scholar' ? 219 : 100) +
+        (t.member2?.name ? (t.member2.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+        (t.member3?.name ? (t.member3.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+        (t.member4?.name ? (t.member4.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+        (t.member5?.name ? (t.member5.residentialStatus === 'Day Scholar' ? 219 : 100) : 0)
+      )),
       escapeCsv(t.transactionRef),
       escapeCsv(t.registeredAt),
       escapeCsv(t.checkedInVenue ? 'Yes' : 'No'),
       escapeCsv(t.leader.name),
       escapeCsv(t.leader.email),
       escapeCsv(t.leader.phone),
-      escapeCsv(t.leader.college || ''),
+      escapeCsv(t.leader.registrationNumber || ''),
+      escapeCsv(t.leader.residentialStatus || ''),
+      escapeCsv(t.leader.messName || ''),
       escapeCsv(t.member2?.name || ''),
       escapeCsv(t.member2?.email || ''),
-      escapeCsv(t.member2?.phone || ''),
+      escapeCsv(t.member2?.registrationNumber || ''),
+      escapeCsv(t.member2?.residentialStatus || ''),
+      escapeCsv(t.member2?.messName || ''),
       escapeCsv(t.member3?.name || ''),
       escapeCsv(t.member3?.email || ''),
-      escapeCsv(t.member3?.phone || ''),
+      escapeCsv(t.member3?.registrationNumber || ''),
+      escapeCsv(t.member3?.residentialStatus || ''),
+      escapeCsv(t.member3?.messName || ''),
       escapeCsv(t.member4?.name || ''),
       escapeCsv(t.member4?.email || ''),
-      escapeCsv(t.member4?.phone || ''),
+      escapeCsv(t.member4?.registrationNumber || ''),
+      escapeCsv(t.member4?.residentialStatus || ''),
+      escapeCsv(t.member4?.messName || ''),
+      escapeCsv(t.member5?.name || ''),
+      escapeCsv(t.member5?.email || ''),
+      escapeCsv(t.member5?.registrationNumber || ''),
+      escapeCsv(t.member5?.residentialStatus || ''),
+      escapeCsv(t.member5?.messName || ''),
       escapeCsv(t.project?.title || ''),
       escapeCsv(t.project?.githubUrl || ''),
       escapeCsv(t.project?.presentationUrl || ''),
@@ -810,19 +925,42 @@ async function startServer() {
       'Track': t.track,
       'Access Code': t.accessCode,
       'Payment Status': t.paymentStatus,
+      'Amount Paid (₹)': t.amountPaid || (
+        (t.leader.residentialStatus === 'Day Scholar' ? 219 : 100) +
+        (t.member2?.name ? (t.member2.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+        (t.member3?.name ? (t.member3.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+        (t.member4?.name ? (t.member4.residentialStatus === 'Day Scholar' ? 219 : 100) : 0) +
+        (t.member5?.name ? (t.member5.residentialStatus === 'Day Scholar' ? 219 : 100) : 0)
+      ),
       'Transaction Ref': t.transactionRef,
       'Registered At': t.registeredAt,
       'Checked In Venue': t.checkedInVenue ? 'Yes' : 'No',
       'Leader Name': t.leader.name,
       'Leader Email': t.leader.email,
       'Leader Phone': t.leader.phone,
-      'Leader College': t.leader.college || '',
-      'Member 2': t.member2?.name || '',
+      'Leader Reg No': t.leader.registrationNumber || '',
+      'Leader Status': t.leader.residentialStatus || '',
+      'Leader Mess': t.leader.messName || '',
+      'Member 2 Name': t.member2?.name || '',
       'Member 2 Email': t.member2?.email || '',
-      'Member 3': t.member3?.name || '',
+      'Member 2 Reg No': t.member2?.registrationNumber || '',
+      'Member 2 Status': t.member2?.residentialStatus || '',
+      'Member 2 Mess': t.member2?.messName || '',
+      'Member 3 Name': t.member3?.name || '',
       'Member 3 Email': t.member3?.email || '',
-      'Member 4': t.member4?.name || '',
+      'Member 3 Reg No': t.member3?.registrationNumber || '',
+      'Member 3 Status': t.member3?.residentialStatus || '',
+      'Member 3 Mess': t.member3?.messName || '',
+      'Member 4 Name': t.member4?.name || '',
       'Member 4 Email': t.member4?.email || '',
+      'Member 4 Reg No': t.member4?.registrationNumber || '',
+      'Member 4 Status': t.member4?.residentialStatus || '',
+      'Member 4 Mess': t.member4?.messName || '',
+      'Member 5 Name': t.member5?.name || '',
+      'Member 5 Email': t.member5?.email || '',
+      'Member 5 Reg No': t.member5?.registrationNumber || '',
+      'Member 5 Status': t.member5?.residentialStatus || '',
+      'Member 5 Mess': t.member5?.messName || '',
       'Project Title': t.project?.title || 'Not Submitted',
       'Project GitHub': t.project?.githubUrl || '',
       'PPT/PDF Document Link': t.project?.presentationUrl || '',

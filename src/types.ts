@@ -14,6 +14,9 @@ export interface TeamMember {
   phone: string;
   role?: string;
   college?: string;
+  registrationNumber?: string;
+  residentialStatus?: 'Hosteller' | 'Day Scholar';
+  messName?: string;
 }
 
 export interface ProjectSubmission {
@@ -53,6 +56,7 @@ export interface Team {
   paymentStatus: PaymentStatus;
   paymentProofUrl?: string; // base64 or receipt image URL
   transactionRef: string;
+  amountPaid?: number; // Total registration fee paid by team (₹)
   registeredAt: string;
   checkedInVenue: boolean;
   ticketIssued: boolean;

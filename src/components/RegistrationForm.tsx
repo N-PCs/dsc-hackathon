@@ -5,16 +5,26 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowRight,
-  Calendar,
   AlertTriangle,
   QrCode,
+  User,
 } from 'lucide-react';
 import { TrackType, Team, TeamMember } from '../types';
 import { HACKATHON_TRACKS } from '../data/mockData';
 import { isVITBhopalEmail } from '../lib/clerk';
 import { uploadDirectToImagekit } from '../lib/imagekitClient';
 
-export type MemberCategory = 'hosteller' | 'day_scholar';
+export const MESS_OPTIONS = [
+  'Anchor (Boys)',
+  'RPL (Boys)',
+  'Safal (Boys)',
+  'JMB (Boys)',
+  'Mayuri (Boys)',
+  'AB Catering (Girls-Block 1)',
+  'Mayuri (Girls-Block 2)',
+  'Mayuri (Special Block-Girls)',
+  'NA (for day scholars)',
+];
 
 interface RegistrationFormProps {
   selectedTrack?: TrackType;
@@ -29,63 +39,88 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 }) => {
   const [teamName, setTeamName] = useState('');
   const [track, setTrack] = useState<TrackType>(selectedTrack);
-  const [memberCount, setMemberCount] = useState<number>(3);
-
-  // Per-member category: hosteller (₹100) vs day_scholar (₹219 - Food Included)
-  const [memberCategories, setMemberCategories] = useState<Record<number, MemberCategory>>({
-    1: 'hosteller',
-    2: 'hosteller',
-    3: 'hosteller',
-    4: 'hosteller',
-    5: 'hosteller',
-  });
+  const [memberCount, setMemberCount] = useState<number>(2);
 
   const [leader, setLeader] = useState<TeamMember>({
     name: '',
     email: '',
     phone: '',
+    registrationNumber: '',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
     college: 'VIT Bhopal University',
-    role: 'Team Leader / Fullstack',
+    role: 'Team Lead',
   });
 
   const [member2, setMember2] = useState<TeamMember>({
     name: '',
     email: '',
     phone: '',
+    registrationNumber: '',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
     college: 'VIT Bhopal University',
-    role: 'ML / Data Scientist',
+    role: 'Member',
   });
 
   const [member3, setMember3] = useState<TeamMember>({
     name: '',
     email: '',
     phone: '',
+    registrationNumber: '',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
     college: 'VIT Bhopal University',
-    role: 'Frontend / UI/UX',
+    role: 'Member',
   });
 
   const [member4, setMember4] = useState<TeamMember>({
     name: '',
     email: '',
     phone: '',
+    registrationNumber: '',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
     college: 'VIT Bhopal University',
-    role: 'Backend / Cloud',
+    role: 'Member',
   });
 
   const [member5, setMember5] = useState<TeamMember>({
     name: '',
     email: '',
     phone: '',
+    registrationNumber: '',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
     college: 'VIT Bhopal University',
-    role: 'AI / System Engineer',
+    role: 'Member',
   });
 
-  // Calculate total registration fee
+  const updateMember = (
+    setter: React.Dispatch<React.SetStateAction<TeamMember>>,
+    field: keyof TeamMember,
+    val: string
+  ) => {
+    setter((prev) => {
+      const updated = { ...prev, [field]: val };
+      if (field === 'residentialStatus') {
+        if (val === 'Day Scholar') {
+          updated.messName = 'NA (for day scholars)';
+        } else if (val === 'Hosteller' && updated.messName === 'NA (for day scholars)') {
+          updated.messName = 'Anchor (Boys)';
+        }
+      }
+      return updated;
+    });
+  };
+
+  // Fee calculation: ₹100 for Hosteller, ₹219 for Day Scholar (food included)
   const calculateTotalFee = () => {
     let total = 0;
-    for (let i = 1; i <= memberCount; i++) {
-      const category = memberCategories[i] || 'hosteller';
-      total += category === 'hosteller' ? 100 : 219;
+    const members = [leader, member2, member3, member4, member5];
+    for (let i = 0; i < memberCount; i++) {
+      const status = members[i]?.residentialStatus || 'Hosteller';
+      total += status === 'Hosteller' ? 100 : 219;
     }
     return total;
   };
@@ -100,12 +135,23 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [domainNotice, setDomainNotice] = useState(false);
 
+  const [isRegistrationsOpen, setIsRegistrationsOpen] = useState(true);
+
+  React.useEffect(() => {
+    fetch('/api/admin/registrations-status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && typeof data.registrationsOpen === 'boolean') {
+          setIsRegistrationsOpen(data.registrationsOpen);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleLeaderEmailChange = (val: string) => {
-    setLeader((prev) => ({ ...prev, email: val }));
+    updateMember(setLeader, 'email', val);
     setDomainNotice(isVITBhopalEmail(val));
   };
-
-
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,12 +180,23 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     e.preventDefault();
     setErrorMsg('');
 
+    if (!isRegistrationsOpen) {
+      setErrorMsg('Registrations are currently closed by the organizers.');
+      return;
+    }
+
     if (!teamName.trim()) {
       setErrorMsg('Please enter your Team Name.');
       return;
     }
-    if (!leader.name.trim() || !leader.email.trim() || !leader.phone.trim()) {
-      setErrorMsg('Please provide complete Team Leader details (Name, Email, Phone).');
+
+    if (
+      !leader.name.trim() ||
+      !leader.email.trim() ||
+      !leader.phone.trim() ||
+      !leader.registrationNumber?.trim()
+    ) {
+      setErrorMsg('Please provide complete Team Leader details (Name, Email, Phone, Registration Number).');
       return;
     }
 
@@ -147,25 +204,30 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       setErrorMsg('Team Leader must register with an official @vitbhopal.ac.in email address.');
       return;
     }
-    const activeMembers = [
-  { label: 'Member 02', data: member2, active: memberCount >= 2 },
-  { label: 'Member 03', data: member3, active: memberCount >= 3 },
-  { label: 'Member 04', data: member4, active: memberCount >= 4 },
-  { label: 'Member 05', data: member5, active: memberCount >= 5 },
-];
 
-for (const m of activeMembers) {
-  if (m.active && m.data.name.trim()) {
-    if (!m.data.email.trim()) {
-      setErrorMsg(`Please provide an email for ${m.label}.`);
-      return;
+    const activeMembers = [
+      { label: 'Member 02', data: member2, active: memberCount >= 2 },
+      { label: 'Member 03', data: member3, active: memberCount >= 3 },
+      { label: 'Member 04', data: member4, active: memberCount >= 4 },
+      { label: 'Member 05', data: member5, active: memberCount >= 5 },
+    ];
+
+    for (const m of activeMembers) {
+      if (m.active) {
+        if (!m.data.name.trim() || !m.data.email.trim() || !m.data.registrationNumber?.trim()) {
+          setErrorMsg(`Please fill in all details for ${m.label} (Name, Email, Registration Number).`);
+          return;
+        }
+        if (!isVITBhopalEmail(m.data.email)) {
+          setErrorMsg(`${m.label} must use an official @vitbhopal.ac.in email address.`);
+          return;
+        }
+        if (!m.data.residentialStatus || !m.data.messName) {
+          setErrorMsg(`Please select ${m.label} Residential Status and Mess Name.`);
+          return;
+        }
+      }
     }
-    if (!isVITBhopalEmail(m.data.email)) {
-      setErrorMsg(`${m.label} must use an official @vitbhopal.ac.in email address.`);
-      return;
-    }
-  }
-}
 
     if (!transactionRef.trim()) {
       setErrorMsg('Please enter your UPI / Payment Transaction Reference (UTR Number).');
@@ -183,12 +245,13 @@ for (const m of activeMembers) {
         teamName: teamName.trim(),
         track,
         leader,
-        member2: memberCount >= 2 && member2.name.trim() ? member2 : undefined,
-        member3: memberCount >= 3 && member3.name.trim() ? member3 : undefined,
-        member4: memberCount >= 4 && member4.name.trim() ? member4 : undefined,
-        member5: memberCount >= 5 && member5.name.trim() ? member5 : undefined,
+        member2: memberCount >= 2 ? member2 : undefined,
+        member3: memberCount >= 3 ? member3 : undefined,
+        member4: memberCount >= 4 ? member4 : undefined,
+        member5: memberCount >= 5 ? member5 : undefined,
         transactionRef: transactionRef.trim(),
         paymentProofUrl: paymentProofUrl || '',
+        amountPaid: calculateTotalFee(),
       };
 
       const res = await fetch('/api/teams/register', {
@@ -228,17 +291,168 @@ for (const m of activeMembers) {
     }
   };
 
-  const inputClass =
-    'input-underline';
+  const inputClass = 'input-underline';
+  const selectClass =
+    'w-full bg-black border-b border-neutral-800 py-3 text-[14px] text-white focus:border-orange-500 focus:outline-none transition-colors cursor-pointer font-mono';
 
-  const memberInputClass =
-    'w-full bg-transparent border-b border-neutral-800 py-3 text-[14px] text-white placeholder:text-neutral-600 focus:border-orange-600 focus:outline-none transition-colors';
+  const renderMemberFormFields = (
+    member: TeamMember,
+    setter: React.Dispatch<React.SetStateAction<TeamMember>>,
+    isLeader: boolean = false,
+    memberLabel: string = 'Team Lead'
+  ) => {
+    return (
+      <div className="bg-black/60 border border-neutral-800 p-6 space-y-6">
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-orange-500" />
+            <h4
+              className="text-base font-bold text-white uppercase tracking-wider"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              {memberLabel}
+            </h4>
+          </div>
+          <span className="text-[11px] font-mono text-neutral-500 uppercase">
+            {member.residentialStatus === 'Day Scholar'
+              ? 'Day Scholar (₹219 - Food Included)'
+              : 'Hosteller (₹100)'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+          {/* Full Name */}
+          <div>
+            <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+              Full Name <span className="text-orange-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Aarav Sharma"
+              value={member.name}
+              onChange={(e) => updateMember(setter, 'name', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          {/* Email ID */}
+          <div>
+            <label className="flex items-center justify-between text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+              <span>Email ID <span className="text-orange-500">*</span></span>
+              {isLeader && domainNotice && (
+                <span className="text-[10px] text-orange-500 flex items-center gap-1 normal-case">
+                  <CheckCircle className="w-3 h-3" /> Verified domain
+                </span>
+              )}
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="name.2024@vitbhopal.ac.in"
+              value={member.email}
+              onChange={(e) =>
+                isLeader ? handleLeaderEmailChange(e.target.value) : updateMember(setter, 'email', e.target.value)
+              }
+              className={inputClass}
+            />
+          </div>
+
+          {/* Contact Phone (Required for Leader) */}
+          {isLeader && (
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+                Contact Number (Phone) <span className="text-orange-500">*</span>
+              </label>
+              <input
+                type="tel"
+                required
+                placeholder="+91 98765 43210"
+                value={member.phone}
+                onChange={(e) => updateMember(setter, 'phone', e.target.value)}
+                className={`${inputClass} font-mono`}
+              />
+            </div>
+          )}
+
+          {/* Registration Number */}
+          <div>
+            <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+              Registration Number <span className="text-orange-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. 24BCE10001"
+              value={member.registrationNumber || ''}
+              onChange={(e) => updateMember(setter, 'registrationNumber', e.target.value.toUpperCase())}
+              className={`${inputClass} font-mono uppercase`}
+            />
+          </div>
+
+          {/* Residential Status */}
+          <div>
+            <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-2">
+              Residential Status <span className="text-orange-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => updateMember(setter, 'residentialStatus', 'Hosteller')}
+                className={`py-2 px-3 text-xs font-mono tracking-wider uppercase transition-colors border cursor-pointer ${
+                  member.residentialStatus === 'Hosteller'
+                    ? 'bg-orange-600 text-white font-bold border-orange-500'
+                    : 'bg-black text-neutral-400 border-neutral-800 hover:text-white'
+                }`}
+              >
+                Hosteller (₹100)
+              </button>
+              <button
+                type="button"
+                onClick={() => updateMember(setter, 'residentialStatus', 'Day Scholar')}
+                className={`py-2 px-3 text-xs font-mono tracking-wider uppercase transition-colors border cursor-pointer ${
+                  member.residentialStatus === 'Day Scholar'
+                    ? 'bg-orange-600 text-white font-bold border-orange-500'
+                    : 'bg-black text-neutral-400 border-neutral-800 hover:text-white'
+                }`}
+              >
+                Day Scholar (₹219)
+              </button>
+            </div>
+          </div>
+
+          {/* Mess Name */}
+          <div className={isLeader ? '' : 'sm:col-span-2'}>
+            <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
+              Enter your mess name <span className="text-orange-500">*</span>
+            </label>
+            <select
+              value={member.messName || 'Anchor (Boys)'}
+              disabled={member.residentialStatus === 'Day Scholar'}
+              onChange={(e) => updateMember(setter, 'messName', e.target.value)}
+              className={selectClass}
+            >
+              {MESS_OPTIONS.map((opt, idx) => (
+                <option key={idx} value={opt} className="bg-black text-white">
+                  {opt}
+                </option>
+              ))}
+            </select>
+            {member.residentialStatus === 'Day Scholar' && (
+              <span className="text-[11px] font-mono text-neutral-500 mt-1 block">
+                Auto-selected NA for Day Scholars.
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-6 pt-24 pb-16">
       {/* Header */}
       <div className="mb-12">
-        {/* Deadline Notice Tag */}
         <div className="flex items-center gap-2 mb-3 text-[12px] font-mono uppercase tracking-wider text-orange-500 font-semibold">
           <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
           <span>Last Date to Register: 2 September 2026</span>
@@ -258,10 +472,10 @@ for (const m of activeMembers) {
           Register for ORIGIN '26
         </h1>
         <p className="text-[14px] text-neutral-400 leading-relaxed max-w-lg">
-          Team Leader must use an <span className="text-white font-semibold">@vitbhopal.ac.in</span> email. 
-          Register your team and be part of an exciting AI-driven hackathon experience!
+          Team Lead and Teammates must use an official <span className="text-white font-semibold">@vitbhopal.ac.in</span> email. 
+          Fill out complete details for all members to unlock team credentials.
         </p>
-        <div className="mt-4 text-[13px] text-neutral-500">
+        <div className="mt-4 text-[13px] text-neutral-500 font-mono">
           Already registered?{' '}
           <button
             onClick={onSwitchToLogin}
@@ -272,15 +486,28 @@ for (const m of activeMembers) {
         </div>
       </div>
 
+      {/* Closed Registration Warning */}
+      {!isRegistrationsOpen && (
+        <div className="mb-8 p-5 border border-rose-800 bg-rose-950/60 text-rose-200 space-y-1 font-mono text-xs">
+          <div className="flex items-center gap-2 font-bold text-rose-400 text-sm">
+            <AlertTriangle className="w-4 h-4" />
+            <span>REGISTRATIONS PAUSED / CLOSED</span>
+          </div>
+          <p className="text-neutral-300 font-sans text-[13px]">
+            The event organizers have temporarily stopped taking new team registrations. Please check back later or contact the Data Science Club.
+          </p>
+        </div>
+      )}
+
       {/* Error */}
       {errorMsg && (
-        <div className="mb-8 py-4 px-5 border border-red-900 bg-red-950/50 text-red-300 text-[13px] flex items-center gap-3">
+        <div className="mb-8 py-4 px-5 border border-red-900 bg-red-950/50 text-red-300 text-[13px] flex items-center gap-3 font-mono">
           <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-16">
+      <form onSubmit={handleSubmit} className="space-y-12">
         {/* Step 1: Team & Track */}
         <div>
           <div className="flex items-baseline justify-between mb-8 pb-4 border-b border-neutral-800">
@@ -329,9 +556,9 @@ for (const m of activeMembers) {
 
             <div>
               <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-3">
-                Team Size (2-5 Members)
+                Team Size (2-5 Members) <span className="text-orange-500">*</span>
               </label>
-              <div className="grid grid-cols-4 gap-px bg-neutral-800">
+              <div className="grid grid-cols-4 gap-px bg-neutral-800 border border-neutral-800">
                 {[2, 3, 4, 5].map((num) => (
                   <button
                     key={num}
@@ -344,7 +571,7 @@ for (const m of activeMembers) {
                     }`}
                     style={{ fontFamily: 'var(--font-heading)' }}
                   >
-                    {num === 2 ? '2 Duo' : num === 3 ? '3 Trio' : num === 4 ? '4 Squad' : '5 Team'}
+                    {num} Members
                   </button>
                 ))}
               </div>
@@ -352,83 +579,19 @@ for (const m of activeMembers) {
           </div>
         </div>
 
-        {/* Step 2: Leader Details */}
+        {/* Step 2: Team Lead */}
         <div>
           <div className="flex items-baseline justify-between mb-8 pb-4 border-b border-neutral-800">
             <h3
               className="text-lg font-bold"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
-              Team Leader
+              Team Lead Details
             </h3>
             <span className="text-[12px] font-mono text-neutral-600">Step 2 of 4</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                Full Name <span className="text-orange-500">*</span>
-              </label>
-              <input
-                id="reg-input-leader-name"
-                type="text"
-                required
-                placeholder="Aarav Sharma"
-                value={leader.name}
-                onChange={(e) => setLeader({ ...leader, name: e.target.value })}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center justify-between text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                <span>Email <span className="text-orange-500">*</span></span>
-                {domainNotice && (
-                  <span className="text-[10px] text-orange-500 flex items-center gap-1 normal-case">
-                    <CheckCircle className="w-3 h-3" /> Verified domain
-                  </span>
-                )}
-              </label>
-              <input
-                id="reg-input-leader-email"
-                type="email"
-                required
-                placeholder="name.2023@vitbhopal.ac.in"
-                value={leader.email}
-                onChange={(e) => handleLeaderEmailChange(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                Phone <span className="text-orange-500">*</span>
-              </label>
-              <input
-                id="reg-input-leader-phone"
-                type="tel"
-                required
-                placeholder="+91 98765 43210"
-                value={leader.phone}
-                onChange={(e) => setLeader({ ...leader, phone: e.target.value })}
-                className={`${inputClass} font-mono`}
-              />
-            </div>
-
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-500 uppercase tracking-wider mb-1">
-                College
-              </label>
-              <input
-                id="reg-input-leader-college"
-                type="text"
-                placeholder="VIT Bhopal University"
-                value={leader.college}
-                onChange={(e) => setLeader({ ...leader, college: e.target.value })}
-                className={inputClass}
-              />
-            </div>
-          </div>
+          {renderMemberFormFields(leader, setLeader, true, 'Team Lead')}
         </div>
 
         {/* Step 3: Teammates */}
@@ -439,55 +602,16 @@ for (const m of activeMembers) {
                 className="text-lg font-bold"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
-                Teammates ({memberCount - 1})
+                Teammates Details ({memberCount - 1})
               </h3>
               <span className="text-[12px] font-mono text-neutral-600">Step 3 of 4</span>
             </div>
 
-            <div className="space-y-8">
-              {memberCount >= 2 && (
-                <div>
-                  <span className="text-[11px] font-mono text-neutral-600 uppercase block mb-4">Member 02</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-                    <input type="text" placeholder="Full Name" value={member2.name} onChange={(e) => setMember2({ ...member2, name: e.target.value })} className={memberInputClass} />
-                    <input type="email" placeholder="Email" value={member2.email} onChange={(e) => setMember2({ ...member2, email: e.target.value })} className={memberInputClass} />
-                    <input type="tel" placeholder="Phone" value={member2.phone} onChange={(e) => setMember2({ ...member2, phone: e.target.value })} className={`${memberInputClass} font-mono`} />
-                  </div>
-                </div>
-              )}
-
-              {memberCount >= 3 && (
-                <div>
-                  <span className="text-[11px] font-mono text-neutral-600 uppercase block mb-4">Member 03</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-                    <input type="text" placeholder="Full Name" value={member3.name} onChange={(e) => setMember3({ ...member3, name: e.target.value })} className={memberInputClass} />
-                    <input type="email" placeholder="Email" value={member3.email} onChange={(e) => setMember3({ ...member3, email: e.target.value })} className={memberInputClass} />
-                    <input type="tel" placeholder="Phone" value={member3.phone} onChange={(e) => setMember3({ ...member3, phone: e.target.value })} className={`${memberInputClass} font-mono`} />
-                  </div>
-                </div>
-              )}
-
-              {memberCount >= 4 && (
-                <div>
-                  <span className="text-[11px] font-mono text-neutral-600 uppercase block mb-4">Member 04</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-                    <input type="text" placeholder="Full Name" value={member4.name} onChange={(e) => setMember4({ ...member4, name: e.target.value })} className={memberInputClass} />
-                    <input type="email" placeholder="Email" value={member4.email} onChange={(e) => setMember4({ ...member4, email: e.target.value })} className={memberInputClass} />
-                    <input type="tel" placeholder="Phone" value={member4.phone} onChange={(e) => setMember4({ ...member4, phone: e.target.value })} className={`${memberInputClass} font-mono`} />
-                  </div>
-                </div>
-              )}
-
-              {memberCount >= 5 && (
-                <div>
-                  <span className="text-[11px] font-mono text-neutral-600 uppercase block mb-4">Member 05</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-                    <input type="text" placeholder="Full Name" value={member5.name} onChange={(e) => setMember5({ ...member5, name: e.target.value })} className={memberInputClass} />
-                    <input type="email" placeholder="Email" value={member5.email} onChange={(e) => setMember5({ ...member5, email: e.target.value })} className={memberInputClass} />
-                    <input type="tel" placeholder="Phone" value={member5.phone} onChange={(e) => setMember5({ ...member5, phone: e.target.value })} className={`${memberInputClass} font-mono`} />
-                  </div>
-                </div>
-              )}
+            <div className="space-y-6">
+              {memberCount >= 2 && renderMemberFormFields(member2, setMember2, false, 'Member 2')}
+              {memberCount >= 3 && renderMemberFormFields(member3, setMember3, false, 'Member 3')}
+              {memberCount >= 4 && renderMemberFormFields(member4, setMember4, false, 'Member 4')}
+              {memberCount >= 5 && renderMemberFormFields(member5, setMember5, false, 'Member 5')}
             </div>
           </div>
         )}
@@ -509,75 +633,21 @@ for (const m of activeMembers) {
             <span className="text-[12px] font-mono text-neutral-600">Step 4 of 4</span>
           </div>
 
-          {/* Member Fee Category Selector — Site theme matched */}
-          <div className="mb-8 border-t border-b border-neutral-800 py-6 space-y-4">
-            <div className="flex items-center justify-between pb-2">
-              <span className="text-[12px] font-mono text-neutral-500 uppercase tracking-wider">
-                Registration Fee Breakdown ({memberCount} Members)
-              </span>
-              <span className="text-[13px] font-bold text-orange-500 font-mono">
-                Total Payable: ₹{calculateTotalFee()}
-              </span>
-            </div>
-            <div className="space-y-3">
-              {Array.from({ length: memberCount }).map((_, idx) => {
-                const mNum = idx + 1;
-                const cat = memberCategories[mNum] || 'hosteller';
-                const nameLabel =
-                  mNum === 1
-                    ? `Leader (${leader.name || 'Member 01'})`
-                    : mNum === 2
-                    ? `Member 02 (${member2.name || 'Member 02'})`
-                    : mNum === 3
-                    ? `Member 03 (${member3.name || 'Member 03'})`
-                    : mNum === 4
-                    ? `Member 04 (${member4.name || 'Member 04'})`
-                    : `Member 05 (${member5.name || 'Member 05'})`;
-
-                return (
-                  <div key={mNum} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px] border-b border-neutral-900 last:border-b-0 pb-2.5">
-                    <span className="text-neutral-300 font-mono text-xs truncate max-w-xs">{nameLabel}</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setMemberCategories((prev) => ({ ...prev, [mNum]: 'hosteller' }))}
-                        className={`px-3 py-1.5 text-[11px] font-mono tracking-wider uppercase transition-colors cursor-pointer border ${
-                          cat === 'hosteller'
-                            ? 'bg-orange-600 text-white font-semibold border-orange-500'
-                            : 'bg-black text-neutral-500 border-neutral-800 hover:text-neutral-300'
-                        }`}
-                      >
-                        Hosteller (₹100)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMemberCategories((prev) => ({ ...prev, [mNum]: 'day_scholar' }))}
-                        className={`px-3 py-1.5 text-[11px] font-mono tracking-wider uppercase transition-colors cursor-pointer border ${
-                          cat === 'day_scholar'
-                            ? 'bg-orange-600 text-white font-semibold border-orange-500'
-                            : 'bg-black text-neutral-500 border-neutral-800 hover:text-neutral-300'
-                        }`}
-                      >
-                        Day Scholar (₹219 - Food Included)
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* QR Code */}
             <div className="space-y-4">
-              <div className="bg-white p-6 flex flex-col items-center">
-                <QrCode className="w-32 h-32 text-black" />
-                <span className="text-[11px] font-mono text-neutral-600 mt-3">dsc.origin26@upi</span>
+              <div className="bg-white p-4 flex flex-col items-center border border-neutral-800">
+                <img
+                  src="/qr.png"
+                  alt="Origin '26 Payment QR Code"
+                  className="w-56 h-auto object-contain"
+                />
+                <span className="text-[12px] font-mono text-black font-bold mt-2">datascienceclub1@indianbnk</span>
               </div>
-              <div className="text-[12px] text-neutral-500 font-mono space-y-1">
-                <p>• UPI ID: <span className="text-white">dsc.origin26@upi</span></p>
-                <p>• Amount to Pay: <span className="text-orange-400 font-bold">₹{calculateTotalFee()}</span></p>
-                <p>• Covers: Hackathon entry (4-5 Sep), cloud credits, swag kit, food (for Day Scholars)</p>
+              <div className="text-[12px] text-neutral-400 font-mono space-y-1.5 bg-neutral-950 p-4 border border-neutral-800">
+                <p>• UPI ID: <span className="text-orange-400 font-bold select-all">datascienceclub1@indianbnk</span></p>
+                <p>• Total Payable: <span className="text-white font-bold">₹{calculateTotalFee()}</span></p>
+                <p className="text-[11px] text-neutral-500">• Covers: Hackathon entry (4-5 Sep), cloud credits, swag kit, food (for Day Scholars)</p>
               </div>
             </div>
 
@@ -611,7 +681,7 @@ for (const m of activeMembers) {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <Upload className="w-5 h-5 mx-auto text-neutral-500 mb-2" />
-                  <span className="text-[13px] text-neutral-400 block">
+                  <span className="text-[13px] text-neutral-400 block font-mono">
                     {isUploadingImage
                       ? 'Uploading...'
                       : paymentImageName
@@ -628,10 +698,10 @@ for (const m of activeMembers) {
                       className="w-10 h-10 object-cover"
                     />
                     <div className="text-[13px]">
-                      <span className="text-orange-500 font-medium flex items-center gap-1">
+                      <span className="text-orange-500 font-medium flex items-center gap-1 font-mono">
                         <CheckCircle className="w-3.5 h-3.5" /> Uploaded successfully
                       </span>
-                      <span className="text-neutral-500 text-[11px]">Admin will verify for pass release</span>
+                      <span className="text-neutral-500 text-[11px] font-mono">Admin will verify for pass release</span>
                     </div>
                   </div>
                 )}
@@ -641,7 +711,7 @@ for (const m of activeMembers) {
         </div>
 
         {/* Verification notice */}
-        <div className="py-4 px-5 border border-neutral-800 text-[13px] text-neutral-400">
+        <div className="py-4 px-5 border border-neutral-800 text-[13px] text-neutral-400 font-mono">
           <span className="text-white font-semibold">Note: </span>
           Your status will be set to <span className="font-mono text-orange-500">pending</span> until 
           DSC Admins verify your payment. Your Digital ID Pass unlocks after approval.
@@ -658,7 +728,7 @@ for (const m of activeMembers) {
           />
           <span className="text-[13px] text-neutral-400 leading-relaxed">
             I agree to the <span className="text-white font-semibold">Origin Hackathon Rules</span> & Code of Conduct. 
-            I confirm the leader uses @vitbhopal.ac.in and acknowledge that passes unlock upon admin verification.
+            I confirm all member emails use @vitbhopal.ac.in and acknowledge that passes unlock upon admin verification.
           </span>
         </label>
 
@@ -666,12 +736,14 @@ for (const m of activeMembers) {
         <button
           id="reg-btn-submit-team"
           type="submit"
-          disabled={isSubmitting || isUploadingImage}
+          disabled={isSubmitting || isUploadingImage || !isRegistrationsOpen}
           className="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold text-[15px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           style={{ fontFamily: 'var(--font-heading)' }}
         >
           {isSubmitting ? (
             <span>Submitting...</span>
+          ) : !isRegistrationsOpen ? (
+            <span>Registrations Closed</span>
           ) : (
             <>
               <span>Submit Registration</span>
