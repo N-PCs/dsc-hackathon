@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ArrowRight, Search, Filter } from 'lucide-react';
 import { HackathonStats, TrackType } from '../types';
-import { HACKATHON_TRACKS } from '../data/mockData';
+import { HACKATHON_TRACKS, EXTERNAL_REGISTRATION_URL } from '../data/mockData';
 import { SponsorsSection } from './SponsorsSection';
 import { PrizesSection } from './PrizesSection';
 
@@ -126,11 +126,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             <div className="flex items-center gap-3 pt-2">
               <button
-                id="hero-btn-login-team"
-                onClick={() => onNavigate('team')}
+                id="hero-btn-register-team"
+                onClick={() => window.open(EXTERNAL_REGISTRATION_URL, '_blank')}
                 className="gsap-cta btn-primary"
               >
-                TEAM LOGIN &gt;
+                REGISTER TEAM &gt;
               </button>
 
               <button

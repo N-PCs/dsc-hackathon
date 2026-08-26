@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, ArrowRight, Search } from 'lucide-react';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { EXTERNAL_REGISTRATION_URL } from '../data/mockData';
 
 interface NavbarProps {
   activeTab: 'home' | 'register' | 'team' | 'submit' | 'schedule' | 'admin' | 'jury' | 'faq';
@@ -147,12 +148,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Team Login Pill Button matching the theme */}
+            {/* External Registration Pill Button */}
             <button
-              onClick={onOpenLogin}
+              onClick={() => window.open(EXTERNAL_REGISTRATION_URL, '_blank')}
               className="hidden md:inline-flex filter-pill cursor-pointer"
             >
-              TEAM LOGIN &gt;
+              REGISTER &gt;
             </button>
 
             <SignedOut>
@@ -204,10 +205,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             ))}
             <button
-              onClick={() => { onOpenLogin(); setMobileOpen(false); }}
+              onClick={() => { window.open(EXTERNAL_REGISTRATION_URL, '_blank'); setMobileOpen(false); }}
               className="text-left font-display text-3xl text-[#FF3B00] py-3 border-b border-[#222222] cursor-pointer"
             >
-              TEAM LOGIN &gt;
+              REGISTER NOW &gt;
             </button>
             {hasActiveTeam && (
               <button

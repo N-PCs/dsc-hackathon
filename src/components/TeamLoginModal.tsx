@@ -1,3 +1,8 @@
+/* ============================================================================
+ * SPECIAL IDENTIFIER: TEAM LOGIN COMPONENT (TEMPORARILY UNMOUNTED / DISABLED FOR NOW)
+ * All team login functionality, state handlers, and API authentication logic are fully preserved here.
+ * To re-enable Team Login UI rendering, uncomment <TeamLoginModal /> in App.tsx.
+ * ============================================================================ */
 import React, { useState } from 'react';
 import { Ticket, AlertCircle, Sparkles, Shield, ArrowRight } from 'lucide-react';
 import { Team } from '../types';
