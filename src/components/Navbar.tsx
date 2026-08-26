@@ -147,12 +147,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Filter / Register Pill Button matching the reference image */}
+            {/* Team Login Pill Button matching the theme */}
             <button
-              onClick={() => setActiveTab('register')}
+              onClick={onOpenLogin}
               className="hidden md:inline-flex filter-pill cursor-pointer"
             >
-              REGISTER &gt;
+              TEAM LOGIN &gt;
             </button>
 
             <SignedOut>
@@ -204,10 +204,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             ))}
             <button
-              onClick={() => { setActiveTab('register'); setMobileOpen(false); }}
+              onClick={() => { onOpenLogin(); setMobileOpen(false); }}
               className="text-left font-display text-3xl text-[#FF3B00] py-3 border-b border-[#222222] cursor-pointer"
             >
-              REGISTER NOW &gt;
+              TEAM LOGIN &gt;
             </button>
             {hasActiveTeam && (
               <button

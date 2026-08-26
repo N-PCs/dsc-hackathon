@@ -126,11 +126,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             <div className="flex items-center gap-3 pt-2">
               <button
-                id="hero-btn-register-team"
-                onClick={() => onNavigate('register')}
+                id="hero-btn-login-team"
+                onClick={() => onNavigate('team')}
                 className="gsap-cta btn-primary"
               >
-                REGISTER TEAM &gt;
+                TEAM LOGIN &gt;
               </button>
 
               <button

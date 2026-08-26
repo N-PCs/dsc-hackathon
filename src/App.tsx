@@ -393,10 +393,11 @@ export default function App() {
             )}
 
             {activeTab === 'register' && (
-              <RegistrationForm
-                selectedTrack={selectedTrackForReg}
-                onRegisteredSuccess={handleRegistrationSuccess}
-                onSwitchToLogin={() => setIsLoginModalOpen(true)}
+              <TeamPassTicket
+                team={activeTeam}
+                onNavigateToSubmit={() => setActiveTab('submit')}
+                onSwitchTeamLogin={() => setIsLoginModalOpen(true)}
+                onRefreshTeamData={fetchTeamsAndStats}
               />
             )}
 
@@ -466,7 +467,7 @@ export default function App() {
           setActiveTab('team');
         }}
         onNavigateToRegister={() => {
-          setActiveTab('register');
+          setActiveTab('team');
         }}
       />
 
