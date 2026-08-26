@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ticket, AlertCircle, Sparkles } from 'lucide-react';
+import { Ticket, AlertCircle, Sparkles, Shield, ArrowRight } from 'lucide-react';
 import { Team } from '../types';
 
 interface TeamLoginModalProps {
@@ -65,26 +65,31 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111114] border border-white/10 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative">
+      <div className="bg-black border border-neutral-800 max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-zinc-400 hover:text-white text-xs cursor-pointer"
+          className="absolute top-5 right-5 text-neutral-500 hover:text-white text-xs font-mono uppercase cursor-pointer"
         >
           ✕ Close
         </button>
 
         <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 mb-3">
+          <div className="w-12 h-12 bg-black border border-neutral-800 mx-auto flex items-center justify-center text-orange-500 mb-3">
             <Ticket className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-serif font-bold text-white">Team Login</h3>
-          <p className="text-xs text-zinc-400 mt-1">
+          <span className="px-2.5 py-0.5 bg-orange-500/10 border border-orange-500/30 text-orange-400 font-mono text-[10px] font-bold uppercase tracking-wider inline-block">
+            TEAM ACCESS PORTAL
+          </span>
+          <h3 className="text-2xl font-bold text-white tracking-tight mt-2" style={{ fontFamily: 'var(--font-heading)' }}>
+            Team Login
+          </h3>
+          <p className="text-xs text-neutral-400 mt-1">
             Retrieve your Digital ID Pass, check verification status, or submit 24h project deliverables.
           </p>
         </div>
 
         {errorMsg && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+          <div className="p-3 bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs font-mono flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
             <span>{errorMsg}</span>
           </div>
@@ -92,43 +97,43 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1">
-              Team ID or Leader Email <span className="text-emerald-400">*</span>
+            <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">
+              Team ID or Leader Email <span className="text-orange-500">*</span>
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. ORIGIN-101 or aarav.sharma2023@vitbhopal.ac.in"
+              placeholder="e.g. ORIGIN-101 or leader@vitbhopal.ac.in"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+              className="w-full bg-black border border-neutral-800 focus:border-orange-500 px-4 py-3 text-xs text-white font-mono placeholder:text-neutral-600 focus:outline-none transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 cursor-pointer disabled:opacity-50 transition-all"
+            className="w-full py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-mono text-xs uppercase tracking-wider font-bold border border-orange-500 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
           >
             {isLoading ? (
               <span>Authenticating...</span>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Open Team Pass & Submission</span>
+                <span>Open Team Workspace & Pass</span>
               </>
             )}
           </button>
         </form>
 
-        <div className="pt-3 border-t border-white/10 text-center">
-          <span className="text-xs text-zinc-400">Haven't registered your team yet? </span>
+        <div className="pt-4 border-t border-neutral-800 text-center font-mono text-xs text-neutral-400">
+          <span>Haven't registered your team yet? </span>
           <button
             onClick={() => {
               onClose();
               onNavigateToRegister();
             }}
-            className="text-xs font-semibold text-emerald-400 hover:underline cursor-pointer"
+            className="text-orange-500 font-semibold hover:underline cursor-pointer"
           >
             Register Now &rarr;
           </button>
@@ -137,3 +142,4 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
     </div>
   );
 };
+

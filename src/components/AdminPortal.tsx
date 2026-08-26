@@ -181,6 +181,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [submissionDeadline, setSubmissionDeadline] = useState('');
   const [isTogglingSubmissions, setIsTogglingSubmissions] = useState(false);
   const [isTogglingRegistrations, setIsTogglingRegistrations] = useState(false);
+  const [isClearingDb, setIsClearingDb] = useState(false);
 
   // Fetch submission status and whitelist from backend
   useEffect(() => {
@@ -293,6 +294,35 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       setIsTogglingRegistrations(false);
     }
   };
+
+  const handleClearDatabase = async () => {
+    if (!currentAdmin) return;
+    if (!window.confirm('⚠️ WARNING: Are you sure you want to WIPE all team registrations, submissions, and announcements from the database? This action is permanent.')) {
+      return;
+    }
+    setIsClearingDb(true);
+    try {
+      const res = await fetch('/api/admin/clear-database', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-email': currentAdmin.email,
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('Database cleared successfully!');
+        if (onRefreshData) onRefreshData();
+      } else {
+        alert(data.message || 'Failed to clear database.');
+      }
+    } catch (err) {
+      alert('Failed to clear database.');
+    } finally {
+      setIsClearingDb(false);
+    }
+  };
+
 
   // Direct 1-Click Authorized Sign In for Whitelisted Email
   const handleQuickVerifiedSignIn = (admin: AdminUser) => {
@@ -693,6 +723,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           >
             <FileSpreadsheet className="w-4 h-4 text-orange-500" />
             <span>Export Excel</span>
+          </button>
+
+          <button
+            id="admin-btn-clear-db"
+            onClick={handleClearDatabase}
+            disabled={isClearingDb}
+            className="px-4 py-2.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            <span>{isClearingDb ? 'Clearing DB...' : 'Reset DB Data'}</span>
           </button>
 
           <button

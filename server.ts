@@ -23,6 +23,7 @@ import {
   getRegistrationStatusDB,
   setRegistrationStatusDB,
   isTransactionRefUsed,
+  clearAllDataDB,
 } from './server/db';
 import { uploadFileToImagekit } from './server/imagekit';
 import { getSubmissionDeadline, isDeadlinePassed } from './src/lib/deadline';
@@ -728,6 +729,14 @@ async function startServer() {
       success: true,
       registrationsOpen: updated,
       message: `Team registrations are now ${updated ? 'OPEN' : 'CLOSED'}.`,
+    });
+  });
+
+  app.post('/api/admin/clear-database', requireAdminAuth, async (req, res) => {
+    await clearAllDataDB();
+    res.json({
+      success: true,
+      message: 'All teams, submissions, and announcements data cleared successfully from database.',
     });
   });
 

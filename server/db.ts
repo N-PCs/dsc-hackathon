@@ -1,16 +1,17 @@
 import { Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../src/types.js';
 
-
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
-console.log('[DEBUG] DATABASE_URL loaded:', connectionString ? `${connectionString.slice(0, 20)}...` : 'UNDEFINED');
+console.log('[DEBUG] DATABASE_URL loaded:', connectionString ? `${connectionString.slice(0, 25)}...` : 'UNDEFINED');
 
 let pool: Pool | null = null;
 let useNeon = false;
 
 if (connectionString) {
   try {
-    pool = new Pool({ connectionString });
+    // Clean string if contains channel_binding=require which breaks SCRAM auth over serverless pools
+    const cleanConnectionString = connectionString.replace(/&channel_binding=require/g, '').replace(/\?channel_binding=require/g, '');
+    pool = new Pool({ connectionString: cleanConnectionString });
     useNeon = true;
     console.log('[NeonDB] Database URL detected. Initializing Neon DB Pool connection...');
   } catch (err) {
@@ -72,6 +73,15 @@ let localAdmins: AdminUser[] = [
   { email: 'ananya.24bai10039@vitbhopal.ac.in', name: 'Ananya', role: 'Lead Organizer', department: 'Executive Operations', addedAt: '2026-08-23' },
 ];
 
+function handleDBError(err: any, action: string) {
+  if (err?.code === '28P01' || err?.message?.includes('password authentication failed')) {
+    console.warn(`[NeonDB Auth Warning] Authentication failed for Neon DB during ${action}. Disabling Neon DB connection and falling back to memory store.`);
+    useNeon = false;
+  } else {
+    console.error(`[NeonDB Error] ${action}:`, err?.message || err);
+  }
+}
+
 export async function initDatabase() {
   if (!useNeon || !pool) return;
   try {
@@ -85,11 +95,12 @@ export async function initDatabase() {
           track VARCHAR(100) NOT NULL,
           payment_status VARCHAR(50) DEFAULT 'pending',
           payment_proof_url TEXT,
-          transaction_ref VARCHAR(100) UNIQUE,
+          transaction_ref VARCHAR(100),
           registered_at VARCHAR(100),
           checked_in_venue BOOLEAN DEFAULT FALSE,
           ticket_issued BOOLEAN DEFAULT FALSE,
           notes TEXT,
+          amount_paid INTEGER DEFAULT 150,
           data JSONB NOT NULL
         );
         CREATE TABLE IF NOT EXISTS admin_users (
@@ -114,18 +125,26 @@ export async function initDatabase() {
       `);
 
       try {
-        await client.query('ALTER TABLE teams ADD CONSTRAINT unique_transaction_ref UNIQUE (transaction_ref);');
-      } catch (e: any) {
-        // Ignore if constraint already exists
+        await client.query('ALTER TABLE teams ADD COLUMN IF NOT EXISTS amount_paid INTEGER DEFAULT 150;');
+      } catch (e) {}
+
+      // Seed default admins into admin_users table
+      for (const admin of localAdmins) {
+        try {
+          await client.query(
+            `INSERT INTO admin_users (email, name, role, department, added_at)
+             VALUES ($1, $2, $3, $4, $5) ON CONFLICT (email) DO NOTHING`,
+            [admin.email, admin.name, admin.role, admin.department, admin.addedAt]
+          );
+        } catch (e) {}
       }
 
-      console.log('[NeonDB] Database tables initialized successfully.');
+      console.log('[NeonDB] Database tables & default admin whitelist initialized successfully.');
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error('[NeonDB] Schema initialization error:', err);
-    useNeon = false;
+    handleDBError(err, 'initDatabase');
   }
 }
 
@@ -135,7 +154,7 @@ export async function getAllTeams(): Promise<Team[]> {
       const res = await pool.query('SELECT data FROM teams ORDER BY ctid DESC');
       return res.rows.map((r) => r.data as Team);
     } catch (err) {
-      console.error('[NeonDB] Error fetching teams:', err);
+      handleDBError(err, 'fetching teams');
     }
   }
   return localTeams;
@@ -161,8 +180,8 @@ export async function saveNewTeam(team: Team): Promise<Team> {
   if (useNeon && pool) {
     try {
       await pool.query(
-        `INSERT INTO teams (id, team_name, access_code, track, payment_status, payment_proof_url, transaction_ref, registered_at, checked_in_venue, ticket_issued, notes, data)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        `INSERT INTO teams (id, team_name, access_code, track, payment_status, payment_proof_url, transaction_ref, registered_at, checked_in_venue, ticket_issued, notes, amount_paid, data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           team.id,
           team.teamName,
@@ -175,11 +194,12 @@ export async function saveNewTeam(team: Team): Promise<Team> {
           team.checkedInVenue || false,
           team.ticketIssued || false,
           team.notes || '',
+          team.amountPaid || 150,
           JSON.stringify(team),
         ]
       );
     } catch (err) {
-      console.warn('[NeonDB Warning] Error inserting new team, saving to memory fallback:', err);
+      handleDBError(err, 'inserting team');
     }
   }
   localTeams.unshift(team);
@@ -196,20 +216,22 @@ export async function updateTeam(team: Team): Promise<Team> {
           checked_in_venue = $3, 
           ticket_issued = $4, 
           notes = $5, 
-          data = $6 
-         WHERE UPPER(id) = UPPER($7)`,
+          amount_paid = $6,
+          data = $7 
+         WHERE UPPER(id) = UPPER($8)`,
         [
           team.paymentStatus,
           team.paymentProofUrl || '',
           team.checkedInVenue || false,
           team.ticketIssued || false,
           team.notes || '',
+          team.amountPaid || 150,
           JSON.stringify(team),
           team.id,
         ]
       );
     } catch (err) {
-      console.error('[NeonDB] Error updating team:', err);
+      handleDBError(err, 'updating team');
     }
   }
   const idx = localTeams.findIndex((t) => t.id.toUpperCase() === team.id.toUpperCase());
@@ -225,7 +247,7 @@ export async function deleteTeamById(id: string): Promise<boolean> {
     try {
       await pool.query('DELETE FROM teams WHERE UPPER(id) = $1', [cleanId]);
     } catch (err) {
-      console.error('[NeonDB] Error deleting team:', err);
+      handleDBError(err, 'deleting team');
     }
   }
   localTeams = localTeams.filter((t) => t.id.toUpperCase() !== cleanId);
@@ -233,23 +255,30 @@ export async function deleteTeamById(id: string): Promise<boolean> {
 }
 
 export async function getAuthorizedAdminsDB(): Promise<AdminUser[]> {
+  const mergedMap = new Map<string, AdminUser>();
+
+  // Ensure default authorized admins are present
+  for (const admin of localAdmins) {
+    mergedMap.set(admin.email.toLowerCase(), admin);
+  }
+
   if (useNeon && pool) {
     try {
       const res = await pool.query('SELECT email, name, role, department, added_at FROM admin_users');
-      if (res.rows.length > 0) {
-        return res.rows.map((r) => ({
+      for (const r of res.rows) {
+        mergedMap.set(r.email.toLowerCase(), {
           email: r.email,
           name: r.name,
           role: r.role,
           department: r.department,
           addedAt: r.added_at,
-        }));
+        });
       }
     } catch (err) {
-      console.error('[NeonDB] Error fetching admins:', err);
+      handleDBError(err, 'fetching admins');
     }
   }
-  return localAdmins;
+  return Array.from(mergedMap.values());
 }
 
 export async function addAdminDB(admin: AdminUser): Promise<AdminUser[]> {
@@ -261,7 +290,7 @@ export async function addAdminDB(admin: AdminUser): Promise<AdminUser[]> {
         [admin.email, admin.name, admin.role, admin.department, admin.addedAt]
       );
     } catch (err) {
-      console.error('[NeonDB] Error adding admin:', err);
+      handleDBError(err, 'adding admin');
     }
   }
   if (!localAdmins.some((a) => a.email.toLowerCase() === admin.email.toLowerCase())) {
@@ -276,7 +305,7 @@ export async function removeAdminDB(email: string): Promise<AdminUser[]> {
     try {
       await pool.query('DELETE FROM admin_users WHERE LOWER(email) = $1', [clean]);
     } catch (err) {
-      console.error('[NeonDB] Error removing admin:', err);
+      handleDBError(err, 'removing admin');
     }
   }
   localAdmins = localAdmins.filter((a) => a.email.toLowerCase() !== clean);
@@ -296,7 +325,7 @@ export async function getAnnouncementsDB(): Promise<Announcement[]> {
         sender: r.sender,
       }));
     } catch (err) {
-      console.error('[NeonDB] Error fetching announcements:', err);
+      handleDBError(err, 'fetching announcements');
     }
   }
   return localAnnouncements;
@@ -313,7 +342,7 @@ export async function getSubmissionStatusDB(): Promise<boolean> {
         return res.rows[0].value === 'true';
       }
     } catch (err) {
-      console.error('[NeonDB] Error fetching submission status:', err);
+      handleDBError(err, 'fetching submission status');
     }
   }
   return localSubmissionsOpen;
@@ -329,7 +358,7 @@ export async function setSubmissionStatusDB(isOpen: boolean): Promise<boolean> {
         [String(isOpen)]
       );
     } catch (err) {
-      console.error('[NeonDB] Error updating submission status:', err);
+      handleDBError(err, 'updating submission status');
     }
   }
   return localSubmissionsOpen;
@@ -343,7 +372,7 @@ export async function getRegistrationStatusDB(): Promise<boolean> {
         return res.rows[0].value === 'true';
       }
     } catch (err) {
-      console.error('[NeonDB] Error fetching registration status:', err);
+      handleDBError(err, 'fetching registration status');
     }
   }
   return localRegistrationsOpen;
@@ -359,7 +388,7 @@ export async function setRegistrationStatusDB(isOpen: boolean): Promise<boolean>
         [String(isOpen)]
       );
     } catch (err) {
-      console.error('[NeonDB] Error updating registration status:', err);
+      handleDBError(err, 'updating registration status');
     }
   }
   return localRegistrationsOpen;
@@ -374,7 +403,7 @@ export async function addAnnouncementDB(ann: Announcement): Promise<Announcement
         [ann.id, ann.title, ann.message, ann.category, ann.timestamp, ann.sender]
       );
     } catch (err) {
-      console.error('[NeonDB] Error adding announcement:', err);
+      handleDBError(err, 'adding announcement');
     }
   }
   localAnnouncements.unshift(ann);
@@ -386,7 +415,7 @@ export async function deleteAnnouncementDB(id: string): Promise<boolean> {
     try {
       await pool.query('DELETE FROM announcements WHERE id = $1', [id]);
     } catch (err) {
-      console.error('[NeonDB] Error deleting announcement:', err);
+      handleDBError(err, 'deleting announcement');
     }
   }
   localAnnouncements = localAnnouncements.filter((a) => a.id !== id);
@@ -404,9 +433,24 @@ export async function isTransactionRefUsed(ref: string): Promise<boolean> {
         return true;
       }
     } catch (err) {
-      console.error('[NeonDB] Error checking transaction ref:', err);
+      handleDBError(err, 'checking transaction ref');
     }
   }
   
   return localTeams.some(t => t.transactionRef?.toLowerCase() === cleanRef);
+}
+
+export async function clearAllDataDB(): Promise<boolean> {
+  localTeams = [];
+  localAnnouncements = [];
+  if (useNeon && pool) {
+    try {
+      await pool.query('TRUNCATE TABLE teams CASCADE;');
+      await pool.query('TRUNCATE TABLE announcements CASCADE;');
+      console.log('[NeonDB] All teams and announcements data cleared successfully!');
+    } catch (err) {
+      handleDBError(err, 'clearing all data');
+    }
+  }
+  return true;
 }
