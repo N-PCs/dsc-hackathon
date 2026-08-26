@@ -120,24 +120,11 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Open Team Workspace & Pass</span>
+                <span>Sign In to Team Pass & Submissions</span>
               </>
             )}
           </button>
         </form>
-
-        <div className="pt-4 border-t border-neutral-800 text-center font-mono text-xs text-neutral-400">
-          <span>Haven't registered your team yet? </span>
-          <button
-            onClick={() => {
-              onClose();
-              onNavigateToRegister();
-            }}
-            className="text-orange-500 font-semibold hover:underline cursor-pointer"
-          >
-            Register Now &rarr;
-          </button>
-        </div>
       </div>
     </div>
   );
