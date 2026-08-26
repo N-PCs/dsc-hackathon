@@ -67,33 +67,33 @@ flowchart TD
     end
 
     %% Registration Flow
-    A -->|1. Submit Team & Payment Details| E
-    E -->|Valid Magic Bytes| F
-    F -->|Unique UTR & Email| I
-    I -->|Insert Team Record (Pending Status)| P
-    I -->|Fallback if DB Offline| R
-    A -->|Attach Proof (Image/PDF/PPT)| J
-    J -->|Upload Buffer| Q
-    Q -->|Return Hosted Media URL| I
+    A -->|"1. Submit Team & Payment Details"| E
+    E -->|"Valid Magic Bytes"| F
+    F -->|"Unique UTR & Email"| I
+    I -->|"Insert Team Record (Pending Status)"| P
+    I -->|"Fallback if DB Offline"| R
+    A -->|"Attach Proof (Image/PDF/PPT)"| J
+    J -->|"Upload Buffer"| Q
+    Q -->|"Return Hosted Media URL"| I
 
     %% Team Access Flow
-    B -->|2. Enter ID/Email + PIN| P
-    P -->|Return Team State & Pass Access| B
+    B -->|"2. Enter ID/Email + PIN"| P
+    P -->|"Return Team State & Pass Access"| B
 
     %% Admin Flow
-    C -->|3. Request Access Passcode| G
-    G -->|Whitelisted Admin Email| K
-    K -->|Generate & Verify 6-Digit OTP| C
-    C -->|Verify Payment & Unlock Pass| P
-    C -->|Global Submissions Toggle| M
-    M -->|Update Settings Table| P
-    C -->|Score Projects & Post Broadcasts| N
-    C -->|Export Dataset| O
+    C -->|"3. Request Access Passcode"| G
+    G -->|"Whitelisted Admin Email"| K
+    K -->|"Generate & Verify 6-Digit OTP"| C
+    C -->|"Verify Payment & Unlock Pass"| P
+    C -->|"Global Submissions Toggle"| M
+    M -->|"Update Settings Table"| P
+    C -->|"Score Projects & Post Broadcasts"| N
+    C -->|"Export Dataset"| O
 
     %% Project Submission Flow
-    D -->|4. Submit GitHub Repo & Slide Deck| H
-    H -->|Verified & Window Open & In Deadline| L
-    L -->|Update Team Project Payload| P
+    D -->|"4. Submit GitHub Repo & Slide Deck"| H
+    H -->|"Verified & Window Open & In Deadline"| L
+    L -->|"Update Team Project Payload"| P
 
     %% Styling
     classDef client fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
