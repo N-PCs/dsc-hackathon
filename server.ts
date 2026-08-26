@@ -395,8 +395,37 @@ async function startServer() {
     });
   });
 
+  // Admin Authorization Middleware
+  const requireAdminAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const adminEmail = (
+      (req.headers['x-admin-email'] as string) ||
+      (req.headers['authorization']?.replace('Bearer ', '') as string) ||
+      ''
+    ).trim().toLowerCase();
+
+    if (!adminEmail) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: Admin authorization header (x-admin-email) is required.',
+      });
+    }
+
+    const admins = await getAuthorizedAdminsDB();
+    const admin = admins.find((a) => a.email.toLowerCase() === adminEmail);
+
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        message: `Access Denied: Email '${adminEmail}' is not an authorized administrator.`,
+      });
+    }
+
+    (req as any).adminUser = admin;
+    next();
+  };
+
   // Admin: Update Team Status & Unlock Controls (verify payment, reject, check-in, issue ticket)
-  app.patch('/api/teams/:id/status', async (req, res) => {
+  app.patch('/api/teams/:id/status', requireAdminAuth, async (req, res) => {
     const team = await findTeamById(req.params.id);
 
     if (!team) {
@@ -434,7 +463,7 @@ async function startServer() {
   });
 
   // Admin: Grade/Score Project
-  app.post('/api/teams/:id/score', async (req, res) => {
+  app.post('/api/teams/:id/score', requireAdminAuth, async (req, res) => {
     const team = await findTeamById(req.params.id);
 
     if (!team || !team.project) {
@@ -460,7 +489,7 @@ async function startServer() {
   });
 
   // Admin: Delete Team
-  app.delete('/api/teams/:id', async (req, res) => {
+  app.delete('/api/teams/:id', requireAdminAuth, async (req, res) => {
     await deleteTeamById(req.params.id);
     res.json({ success: true, message: 'Team removed successfully.' });
   });
@@ -468,6 +497,36 @@ async function startServer() {
   // ==========================================
   // ADMIN AUTHENTICATION & WHITELIST
   // ==========================================
+
+  // Verify Clerk identity against authorized admin directory
+  app.post('/api/admin/auth/verify-clerk-user', async (req, res) => {
+    const { email } = req.body;
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ success: false, message: 'Email address is required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const admins = await getAuthorizedAdminsDB();
+    const admin = admins.find((a) => a.email.toLowerCase() === cleanEmail);
+
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        message: `Access Denied: Email '${cleanEmail}' is not listed in the Origin Hackathon Authorized Admin Directory.`,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Admin access authorized via Clerk identity.',
+      admin: {
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        department: admin.department,
+      },
+    });
+  });
 
   app.post('/api/admin/auth/request-otp', async (req, res) => {
     const { email } = req.body;
@@ -547,7 +606,7 @@ async function startServer() {
     res.json({ success: true, authorizedAdmins });
   });
 
-  app.post('/api/admin/whitelist', async (req, res) => {
+  app.post('/api/admin/whitelist', requireAdminAuth, async (req, res) => {
     const { email, name, role = 'Lead Organizer', department = 'Hackathon Operations' } = req.body;
     if (!email || !name) {
       return res.status(400).json({ success: false, message: 'Email and Name are required.' });
@@ -566,7 +625,7 @@ async function startServer() {
     res.status(201).json({ success: true, message: 'New administrator added.', admin: newAdmin, authorizedAdmins });
   });
 
-  app.delete('/api/admin/whitelist/:email', async (req, res) => {
+  app.delete('/api/admin/whitelist/:email', requireAdminAuth, async (req, res) => {
     const emailToRemove = decodeURIComponent(req.params.email).trim().toLowerCase();
     const authorizedAdmins = await removeAdminDB(emailToRemove);
     res.json({ success: true, message: 'Administrator removed.', authorizedAdmins });
@@ -587,7 +646,7 @@ async function startServer() {
   });
 
 
-  app.post('/api/admin/submissions-toggle', async (req, res) => {
+  app.post('/api/admin/submissions-toggle', requireAdminAuth, async (req, res) => {
     const { submissionsOpen } = req.body;
     if (typeof submissionsOpen !== 'boolean') {
       return res.status(400).json({ success: false, message: 'submissionsOpen boolean property required.' });
@@ -606,7 +665,7 @@ async function startServer() {
     res.json({ success: true, announcements });
   });
 
-  app.post('/api/announcements', async (req, res) => {
+  app.post('/api/announcements', requireAdminAuth, async (req, res) => {
     const { title, message, category = 'general', sender = 'DSC Origin Admin' } = req.body;
     if (!title || !message) {
       return res.status(400).json({ success: false, message: 'Title and message are required.' });

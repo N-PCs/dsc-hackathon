@@ -176,6 +176,19 @@ export default function App() {
     setActiveTeam(updatedTeam);
   };
 
+  const getAdminHeaders = () => {
+    try {
+      const saved = localStorage.getItem('origin_active_admin');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) {
+          return { 'x-admin-email': parsed.email };
+        }
+      }
+    } catch (e) {}
+    return {};
+  };
+
   const handleAdminUpdateTeamStatus = async (
     teamId: string,
     statusUpdate: {
@@ -195,7 +208,7 @@ export default function App() {
     try {
       await fetch(`/api/teams/${teamId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAdminHeaders() },
         body: JSON.stringify(statusUpdate),
       });
     } catch (e) {
@@ -217,7 +230,7 @@ export default function App() {
     try {
       const res = await fetch(`/api/teams/${teamId}/score`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAdminHeaders() },
         body: JSON.stringify(scoreData),
       });
       const data = await res.json();
@@ -236,7 +249,10 @@ export default function App() {
       localStorage.removeItem('origin_active_team_id');
     }
     try {
-      await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
+      await fetch(`/api/teams/${teamId}`, {
+        method: 'DELETE',
+        headers: { ...getAdminHeaders() },
+      });
     } catch (e) {
       console.error(e);
     }
@@ -250,7 +266,7 @@ export default function App() {
     try {
       const res = await fetch('/api/announcements', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAdminHeaders() },
         body: JSON.stringify({ title, message, category }),
       });
       const data = await res.json();

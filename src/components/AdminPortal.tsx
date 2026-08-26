@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SignIn } from '@clerk/clerk-react';
+import { SignIn, useUser, useClerk } from '@clerk/clerk-react';
 import {
   Shield,
   ShieldCheck,
@@ -97,6 +97,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onSendAnnouncement,
   onRefreshData,
 }) => {
+  const { user: clerkUser, isSignedIn: isClerkSignedIn } = useUser();
+  const { signOut: clerkSignOut } = useClerk();
+
   // Authorized Admin Directory State
   const [adminWhitelist, setAdminWhitelist] = useState<AdminUser[]>(() => {
     const saved = localStorage.getItem('origin_admin_whitelist');
@@ -200,13 +203,45 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       .catch(() => {});
   }, []);
 
+  // Sync Clerk authenticated user with Admin Whitelist
+  useEffect(() => {
+    if (isClerkSignedIn && clerkUser?.primaryEmailAddress?.emailAddress) {
+      const email = clerkUser.primaryEmailAddress.emailAddress.toLowerCase();
+      const matchedAdmin = adminWhitelist.find(
+        (a) => a.email.toLowerCase() === email
+      );
+      if (matchedAdmin) {
+        setCurrentAdmin(matchedAdmin);
+        localStorage.setItem('origin_active_admin', JSON.stringify(matchedAdmin));
+      } else {
+        fetch('/api/admin/auth/verify-clerk-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && data.admin) {
+              setCurrentAdmin(data.admin);
+              localStorage.setItem('origin_active_admin', JSON.stringify(data.admin));
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [isClerkSignedIn, clerkUser, adminWhitelist]);
+
   const handleToggleSubmissions = async () => {
+    if (!currentAdmin) return;
     const nextState = !isSubmissionsOpen;
     setIsTogglingSubmissions(true);
     try {
       const res = await fetch('/api/admin/submissions-toggle', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-email': currentAdmin.email,
+        },
         body: JSON.stringify({ submissionsOpen: nextState }),
       });
       const data = await res.json();
@@ -280,7 +315,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   // Admin Sign Out
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setCurrentAdmin(null);
     localStorage.removeItem('origin_active_admin');
     setAuthStep('email');
@@ -288,12 +323,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     setSentOtp(null);
     setAuthError('');
     setAuthSuccessNotice('');
+    if (isClerkSignedIn) {
+      try {
+        await clerkSignOut();
+      } catch (e) {}
+    }
   };
 
   // Add new Authorized Admin to Whitelist
   const handleAddNewAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAdminEmail.trim() || !newAdminName.trim()) return;
+    if (!newAdminEmail.trim() || !newAdminName.trim() || !currentAdmin) return;
 
     const emailToAdd = newAdminEmail.trim().toLowerCase();
     const existing = adminWhitelist.find((a) => a.email.toLowerCase() === emailToAdd);
@@ -313,7 +353,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     try {
       await fetch('/api/admin/whitelist', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-email': currentAdmin.email,
+        },
         body: JSON.stringify(newAdminObj),
       });
     } catch (e) {
@@ -345,6 +388,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     try {
       await fetch(`/api/admin/whitelist/${encodeURIComponent(emailToRemove)}`, {
         method: 'DELETE',
+        headers: {
+          'x-admin-email': currentAdmin?.email || '',
+        },
       });
     } catch (e) {
       // ignore
@@ -445,26 +491,54 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <h3 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             Origin '26 Executive Admin Console
           </h3>
-          <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
-            Please sign in with Clerk using your authorized executive or jury email address to access administrative management tools.
-          </p>
 
-          <div className="flex justify-center pt-4">
-            <SignIn
-              appearance={{
-                elements: {
-                  rootBox: 'w-full flex justify-center',
-                  card: 'bg-black border border-neutral-800 shadow-2xl text-white p-6',
-                  headerTitle: 'text-white font-bold',
-                  headerSubtitle: 'text-neutral-400 text-xs',
-                  socialButtonsBlockButton: 'bg-black text-white border border-neutral-800 hover:bg-neutral-900',
-                  formButtonPrimary: 'bg-orange-600 hover:bg-orange-500 text-white font-mono uppercase tracking-wider font-bold border border-orange-500',
-                  formFieldInput: 'bg-black border border-neutral-800 text-white font-mono text-xs',
-                  footerActionLink: 'text-orange-400 hover:text-orange-300 font-mono font-bold',
-                },
-              }}
-            />
-          </div>
+          {isClerkSignedIn && clerkUser?.primaryEmailAddress?.emailAddress ? (
+            <div className="space-y-4 pt-2">
+              <div className="p-4 bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs font-mono text-left space-y-2">
+                <div className="flex items-center gap-2 font-bold text-rose-400">
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>ACCESS DENIED — NOT AN AUTHORIZED ADMIN</span>
+                </div>
+                <p>
+                  You are currently signed in as <strong className="text-white">{clerkUser.primaryEmailAddress.emailAddress}</strong>, but this email address is not in the Authorized Admin Whitelist.
+                </p>
+                <p className="text-[11px] text-neutral-400">
+                  If you are an organizer or convener, please request access from the Lead Convener or Superadmin.
+                </p>
+              </div>
+
+              <button
+                onClick={() => clerkSignOut()}
+                className="w-full py-3 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-200 font-mono text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4 text-rose-400" />
+                <span>Sign Out of Clerk to Switch Account</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
+                Please sign in with Clerk using your authorized executive or jury email address to access administrative management tools.
+              </p>
+
+              <div className="flex justify-center pt-4">
+                <SignIn
+                  appearance={{
+                    elements: {
+                      rootBox: 'w-full flex justify-center',
+                      card: 'bg-black border border-neutral-800 shadow-2xl text-white p-6',
+                      headerTitle: 'text-white font-bold',
+                      headerSubtitle: 'text-neutral-400 text-xs',
+                      socialButtonsBlockButton: 'bg-black text-white border border-neutral-800 hover:bg-neutral-900',
+                      formButtonPrimary: 'bg-orange-600 hover:bg-orange-500 text-white font-mono uppercase tracking-wider font-bold border border-orange-500',
+                      formFieldInput: 'bg-black border border-neutral-800 text-white font-mono text-xs',
+                      footerActionLink: 'text-orange-400 hover:text-orange-300 font-mono font-bold',
+                    },
+                  }}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
