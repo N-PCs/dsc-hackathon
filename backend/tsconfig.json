@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "types": ["node"]
+  },
+  "include": ["api/**/*", "src/**/*", "server.ts"],
+  "exclude": ["node_modules", "dist"]
+}
