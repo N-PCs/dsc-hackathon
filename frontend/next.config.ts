@@ -1,13 +1,18 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.BACKEND_URL ||
+  "https://your-backend-url.com";
+
 const nextConfig: NextConfig = {
   rewrites: async () => [
     {
       source: "/api/:path*",
       destination:
         process.env.NODE_ENV === "production"
-          ? "https://your-backend-url.com/api/:path*"   // ← replace with your production backend URL
-          : "http://localhost:4000/api/:path*",          // ← make sure this is port 3000
+          ? `${backendUrl.replace(/\/$/, "")}/api/:path*`
+          : "http://localhost:4000/api/:path*",
     },
   ],
 };

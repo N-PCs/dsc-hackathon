@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getAllTeams } from '../services/teamService.js';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 export const exportCsv = async (req: Request, res: Response) => {
   const teams = await getAllTeams();
@@ -49,6 +49,9 @@ export const exportCsv = async (req: Request, res: Response) => {
 
 export const exportExcel = async (req: Request, res: Response) => {
   const teams = await getAllTeams();
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Registrations');
+
   const data = teams.map((t) => ({
     'Team ID': t.id,
     'Team Name': t.teamName,
@@ -90,11 +93,21 @@ export const exportExcel = async (req: Request, res: Response) => {
     'PPT/PDF Document Link': t.project?.presentationUrl || '',
     'Score': t.project?.score?.total || 'Unscored',
   }));
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
-  const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+  if (data.length > 0) {
+    worksheet.columns = Object.keys(data[0]).map((key) => ({
+      header: key,
+      key: key,
+      width: 20,
+    }));
+
+    data.forEach((row) => {
+      worksheet.addRow(row);
+    });
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="origin-teams-${Date.now()}.xlsx"`);
-  res.send(buffer);
+  res.send(Buffer.from(buffer));
 };
