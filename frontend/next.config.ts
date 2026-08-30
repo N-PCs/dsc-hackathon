@@ -8,10 +8,6 @@ const backendUrl =
 const nextConfig: NextConfig = {
   rewrites: async () => [
     {
-      source: "/__clerk/:path*",
-      destination: "https://api.clerk.com/v1/:path*",
-    },
-    {
       source: "/api/:path*",
       destination:
         process.env.NODE_ENV === "production"
