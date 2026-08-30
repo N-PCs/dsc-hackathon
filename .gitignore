@@ -16,3 +16,4 @@ build/
 # IDE & system logs
 .DS_Store
 *.log
+.vercel
