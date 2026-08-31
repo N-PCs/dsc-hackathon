@@ -82,4 +82,49 @@ export const HACKATHON_SCHEDULE = [
 export const DEFAULT_SUBMISSION_DEADLINE = "2026-08-26T11:00:00+05:30";
 
 export const INITIAL_ANNOUNCEMENTS: Announcement[] = [];
-export const INITIAL_TEAMS: Team[] = [];
+
+export const DUMMY_LEAD_TEAM: Team = {
+  id: "ORIGIN-101",
+  teamName: "NeuralPulse AI",
+  accessCode: "1001",
+  track: "AI & Machine Learning",
+  leader: {
+    name: "Neel Shukla",
+    email: "neel.24bce10303@vitbhopal.ac.in",
+    phone: "+91 98765 43210",
+    college: "VIT Bhopal University",
+    role: "Team Lead",
+    registrationNumber: "24BCE10303",
+    residentialStatus: "Hosteller",
+    messName: "Anchor (Boys)",
+  },
+  member2: {
+    name: "Aarav Sharma",
+    email: "aarav.24bce10101@vitbhopal.ac.in",
+    phone: "+91 98765 11111",
+    registrationNumber: "24BCE10101",
+    college: "VIT Bhopal University",
+    role: "Full Stack Developer",
+    residentialStatus: "Hosteller",
+    messName: "Anchor (Boys)",
+  },
+  member3: {
+    name: "Priya Patel",
+    email: "priya.24bce10202@vitbhopal.ac.in",
+    phone: "+91 98765 22222",
+    registrationNumber: "24BCE10202",
+    college: "VIT Bhopal University",
+    role: "ML Engineer",
+    residentialStatus: "Day Scholar",
+  },
+  paymentStatus: "verified",
+  paymentProofUrl: "https://ik.imagekit.io/origin/demo-receipt.png",
+  transactionRef: "UPI/ORIGIN/NEEL24BCE10303",
+  amountPaid: 419,
+  registeredAt: "Sep 4, 2026, 6:00 PM",
+  checkedInVenue: true,
+  ticketIssued: true,
+  notes: "Verified Lead Team - Project Submission Enabled",
+};
+
+export const INITIAL_TEAMS: Team[] = [DUMMY_LEAD_TEAM];

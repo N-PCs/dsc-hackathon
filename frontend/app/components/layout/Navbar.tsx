@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Menu, X, LogOut, User as UserIcon, Shield, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, Shield, ChevronDown, Lock, Send } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { EXTERNAL_REGISTRATION_URL } from "@/data/mockData";
@@ -27,8 +27,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("hero");
+  const [isSubmissionsOpen, setIsSubmissionsOpen] = useState<boolean>(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Background blur on scroll
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -46,25 +49,97 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Poll submissions open/closed status from admin settings
+  useEffect(() => {
+    const checkSubmissions = () => {
+      fetch("/api/admin/submissions-status")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success && typeof data.submissionsOpen === "boolean") {
+            setIsSubmissionsOpen(data.submissionsOpen);
+          }
+        })
+        .catch(() => {});
+    };
+    checkSubmissions();
+    const interval = setInterval(checkSubmissions, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Dynamic active section detection when scrolling on homepage
+  useEffect(() => {
+    if (pathname !== "/") return;
+
+    const handleScrollSpy = () => {
+      const scrollPos = window.scrollY + 160;
+      const sections = [
+        { id: "faq-section", label: "FAQ" },
+        { id: "timeline-section", label: "SCHEDULE" },
+        { id: "sponsors", label: "SPONSORS" },
+        { id: "hero", label: "MAIN" },
+      ];
+
+      for (const s of sections) {
+        const el = document.getElementById(s.id);
+        if (el) {
+          const top = el.offsetTop;
+          if (scrollPos >= top) {
+            setActiveSection(s.id);
+            return;
+          }
+        }
+      }
+      setActiveSection("hero");
+    };
+
+    window.addEventListener("scroll", handleScrollSpy, { passive: true });
+    handleScrollSpy();
+    return () => window.removeEventListener("scroll", handleScrollSpy);
+  }, [pathname]);
+
+  const handleLogoClick = () => {
+    setMobileOpen(false);
+    if (pathname === "/") {
+      const el = document.getElementById("hero");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+        setActiveSection("hero");
+      }
+    } else {
+      sessionStorage.setItem("pendingScroll", "hero");
+      router.push("/");
+    }
+  };
+
   const handleNavClick = (tab: string, scrollTo?: string) => {
     setMobileOpen(false);
 
     if (tab === "home") {
       if (pathname === "/") {
         if (scrollTo) {
+          setActiveSection(scrollTo);
           const el = document.getElementById(scrollTo);
           if (el) {
             el.scrollIntoView({ behavior: "smooth" });
           }
         }
       } else {
-        router.push("/");
         if (scrollTo) {
           sessionStorage.setItem("pendingScroll", scrollTo);
         }
+        router.push("/");
       }
     } else {
       router.push(`/${tab}`);
+    }
+  };
+
+  const handleSubmitClick = () => {
+    setMobileOpen(false);
+    if (!user && !hasActiveTeam) {
+      setAuthModalOpen(true);
+    } else {
+      router.push("/submit");
     }
   };
 
@@ -75,11 +150,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "home", label: "FAQ", scrollTo: "faq-section" },
   ];
 
-  const isActive = (linkLabel: string) => {
+  const isActive = (linkLabel: string, scrollTo?: string) => {
     if (pathname === "/") {
-      return activeTab === "home" && linkLabel === "MAIN";
+      if (scrollTo) {
+        return activeSection === scrollTo;
+      }
+      return activeSection === "hero" && linkLabel === "MAIN";
     }
-    return activeTab === linkLabel.toLowerCase();
+    return activeTab === linkLabel.toLowerCase() || pathname === `/${linkLabel.toLowerCase()}`;
   };
 
   const getUserInitials = () => {
@@ -107,44 +185,53 @@ export const Navbar: React.FC<NavbarProps> = ({
             : "bg-[#0A0A0A]/80 backdrop-blur-sm border-b border-[#1A1A1A]"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <img
-              src="/DSClogo.png"
-              alt="Data Science Club Logo"
-              className="h-9 md:h-11 w-auto object-contain group-hover:scale-105 transition-transform"
-            />
-            <img
-              src="/origin-logo.png"
-              alt="ORIGIN Hackathon Logo"
-              className="h-14 md:h-16 w-auto object-contain group-hover:scale-105 transition-transform"
-            />
-          </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          {/* Brand Logos - Clicking either smoothly scrolls to main hero */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleLogoClick}
+              className="flex items-center gap-3 cursor-pointer group focus:outline-none"
+              title="Return to Main Section"
+            >
+              <img
+                src="/DSClogo.png"
+                alt="Data Science Club Logo"
+                className="h-8 sm:h-10 md:h-11 w-auto object-contain group-hover:scale-105 transition-transform"
+              />
+              <img
+                src="/origin-logo.png"
+                alt="ORIGIN Hackathon Logo"
+                className="h-12 sm:h-14 md:h-16 w-auto object-contain group-hover:scale-105 transition-transform"
+              />
+            </button>
+          </div>
 
+          {/* Navigation Links with Active State Highlighting */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link, i) => (
-              <button
-                key={i}
-                onClick={() => handleNavClick(link.id, link.scrollTo)}
-                className={`font-heading text-[15px] tracking-widest uppercase transition-all duration-200 cursor-pointer relative py-1 ${
-                  isActive(link.label)
-                    ? "text-[#FF3B00] font-bold border-b-2 border-[#FF3B00] drop-shadow-[0_2px_8px_rgba(255,59,0,0.4)]"
-                    : "text-neutral-300 hover:text-white"
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link, i) => {
+              const active = isActive(link.label, link.scrollTo);
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleNavClick(link.id, link.scrollTo)}
+                  className={`font-heading text-[15px] tracking-widest uppercase transition-all duration-200 cursor-pointer relative py-1.5 ${
+                    active
+                      ? "text-[#FF3B00] font-bold border-b-2 border-[#FF3B00] drop-shadow-[0_2px_8px_rgba(255,59,0,0.5)]"
+                      : "text-neutral-300 hover:text-white"
+                  }`}
+                >
+                  {link.label}
+                </button>
+              );
+            })}
           </nav>
 
-          <div className="flex items-center gap-4">
+          {/* Action CTAs */}
+          <div className="flex items-center gap-3 sm:gap-4">
             {hasActiveTeam && (
               <button
                 onClick={() => router.push("/team")}
-                className={`hidden sm:inline-flex font-heading text-[14px] tracking-wider transition-colors cursor-pointer uppercase ${
+                className={`hidden lg:inline-flex font-heading text-[14px] tracking-wider transition-colors cursor-pointer uppercase ${
                   pathname === "/team" ? "text-[#FF3B00] font-bold" : "text-neutral-300 hover:text-[#FF3B00]"
                 }`}
               >
@@ -152,17 +239,45 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
+            {/* Submit Project Button (Admin Controlled) */}
+            {isSubmissionsOpen ? (
+              <button
+                id="nav-btn-submit-project"
+                onClick={handleSubmitClick}
+                className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer border ${
+                  pathname === "/submit"
+                    ? "bg-[#FF3B00] text-white border-[#FF3B00] shadow-[0_0_15px_rgba(255,59,0,0.5)]"
+                    : "bg-[#FF3B00]/10 hover:bg-[#FF3B00] text-[#FF3B00] hover:text-white border-[#FF3B00]/40 hover:border-[#FF3B00]"
+                }`}
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>SUBMIT PROJECT &gt;</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push("/submit")}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 cursor-pointer hover:border-neutral-700"
+                title="Submissions currently closed by Admin"
+              >
+                <Lock className="w-3 h-3 text-neutral-500" />
+                <span>SUBMISSION CLOSED</span>
+              </button>
+            )}
+
+            {/* Register Button */}
             <button
+              id="nav-btn-register"
               onClick={() => window.open(EXTERNAL_REGISTRATION_URL, "_blank")}
               className="hidden md:inline-flex filter-pill cursor-pointer"
             >
               REGISTER &gt;
             </button>
 
+            {/* Auth Button / Profile Dropdown */}
             {!loading && !user && (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="font-heading text-[14px] tracking-wider text-neutral-300 hover:text-white transition-colors cursor-pointer uppercase px-3 py-1.5 border border-neutral-800 hover:border-[#FF3B00] bg-[#111111]"
+                className="font-heading text-[13px] sm:text-[14px] tracking-wider text-neutral-300 hover:text-white transition-colors cursor-pointer uppercase px-3 py-1.5 border border-neutral-800 hover:border-[#FF3B00] bg-[#111111]"
               >
                 Sign In
               </button>
@@ -228,6 +343,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <UserIcon className="w-3.5 h-3.5" />
                         <span>My Digital Pass</span>
                       </button>
+
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          router.push("/submit");
+                        }}
+                        className="w-full text-left px-2.5 py-2 hover:bg-[#171717] hover:text-[#FF3B00] transition-colors flex items-center gap-2 cursor-pointer text-[#FF3B00]"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Project Submission</span>
+                      </button>
                     </div>
 
                     <div className="border-t border-[#222222] pt-2">
@@ -263,25 +389,49 @@ export const Navbar: React.FC<NavbarProps> = ({
         onClose={() => setAuthModalOpen(false)}
       />
 
+      {/* Mobile Navigation Drawer */}
       {mobileOpen && (
         <div
           style={{ paddingTop: hasAnnouncement ? "8rem" : "6rem" }}
           className="fixed inset-0 z-40 bg-[#0A0A0A] px-6 md:hidden overflow-y-auto"
         >
           <nav className="flex flex-col gap-2">
-            {navLinks.map((link, i) => (
+            {navLinks.map((link, i) => {
+              const active = isActive(link.label, link.scrollTo);
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleNavClick(link.id, link.scrollTo)}
+                  className={`text-left font-display text-3xl py-3 border-b border-[#222222] cursor-pointer transition-all ${
+                    active
+                      ? "text-[#FF3B00] font-bold border-l-4 border-l-[#FF3B00] pl-3 bg-[#FF3B00]/10"
+                      : "text-white hover:text-[#FF3B00]"
+                  }`}
+                >
+                  {link.label}
+                </button>
+              );
+            })}
+
+            {isSubmissionsOpen ? (
               <button
-                key={i}
-                onClick={() => handleNavClick(link.id, link.scrollTo)}
-                className={`text-left font-display text-3xl py-3 border-b border-[#222222] cursor-pointer transition-all ${
-                  isActive(link.label)
-                    ? "text-[#FF3B00] font-bold border-l-4 border-l-[#FF3B00] pl-3"
-                    : "text-white hover:text-[#FF3B00]"
-                }`}
+                onClick={handleSubmitClick}
+                className="text-left font-display text-3xl text-orange-400 py-3 border-b border-[#222222] cursor-pointer"
               >
-                {link.label}
+                SUBMIT PROJECT &gt;
               </button>
-            ))}
+            ) : (
+              <button
+                onClick={() => {
+                  router.push("/submit");
+                  setMobileOpen(false);
+                }}
+                className="text-left font-display text-3xl text-neutral-500 py-3 border-b border-[#222222] cursor-pointer"
+              >
+                SUBMISSION CLOSED 🔒
+              </button>
+            )}
+
             <button
               onClick={() => {
                 window.open(EXTERNAL_REGISTRATION_URL, "_blank");
@@ -291,6 +441,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               REGISTER NOW &gt;
             </button>
+
             {hasActiveTeam && (
               <button
                 onClick={() => {
@@ -302,15 +453,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 MY DIGITAL PASS
               </button>
             )}
-            <button
-              onClick={() => {
-                router.push("/submit");
-                setMobileOpen(false);
-              }}
-              className="text-left font-display text-3xl text-neutral-400 py-3 border-b border-[#222222] cursor-pointer"
-            >
-              SUBMIT PROJECT
-            </button>
+
             {!user ? (
               <button
                 onClick={() => {

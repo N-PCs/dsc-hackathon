@@ -35,8 +35,53 @@ if (connectionString) {
   logger.info('[NeonDB] No DATABASE_URL – using in‑memory store');
 }
 
+// Dummy verified lead team for end-to-end testing
+const DUMMY_LEAD_TEAM: Team = {
+  id: 'ORIGIN-101',
+  teamName: 'NeuralPulse AI',
+  accessCode: '1001',
+  track: 'AI & Machine Learning',
+  leader: {
+    name: 'Neel Shukla',
+    email: 'neel.24bce10303@vitbhopal.ac.in',
+    phone: '+91 98765 43210',
+    college: 'VIT Bhopal University',
+    role: 'Team Lead',
+    registrationNumber: '24BCE10303',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
+  },
+  member2: {
+    name: 'Aarav Sharma',
+    email: 'aarav.24bce10101@vitbhopal.ac.in',
+    phone: '+91 98765 11111',
+    registrationNumber: '24BCE10101',
+    college: 'VIT Bhopal University',
+    role: 'Full Stack Developer',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
+  },
+  member3: {
+    name: 'Priya Patel',
+    email: 'priya.24bce10202@vitbhopal.ac.in',
+    phone: '+91 98765 22222',
+    registrationNumber: '24BCE10202',
+    college: 'VIT Bhopal University',
+    role: 'ML Engineer',
+    residentialStatus: 'Day Scholar',
+  },
+  paymentStatus: 'verified',
+  paymentProofUrl: 'https://ik.imagekit.io/origin/demo-receipt.png',
+  transactionRef: 'UPI/ORIGIN/NEEL24BCE10303',
+  amountPaid: 419,
+  registeredAt: 'Sep 4, 2026, 6:00 PM',
+  checkedInVenue: true,
+  ticketIssued: true,
+  notes: 'Verified Lead Team - Ready for Project Submission',
+};
+
 // In‑memory fallback
-let localTeams: Team[] = [];
+let localTeams: Team[] = [DUMMY_LEAD_TEAM];
 let localAnnouncements: Announcement[] = [];
 let localAdmins: AdminUser[] = [
   { email: 'admin@vitbhopal.ac.in', name: 'Admin', role: 'Superadmin', department: 'DSC' },
@@ -100,6 +145,27 @@ export async function initDatabase() {
           [admin.email, admin.name, admin.role, admin.department, admin.addedAt || new Date().toISOString()]
         );
       }
+      // Seed dummy verified team for testing
+      await client.query(
+        `INSERT INTO teams (id, team_name, access_code, track, payment_status, payment_proof_url, transaction_ref, registered_at, checked_in_venue, ticket_issued, notes, amount_paid, data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          DUMMY_LEAD_TEAM.id,
+          DUMMY_LEAD_TEAM.teamName,
+          DUMMY_LEAD_TEAM.accessCode,
+          DUMMY_LEAD_TEAM.track,
+          DUMMY_LEAD_TEAM.paymentStatus,
+          DUMMY_LEAD_TEAM.paymentProofUrl || '',
+          DUMMY_LEAD_TEAM.transactionRef || '',
+          DUMMY_LEAD_TEAM.registeredAt,
+          DUMMY_LEAD_TEAM.checkedInVenue || false,
+          DUMMY_LEAD_TEAM.ticketIssued || false,
+          DUMMY_LEAD_TEAM.notes || '',
+          DUMMY_LEAD_TEAM.amountPaid || 150,
+          JSON.stringify(DUMMY_LEAD_TEAM),
+        ]
+      );
       logger.info('[NeonDB] Tables ready');
     } finally {
       client.release();
@@ -407,7 +473,7 @@ export async function deleteAnnouncement(id: string): Promise<void> {
 }
 
 // ---- Settings ----
-let localSubmissionsOpen = false;
+let localSubmissionsOpen = true;
 let localRegistrationsOpen = true;
 
 export async function getSubmissionStatus(): Promise<boolean> {
