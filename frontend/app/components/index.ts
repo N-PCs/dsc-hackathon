@@ -18,6 +18,9 @@ export { AdminPortal } from "./admin/AdminPortal";
 // Jury
 export { JuryPortal } from "./jury/JuryPortal";
 
+// Auth
+export { AuthModal } from "./auth/AuthModal";
+
 // Sections
 export { HeroSection } from "./sections/HeroSection";
 export { SponsorsSection } from "./sections/SponsorsSection";

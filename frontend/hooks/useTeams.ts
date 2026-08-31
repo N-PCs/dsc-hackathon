@@ -4,6 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import { Team, Announcement, HackathonStats, TrackType } from "@/types";
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from "@/data/mockData";
 
+const safeFetchJson = async (url: string) => {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_e) {
+    return null;
+  }
+};
+
 export function useTeams() {
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
@@ -38,12 +48,12 @@ export function useTeams() {
   const fetchData = useCallback(async () => {
     try {
       const [teamsRes, annRes, statsRes] = await Promise.all([
-        fetch("/api/teams").then((r) => r.json()),
-        fetch("/api/announcements").then((r) => r.json()),
-        fetch("/api/stats").then((r) => r.json()),
+        safeFetchJson("/api/teams"),
+        safeFetchJson("/api/announcements"),
+        safeFetchJson("/api/stats"),
       ]);
 
-      if (teamsRes.success && Array.isArray(teamsRes.teams)) {
+      if (teamsRes && teamsRes.success && Array.isArray(teamsRes.teams)) {
         setTeams(teamsRes.teams);
         // Sync active team from localStorage
         const savedId = localStorage.getItem("origin_active_team_id");
@@ -56,22 +66,22 @@ export function useTeams() {
         }
       }
 
-      if (annRes.success && Array.isArray(annRes.announcements)) {
+      if (annRes && annRes.success && Array.isArray(annRes.announcements)) {
         setAnnouncements(annRes.announcements);
       }
 
-      if (statsRes.success && statsRes.stats) {
+      if (statsRes && statsRes.success && statsRes.stats) {
         setStats(statsRes.stats);
       }
-    } catch (err) {
-      console.warn("[useTeams] Failed to fetch data", err);
+    } catch (_err) {
+      // Graceful fallback to initial state / cache
     }
   }, []);
 
-  // Initial fetch + polling every 5 seconds
+  // Initial fetch + polling every 10 seconds
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [fetchData]);
 

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { TrackType, Team, TeamMember } from "@/types";
 import { HACKATHON_TRACKS } from "@/data/mockData";
-import { isVITBhopalEmail } from "@/lib/clerk";
+import { isVITBhopalEmail } from "@/lib/firebase";
 import { uploadDirectToImagekit } from "@/lib/imagekitClient";
 
 export const MESS_OPTIONS = [

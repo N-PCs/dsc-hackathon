@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.8.3",
+    "firebase": "^11.4.0",
     "@gsap/react": "^2.1.2",
     "canvas-confetti": "^1.9.4",
     "gsap": "^3.15.0",
