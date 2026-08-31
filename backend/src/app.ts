@@ -33,6 +33,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check & base status
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'Origin Hackathon Backend API',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Routes
 app.use('/api', routes);
 
