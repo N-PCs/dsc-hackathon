@@ -26,79 +26,106 @@ A production-grade, full-stack platform powering the flagship **Origin Hackathon
 
 ## Key Features
 
-- **⚡ High-Performance Next.js 16 UI** — Fluid client-side experience with GSAP, Lenis smooth scrolling, framer-motion animations, custom cybernetic aesthetic, and interactive 3D particle backgrounds.
-- **🛡️ Google Firebase Authentication** — Secure organizer and leader authentication enforcing `@vitbhopal.ac.in` domain verification.
-- **📦 Amazon S3 Presentation Storage** — Fast and secure direct-to-cloud upload pipeline for participant pitch decks (.ppt, .pptx, .pdf up to 50MB) and payment receipts.
-- **🎫 Digital Team ID Pass & Ticket** — Instant generation of digital passcards with unique Team IDs (e.g. `ORIGIN-AI-1024`) and 4-digit PIN access codes with print/download capabilities.
-- **🐘 Neon Serverless PostgreSQL** — Hybrid relational & JSONB document database architecture with ACID transactions and automatic indexing.
-- **⚡ Upstash Redis High-Speed Caching** — Sub-millisecond distributed in-memory cache layer for real-time team lookups, live announcements, and registration status flags.
-- **📢 Real-Time Broadcast Console** — Organizer announcement banner polled live by participants without requiring page reloads.
-- **⚖️ Jury Evaluation Portal** — Streamlined evaluator interface with custom scoring rubrics (Innovation, Implementation, UI/UX, Presentation) and real-time leaderboard aggregation.
-- **📊 Admin Control Center & Excel Export** — Comprehensive dashboard to verify UPI transactions, toggle registrations/submissions, and stream-export full team reports to `.xlsx` and `.csv`.
+- ** High-Performance Next.js 16 UI** — Fluid client-side experience with GSAP, Lenis smooth scrolling, framer-motion animations, custom cybernetic aesthetic, and interactive 3D particle backgrounds.
+- ** Google Firebase Authentication** — Secure organizer and leader authentication enforcing `@vitbhopal.ac.in` domain verification.
+- ** Amazon S3 Presentation Storage** — Fast and secure direct-to-cloud upload pipeline for participant pitch decks (.ppt, .pptx, .pdf up to 50MB) and payment receipts.
+- ** Digital Team ID Pass & Ticket** — Instant generation of digital passcards with unique Team IDs (e.g. `ORIGIN-AI-1024`) and 4-digit PIN access codes with print/download capabilities.
+- ** Neon Serverless PostgreSQL** — Hybrid relational & JSONB document database architecture with ACID transactions and automatic indexing.
+- ** Upstash Redis High-Speed Caching** — Sub-millisecond distributed in-memory cache layer for real-time team lookups, live announcements, and registration status flags.
+- ** Real-Time Broadcast Console** — Organizer announcement banner polled live by participants without requiring page reloads.
+- ** Jury Evaluation Portal** — Streamlined evaluator interface with custom scoring rubrics (Innovation, Implementation, UI/UX, Presentation) and real-time leaderboard aggregation.
+- ** Admin Control Center & Excel Export** — Comprehensive dashboard to verify UPI transactions, toggle registrations/submissions, and stream-export full team reports to `.xlsx` and `.csv`.
 
 ---
 
 ## Workflow Diagram
 
 ```mermaid
-flowchart TD
-    User([Participant / Team]) --> Browser["Browser (Client Frontend)"]
-    AdminUser([DSC Admin / Organiser]) --> Browser
-    JuryUser([Jury Evaluator]) --> Browser
+flowchart TB
+    %% Neon Palette Definitions
+    %% Client Layer (Neon Cyan)
+    classDef clientStyle fill:#002b36,stroke:#00f3ff,stroke-width:2px,color:#00f3ff
+    classDef clientBox fill:#003847,stroke:#00f3ff,stroke-width:1.5px,color:#ffffff
 
-    subgraph Browser UI ["⚡ Next.js 16 Client (frontend/app)"]
-        Landing["Landing & Tracks\n(/, /schedule, /faq)"]
-        RegForm["Team Registration & UPI\n/register"]
-        TeamPass["Team ID Pass & Ticket\n/team"]
-        Submission["Project PPT Submission\n/submit"]
-        AdminPortal["Admin Console\n/admin"]
-        JuryPortal["Jury Evaluation\n/jury"]
+    %% Frontend Layer (Neon Yellow)
+    classDef frontendStyle fill:#2a2800,stroke:#ffee00,stroke-width:2px,color:#ffee00
+    classDef frontendBox fill:#383500,stroke:#ffee00,stroke-width:1.5px,color:#ffffff
+
+    %% Security Layer (Neon Gold / Yellow-Orange)
+    classDef securityStyle fill:#2b1d00,stroke:#ffb700,stroke-width:2px,color:#ffb700
+    classDef securityBox fill:#3d2900,stroke:#ffb700,stroke-width:1.5px,color:#ffffff
+
+    %% Backend Layer (Neon Green)
+    classDef backendStyle fill:#002e0c,stroke:#00ff66,stroke-width:2px,color:#00ff66
+    classDef backendBox fill:#004212,stroke:#00ff66,stroke-width:1.5px,color:#ffffff
+
+    %% Storage Layer (Neon Magenta)
+    classDef storageStyle fill:#2e0026,stroke:#ff00bb,stroke-width:2px,color:#ff00bb
+    classDef s3Box fill:#380010,stroke:#ff3300,stroke-width:1.5px,color:#ffffff
+    classDef neonBox fill:#003820,stroke:#00ff99,stroke-width:1.5px,color:#ffffff
+    classDef redisBox fill:#400000,stroke:#ff003c,stroke-width:1.5px,color:#ffffff
+
+    subgraph Clients["Client Layer (Browser)"]
+        User["Participant / Team Leader"]
+        Admin["DSC Admin / Organizer"]
+        Jury["Jury Member / Evaluator"]
     end
 
-    Browser --> Landing & RegForm & TeamPass & Submission & AdminPortal & JuryPortal
-
-    subgraph AuthLayer ["🔐 Identity & Security"]
-        FirebaseAuth["Google Firebase Auth\n@vitbhopal.ac.in domain check"]
+    subgraph Frontend["Frontend Layer (Next.js 16 / Vercel)"]
+        Landing["Marketing Pages\n(/, /schedule, /faq)"]
+        RegForm["Team Registration\n(/register)"]
+        TeamDash["Team Dashboard & Ticket\n(/team, /submit)"]
+        AdminPortal["Admin Console\n(/admin)"]
+        JuryPortal["Jury Evaluation\n(/jury)"]
+        AuthCtx["Firebase Auth Context"]
     end
 
-    AdminPortal -->|Authenticate| FirebaseAuth
-    RegForm -->|Verify Domain| FirebaseAuth
-
-    subgraph BackendAPI ["🚀 Express + TypeScript Backend API (/api)"]
-        Router["Express Router"]
-        UploadCtrl["Upload Controller\n(Multer 50MB limit)"]
-        TeamCtrl["Team Controller\n(Register / Update / Pass)"]
-        AdminCtrl["Admin Controller\n(Verify / Export / Toggle)"]
-        JuryCtrl["Jury Controller\n(Rubric Scoring)"]
+    subgraph Security["Auth & Identity"]
+        FirebaseAuth["Google Firebase Auth"]
     end
 
-    RegForm -->|POST /api/upload| UploadCtrl
-    Submission -->|POST /api/upload (PPT/PDF)| UploadCtrl
-    RegForm -->|POST /api/teams| TeamCtrl
-    TeamPass -->|POST /api/teams/auth/team-login| TeamCtrl
-    AdminPortal -->|PATCH /api/teams/:id/status| AdminCtrl
-    JuryPortal -->|POST /api/jury/score| JuryCtrl
-
-    subgraph CloudStorage ["☁️ Cloud Storage & Database"]
-        S3[("Amazon S3 Bucket\nPPTs / Decks / Receipts")]
-        NeonDB[("Neon PostgreSQL\nTeams, Scores, Audit Logs")]
-        Redis[("Upstash Redis\nSub-ms Cache & Flags")]
+    subgraph Backend["Backend API Layer (Express / Vercel Serverless)"]
+        Router["Express Router (/api)"]
+        AuthMiddleware["Admin Auth & Role Verification"]
+        ValMiddleware["Signature & Input Validation"]
+        Controllers["Controllers\n(Team, Upload, Admin, Jury, Stats)"]
     end
 
-    UploadCtrl -->|PutObjectCommand| S3
-    TeamCtrl & AdminCtrl & JuryCtrl <-->|Cache-Aside (Get / Invalidate)| Redis
-    TeamCtrl & AdminCtrl & JuryCtrl <-->|Persistent SQL Queries| NeonDB
+    subgraph Storage["Cloud Storage & Database Layer"]
+        S3["Amazon S3 Storage\n(PPT / Pitch Decks / Submissions)"]
+        NeonDB[("Neon PostgreSQL DB\n(Teams, Projects, Scores)")]
+        Redis[("Upstash Redis Cache\n(Fast Cache & Fallback)")]
+    end
 
-    %% Custom High-Contrast Styling
-    classDef blueBox fill:#0288D1,stroke:#000000,stroke-width:2px,color:#FFF;
-    classDef neonYellowBox fill:#FFFF00,stroke:#000000,stroke-width:2px,color:#000;
-    classDef pinkBox fill:#FF1493,stroke:#000000,stroke-width:2px,color:#FFF;
-    classDef purpleBox fill:#7B1FA2,stroke:#000000,stroke-width:2px,color:#FFF;
+    %% Apply Classes
+    class User,Admin,Jury clientBox
+    class Landing,RegForm,TeamDash,AdminPortal,JuryPortal,AuthCtx frontendBox
+    class FirebaseAuth securityBox
+    class Router,AuthMiddleware,ValMiddleware,Controllers backendBox
+    class S3 s3Box
+    class NeonDB neonBox
+    class Redis redisBox
 
-    class User,AdminUser,JuryUser blueBox;
-    class Landing,RegForm,TeamPass,Submission,AdminPortal,JuryPortal neonYellowBox;
-    class FirebaseAuth,Router,UploadCtrl,TeamCtrl,AdminCtrl,JuryCtrl pinkBox;
-    class S3,NeonDB,Redis purpleBox;
+    class Clients clientStyle
+    class Frontend frontendStyle
+    class Security securityStyle
+    class Backend backendStyle
+    class Storage storageStyle
+
+    %% Connections
+    User --> Landing & RegForm & TeamDash
+    Admin --> AdminPortal
+    Jury --> JuryPortal
+
+    Admin & User -.-> AuthCtx
+    AuthCtx <==> FirebaseAuth
+
+    RegForm & TeamDash & AdminPortal & JuryPortal == "fetch('/api/')" ==> Router
+    Router --> AuthMiddleware --> ValMiddleware --> Controllers
+
+    Controllers -->|Upload PPT / PDF| S3
+    Controllers <-->|Get / Invalidate Cache| Redis
+    Controllers <-->|Read / Write Data| NeonDB
 ```
 
 ---
@@ -304,16 +331,16 @@ npm --prefix backend install
 Create `.env` in the root directory (and copy to `backend/.env` & `frontend/.env.local`):
 
 ```env
-# 🐘 Neon PostgreSQL Database
+#  Neon PostgreSQL Database
 DATABASE_URL=postgresql://neondb_owner:password@ep-host.aws.neon.tech/neondb?sslmode=require
 
-# 📦 AWS S3 Storage (PPT Submissions & Receipts)
+#  AWS S3 Storage (PPT Submissions & Receipts)
 AWS_ACCESS_KEY_ID=your_aws_access_key_id
 AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 AWS_REGION=ap-south-1
 AWS_S3_BUCKET=dsc-hackathon-storage
 
-# 🔐 Google Firebase Authentication
+#  Google Firebase Authentication
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
@@ -322,11 +349,11 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
-# ⚡ Upstash Redis Cache
+#  Upstash Redis Cache
 UPSTASH_REDIS_REST_URL=https://your-redis-instance.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
 
-# 🌐 Service Routing (Production)
+#  Service Routing (Production)
 NEXT_PUBLIC_BACKEND_URL=https://backend-git-master-n-pcs-projects.vercel.app
 ```
 
@@ -359,7 +386,7 @@ npm run dev
 
 ---
 
-## 🚀 Production Deployment on Vercel
+## Production Deployment on Vercel
 
 ### Backend Project Setup
 1. In the [Vercel Dashboard](https://vercel.com/dashboard), open your **Backend Project** (`backend`).
