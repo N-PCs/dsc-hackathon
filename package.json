@@ -2,15 +2,21 @@
   "name": "dsc-hackathon-monorepo",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "dev": "concurrently -n \"next,api\" -c \"cyan,magenta\" \"npm --prefix frontend run dev\" \"npm --prefix backend run dev\"",
-    "dev:frontend": "npm --prefix frontend run dev",
-    "dev:backend": "npm --prefix backend run dev",
-    "build": "npm --prefix frontend run build",
-    "start": "npm --prefix frontend run start",
-    "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
-    "backend:dev": "npm --prefix backend run dev",
-    "backend:build": "npm --prefix backend run build"
+    "dev": "concurrently -n \"next,api\" -c \"cyan,magenta\" \"npm run dev --workspace=frontend\" \"npm run dev --workspace=backend\"",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build": "npm run build --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "start": "npm run start --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend && npm run lint --workspace=backend",
+    "backend:dev": "npm run dev --workspace=backend",
+    "backend:build": "npm run build --workspace=backend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
