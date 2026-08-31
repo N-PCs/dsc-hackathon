@@ -11,14 +11,16 @@ import {
   Auth,
 } from "firebase/auth";
 
+const cleanEnv = (val?: string) => (val ? val.trim().replace(/[\r\n\s\t]+/g, "") : "");
+
 export const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDpu0w07PqgYE1SzsXlW8A_0l6ZBc45JWI",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "dscorigin.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "dscorigin",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "dscorigin.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "131384799615",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:131384799615:web:229ac9ff5b19872eb6aa4a",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-58MTEF0T3Y",
+  apiKey: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) || "AIzaSyDpu0w07PqgYE1SzsXlW8A_0l6ZBc45JWI",
+  authDomain: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) || "dscorigin.firebaseapp.com",
+  projectId: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) || "dscorigin",
+  storageBucket: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) || "dscorigin.firebasestorage.app",
+  messagingSenderId: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID) || "131384799615",
+  appId: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_APP_ID) || "1:131384799615:web:229ac9ff5b19872eb6aa4a",
+  measurementId: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID) || "G-58MTEF0T3Y",
 };
 
 // Initialize Firebase safely (avoid re-initialization on hot reloads)
