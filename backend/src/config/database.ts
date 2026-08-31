@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
+dotenv.config({ path: '../.env' });
+dotenv.config({ path: '../.env.local' });
+
 import { Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../utils/types.js';
 import { getCachedData, setCachedData, invalidateCache, CACHE_KEYS } from './redis.js';

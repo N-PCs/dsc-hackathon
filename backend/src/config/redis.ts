@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
+dotenv.config({ path: '../.env' });
+dotenv.config({ path: '../.env.local' });
+
 import { Redis } from '@upstash/redis';
 import { logger } from '../utils/logger.js';
 
