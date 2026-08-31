@@ -2,651 +2,404 @@
 
 <div align="center">
 
-[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+![Next.js](https://img.shields.io/badge/Next.js-16.3-333333?style=for-the-badge&logo=nextdotjs&logoColor=white&labelColor=000000)
+![React](https://img.shields.io/badge/React-19-333333?style=for-the-badge&logo=react&logoColor=black&labelColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-333333?style=for-the-badge&logo=typescript&logoColor=white&labelColor=3178C6)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-333333?style=for-the-badge&logo=tailwindcss&logoColor=white&labelColor=06B6D4)
+![Express.js](https://img.shields.io/badge/Express.js-4.21-333333?style=for-the-badge&logo=express&logoColor=white&labelColor=404D59)
+![Node.js](https://img.shields.io/badge/Node.js-20.x-333333?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=339933)
+![Amazon S3](https://img.shields.io/badge/Amazon_S3-Storage-333333?style=for-the-badge&logo=amazons3&logoColor=white&labelColor=569A31)
+![Firebase](https://img.shields.io/badge/Firebase-Auth-333333?style=for-the-badge&logo=firebase&logoColor=black&labelColor=FFCA28)
+![Neon DB](https://img.shields.io/badge/Neon_DB-PostgreSQL-333333?style=for-the-badge&logo=postgresql&logoColor=black&labelColor=00E599)
+![Upstash Redis](https://img.shields.io/badge/Upstash-Redis_Cache-333333?style=for-the-badge&logo=redis&logoColor=white&labelColor=DC382D)
+![Vercel](https://img.shields.io/badge/Vercel-Deploy-333333?style=for-the-badge&logo=vercel&logoColor=white&labelColor=000000)
 
-[![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
-[![Google Firebase](https://img.shields.io/badge/Firebase_Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Neon DB](https://img.shields.io/badge/Neon_PostgreSQL-00E599?style=for-the-badge&logo=postgresql&logoColor=black)](https://neon.tech/)
-[![Upstash Redis](https://img.shields.io/badge/Upstash_Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
-[![Vercel](https://img.shields.io/badge/Vercel_Deploy-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+<br />
+
+A production-grade, full-stack platform powering the flagship **Origin Hackathon** hosted by the **Data Science Club (DSC)** at **VIT Bhopal University**. Real-time team registration, digital access ticket pass, Amazon S3-backed presentation uploads, Google Firebase identity management, Neon PostgreSQL storage, Upstash Redis caching, and an organizer command center.
+
+**Live Frontend → [dsc-hackathon.vercel.app](https://dsc-hackathon.vercel.app)** &nbsp;|&nbsp; **API → [backend-git-master-n-pcs-projects.vercel.app](https://backend-git-master-n-pcs-projects.vercel.app)**
 
 </div>
 
 ---
 
-A two-repo, full-stack platform powering the **Origin Hackathon** (Data Science Club, VIT Bhopal): a modern **Next.js 16** responsive frontend with interactive dashboards, talking to an **Express + TypeScript API** backed by **Amazon S3** (PPT/presentation storage), **Google Firebase Auth** (authentication), **Neon DB** (Serverless PostgreSQL data storage), **Upstash Redis** (caching), and deployed on **Vercel**.
+## Key Features
 
-This README documents the *whole system* — both repos, how they're wired together,
-every major data flow, and how to run/extend it.
+- **⚡ High-Performance Next.js 16 UI** — Fluid client-side experience with GSAP, Lenis smooth scrolling, framer-motion animations, custom cybernetic aesthetic, and interactive 3D particle backgrounds.
+- **🛡️ Google Firebase Authentication** — Secure organizer and leader authentication enforcing `@vitbhopal.ac.in` domain verification.
+- **📦 Amazon S3 Presentation Storage** — Fast and secure direct-to-cloud upload pipeline for participant pitch decks (.ppt, .pptx, .pdf up to 50MB) and payment receipts.
+- **🎫 Digital Team ID Pass & Ticket** — Instant generation of digital passcards with unique Team IDs (e.g. `ORIGIN-AI-1024`) and 4-digit PIN access codes with print/download capabilities.
+- **🐘 Neon Serverless PostgreSQL** — Hybrid relational & JSONB document database architecture with ACID transactions and automatic indexing.
+- **⚡ Upstash Redis High-Speed Caching** — Sub-millisecond distributed in-memory cache layer for real-time team lookups, live announcements, and registration status flags.
+- **📢 Real-Time Broadcast Console** — Organizer announcement banner polled live by participants without requiring page reloads.
+- **⚖️ Jury Evaluation Portal** — Streamlined evaluator interface with custom scoring rubrics (Innovation, Implementation, UI/UX, Presentation) and real-time leaderboard aggregation.
+- **📊 Admin Control Center & Excel Export** — Comprehensive dashboard to verify UPI transactions, toggle registrations/submissions, and stream-export full team reports to `.xlsx` and `.csv`.
 
-```
-origin-hackathon/
-├── backend/     ← Express + TypeScript API (Node server or Vercel Function)
-└── frontend/    ← Next.js 16 App Router site (marketing + team/admin/jury UI)
+---
+
+## Workflow Diagram
+
+```mermaid
+flowchart TD
+    User([Participant / Team]) --> Browser["Browser (Client Frontend)"]
+    AdminUser([DSC Admin / Organiser]) --> Browser
+    JuryUser([Jury Evaluator]) --> Browser
+
+    subgraph Browser UI ["⚡ Next.js 16 Client (frontend/app)"]
+        Landing["Landing & Tracks\n(/, /schedule, /faq)"]
+        RegForm["Team Registration & UPI\n/register"]
+        TeamPass["Team ID Pass & Ticket\n/team"]
+        Submission["Project PPT Submission\n/submit"]
+        AdminPortal["Admin Console\n/admin"]
+        JuryPortal["Jury Evaluation\n/jury"]
+    end
+
+    Browser --> Landing & RegForm & TeamPass & Submission & AdminPortal & JuryPortal
+
+    subgraph AuthLayer ["🔐 Identity & Security"]
+        FirebaseAuth["Google Firebase Auth\n@vitbhopal.ac.in domain check"]
+    end
+
+    AdminPortal -->|Authenticate| FirebaseAuth
+    RegForm -->|Verify Domain| FirebaseAuth
+
+    subgraph BackendAPI ["🚀 Express + TypeScript Backend API (/api)"]
+        Router["Express Router"]
+        UploadCtrl["Upload Controller\n(Multer 50MB limit)"]
+        TeamCtrl["Team Controller\n(Register / Update / Pass)"]
+        AdminCtrl["Admin Controller\n(Verify / Export / Toggle)"]
+        JuryCtrl["Jury Controller\n(Rubric Scoring)"]
+    end
+
+    RegForm -->|POST /api/upload| UploadCtrl
+    Submission -->|POST /api/upload (PPT/PDF)| UploadCtrl
+    RegForm -->|POST /api/teams| TeamCtrl
+    TeamPass -->|POST /api/teams/auth/team-login| TeamCtrl
+    AdminPortal -->|PATCH /api/teams/:id/status| AdminCtrl
+    JuryPortal -->|POST /api/jury/score| JuryCtrl
+
+    subgraph CloudStorage ["☁️ Cloud Storage & Database"]
+        S3[("Amazon S3 Bucket\nPPTs / Decks / Receipts")]
+        NeonDB[("Neon PostgreSQL\nTeams, Scores, Audit Logs")]
+        Redis[("Upstash Redis\nSub-ms Cache & Flags")]
+    end
+
+    UploadCtrl -->|PutObjectCommand| S3
+    TeamCtrl & AdminCtrl & JuryCtrl <-->|Cache-Aside (Get / Invalidate)| Redis
+    TeamCtrl & AdminCtrl & JuryCtrl <-->|Persistent SQL Queries| NeonDB
+
+    %% Custom High-Contrast Styling
+    classDef blueBox fill:#0288D1,stroke:#000000,stroke-width:2px,color:#FFF;
+    classDef neonYellowBox fill:#FFFF00,stroke:#000000,stroke-width:2px,color:#000;
+    classDef pinkBox fill:#FF1493,stroke:#000000,stroke-width:2px,color:#FFF;
+    classDef purpleBox fill:#7B1FA2,stroke:#000000,stroke-width:2px,color:#FFF;
+
+    class User,AdminUser,JuryUser blueBox;
+    class Landing,RegForm,TeamPass,Submission,AdminPortal,JuryPortal neonYellowBox;
+    class FirebaseAuth,Router,UploadCtrl,TeamCtrl,AdminCtrl,JuryCtrl pinkBox;
+    class S3,NeonDB,Redis purpleBox;
 ```
 
 ---
 
-## Table of Contents
+### Team Registration & Fee Verification Flow
 
-1. [System Architecture (Big Picture)](#system-architecture-big-picture)
-2. [How Frontend ↔ Backend Are Wired](#how-frontend--backend-are-wired)
-3. [Backend Architecture](#backend-architecture)
-4. [Frontend Architecture](#frontend-architecture)
-5. [Authentication — Four Separate Systems](#authentication--four-separate-systems)
-6. [End-to-End Data Flows](#end-to-end-data-flows)
-7. [State Management on the Frontend](#state-management-on-the-frontend)
-8. [File Upload Pipeline](#file-upload-pipeline)
-9. [Database Schema](#database-schema)
-10. [API Reference](#api-reference)
-11. [Environment Variables](#environment-variables)
-12. [Running Everything Locally](#running-everything-locally)
-13. [Deployment](#deployment)
-14. [Known Inconsistencies & Gotchas](#known-inconsistencies--gotchas)
-15. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
+```mermaid
+sequenceDiagram
+    actor Leader as Team Leader
+    participant App as Origin Frontend (Next.js 16)
+    participant Auth as Firebase Auth
+    participant API as Backend API (Express)
+    participant S3 as Amazon S3 Storage
+    participant DB as Neon PostgreSQL
+    participant Redis as Upstash Redis
 
----
+    Leader->>App: Open /register
+    Leader->>Auth: Verify @vitbhopal.ac.in Email
+    Auth-->>App: Domain Verified
 
-## System Architecture (Big Picture)
+    Leader->>App: Fill Team details (Leader, Members 2-5, Track, UPI Ref)
+    Leader->>App: Upload UPI payment screenshot
+    App->>API: POST /api/upload (Multipart image)
+    API->>S3: Upload to S3 bucket
+    S3-->>API: S3 URL returned
+    API-->>App: { success: true, url: receiptUrl }
 
-```
-                              ┌────────────────────────────────────────┐
-                              │              Browser (User)              │
-                              └───────────────────┬──────────────────────┘
-                                                  │  HTTPS
-                                                  ▼
-                    ┌──────────────────────────────────────────────────────┐
-                    │        FRONTEND — Next.js 16 (App Router)             │
-                    │  frontend/app/**                                     │
-                    │  - Marketing pages (/, /schedule, /faq)               │
-                    │  - Team pages (/register, /team, /submit)             │
-                    │  - Admin dashboard (/admin) — Clerk + OTP gated       │
-                    │  - Jury dashboard (/jury) — static passcode gated     │
-                    │  - useTeams() hook polls backend every 5s             │
-                    └───────────────────┬────────────────────────────────┘
-                                        │  fetch('/api/...')
-                                        │  (same-origin, browser-relative)
-                                        ▼
-                    ┌──────────────────────────────────────────────────────┐
-                    │   next.config.ts  →  rewrites()                       │
-                    │   /api/:path*  ⇒  proxied to BACKEND_URL/api/:path*   │
-                    │   (dev: http://localhost:4000, prod: your backend URL)│
-                    └───────────────────┬────────────────────────────────┘
-                                        │  HTTP (server-to-server, invisible
-                                        │  to the browser — no CORS needed)
-                                        ▼
-                    ┌──────────────────────────────────────────────────────┐
-                    │        BACKEND — Express + TypeScript API             │
-                    │  backend/src/**                                       │
-                    │  routes → middleware → controllers → services         │
-                    │  Mounted at /api (health, teams, admin, announcements, │
-                    │  upload, export-csv, export-excel)                    │
-                    └───────┬─────────────────┬─────────────────┬──────────┘
-                            ▼                 ▼                 ▼
-                 ┌─────────────────┐ ┌────────────────┐ ┌──────────────────┐
-                 │  NeonDB (Postgres)│ │ Upstash Redis  │ │  ImageKit.io      │
-                 │  source of truth  │ │ cache-aside     │ │  file storage     │
-                 │  (teams, admins,  │ │ layer (optional)│ │  (payment proofs, │
-                 │  announcements,   │ │                 │ │  PPT/PDF decks)   │
-                 │  settings)        │ │                 │ │                   │
-                 └─────────────────┘ └────────────────┘ └──────────────────┘
-```
-
-**Key idea:** the browser never talks to the backend directly. It only ever calls
-relative paths like `/api/teams`, which Next.js's `rewrites()` config silently proxies
-to the real Express server. This means **no CORS configuration is needed** anywhere in
-this system — from the browser's point of view, frontend and backend are the same
-origin.
-
----
-
-## How Frontend ↔ Backend Are Wired
-
-This is the single most important integration detail in the whole project.
-
-**`frontend/next.config.ts`:**
-```ts
-rewrites: async () => [
-  {
-    source: "/api/:path*",
-    destination:
-      process.env.NODE_ENV === "production"
-        ? "https://your-backend-url.com/api/:path*"   // set to your deployed backend
-        : "http://localhost:4000/api/:path*",           // local backend dev server
-  },
-],
-```
-
-**`backend/src/app.ts`:**
-```ts
-app.use('/api', routes);   // all backend routes live under /api/*
-```
-
-So a browser call to `fetch('/api/teams')` on the frontend:
-1. Hits the Next.js server (or Vercel edge) at `/api/teams`.
-2. Next.js's rewrite silently forwards it to `http://localhost:4000/api/teams` (dev)
-   or your production backend's `/api/teams` (prod) — same path, different host.
-3. The Express app's `router.use('/api', routes)` → `teamRoutes` → `listTeams`
-   controller handles it and returns JSON.
-4. The response is streamed back through Next.js to the browser, looking exactly
-   like it came from the frontend's own domain.
-
-**Practical consequence:** you must update the hardcoded production URL in
-`next.config.ts` (`https://your-backend-url.com`) to point at wherever the `backend/`
-folder is actually deployed, or every API call in production will fail.
-
----
-
-## Backend Architecture
-
-Standard layered Express architecture.
-
-```
-Routes → Middleware (validate, auth) → Controllers → Services → Config (DB/Redis/ImageKit)
-```
-
-| Layer | Responsibility | Location |
-|---|---|---|
-| Routes | HTTP verb + path → middleware chain → controller | `src/routes/*` |
-| Middleware | Cross-cutting: validation, admin auth, error handling | `src/middleware/*` |
-| Controllers | Parse `req`, call services, shape `res` | `src/controllers/*` |
-| Services | Business logic + Redis cache-aside orchestration | `src/services/*` |
-| Config | Raw I/O: Postgres queries, Redis calls, ImageKit uploads | `src/config/*` |
-
-**Resilience pattern:** every external dependency (NeonDB, Redis, ImageKit) has a
-built-in fallback — in-memory arrays if Postgres is unreachable, no-op caching if
-Redis isn't configured, Base64 Data-URI embedding if ImageKit isn't configured. The
-backend is designed to **never hard-crash** due to a missing/misconfigured
-integration; it just silently degrades.
-
-**Two run modes** from the same codebase:
-- `server.ts` — a standalone long-running Node process (`npm run dev` / `npm start`),
-  used for local development and any traditional host. In dev mode it also boots a
-  Vite dev-server in middleware mode alongside Express.
-- `api/index.ts` — a thin wrapper (`export default app`) that lets the same Express
-  app run as a Vercel Serverless Function if you deploy the backend to Vercel too.
-
-**Cache-aside pattern (used everywhere a list is read/written):**
-```
-read:  check Redis → miss? read Postgres (or in-memory) → populate Redis → return
-write: write Postgres (or in-memory) → invalidate the relevant Redis key
-```
-
-**Storage fallback chain (per operation):**
-```
-NeonDB configured & reachable? ──yes──▶ use it, mirror the query into Redis + local vars
-        │ no / errors out
-        ▼
-fall back to in-memory JS arrays (localTeams, localAdmins, localAnnouncements)
+    Leader->>App: Confirm Registration
+    App->>API: POST /api/teams (Payload + receiptUrl)
+    API->>DB: INSERT team (paymentStatus='pending')
+    API->>Redis: Invalidate origin:teams cache
+    API-->>App: { success: true, team: { id: "ORIGIN-AI-1024", accessCode: "4921" } }
+    App-->>Leader: Confetti Animation 🎉 + Digital ID Ticket Pass
 ```
 
 ---
 
-## Frontend Architecture
+### Project PPT Submission Flow (AWS S3)
 
-Next.js 16, App Router, almost entirely client components (`"use client"` — this is a
-highly interactive dashboard-style app, not a static content site).
+```mermaid
+sequenceDiagram
+    actor Team as Participant Team
+    participant App as Origin Frontend (/submit)
+    participant API as Backend API (/api)
+    participant S3 as Amazon S3 Bucket
+    participant DB as Neon PostgreSQL
+    participant Redis as Upstash Redis
 
+    Team->>App: Login with Team ID + 4-digit PIN Access Code
+    App->>API: POST /api/teams/auth/team-login
+    API->>Redis: Check origin:teams
+    API-->>App: Team Profile (paymentStatus must be 'verified')
+
+    Team->>App: Choose Pitch Deck (.ppt / .pptx / .pdf up to 50MB)
+    App->>API: POST /api/upload (file FormData)
+    API->>API: Validate file signature & extension
+    API->>S3: PutObjectCommand (Key: presentations/timestamp_filename)
+    S3-->>API: Public S3 Object URL
+    API-->>App: { success: true, url: s3PresentationUrl }
+
+    Team->>App: Add GitHub Repo, Demo Link & Problem Statement
+    Team->>App: Click "Submit Project"
+    App->>API: PUT /api/teams/:id (project data + s3PresentationUrl)
+    API->>DB: UPDATE teams SET project = ...
+    API->>Redis: Invalidate origin:teams cache
+    API-->>App: { success: true, message: "Project Submitted" }
+    App-->>Team: Live submission confirmed & locked
 ```
-frontend/
-├── app/
-│   ├── (routes)/                 ← route group, one page.tsx per route
-│   │   ├── page.tsx               → "/"        (marketing home)
-│   │   ├── register/page.tsx      → "/register" (team registration)
-│   │   ├── team/page.tsx          → "/team"     (team workspace/pass)
-│   │   ├── submit/page.tsx        → "/submit"   (project submission)
-│   │   ├── admin/page.tsx         → "/admin"    (admin dashboard)
-│   │   ├── jury/page.tsx          → "/jury"     (jury evaluation portal)
-│   │   ├── schedule/page.tsx      → "/schedule"
-│   │   └── faq/page.tsx           → "/faq"
-│   ├── components/
-│   │   ├── layout/                ← AppShell, Navbar, Footer, LoadingScreen,
-│   │   │                            LiveAnnouncementsBanner, BackgroundVeins
-│   │   ├── sections/              ← Hero, Sponsors, Prizes, Schedule/Rules, FAQ
-│   │   ├── team/                  ← RegistrationForm, TeamPassTicket,
-│   │   │                            TeamLoginModal, ProjectSubmissionModal
-│   │   ├── admin/AdminPortal.tsx  ← the entire admin dashboard (huge single file)
-│   │   └── jury/JuryPortal.tsx    ← the entire jury dashboard
-│   ├── globals.css                ← Tailwind + custom design tokens + Clerk theming
-│   └── layout.tsx                 ← Root layout: wraps app in <ClerkProvider>
-├── data/mockData.ts               ← static content: tracks, rules, schedule, sponsors
-├── hooks/useTeams.ts               ← the ONE hook that owns all server data
-├── lib/
-│   ├── clerk.ts                    ← @vitbhopal.ac.in email domain validator
-│   ├── deadline.ts                 ← client-side mirror of backend deadline logic
-│   ├── fileValidation.ts           ← client-side mirror of backend magic-byte checks
-│   └── imagekitClient.ts           ← upload helper with client-side image compression
-└── types/index.ts                  ← shared TypeScript types (mirrors backend types.ts)
-```
-
-### `AppShell` — the layout backbone
-
-`app/layout.tsx` wraps everything in `<ClerkProvider>` (for the admin login flow),
-and every page is rendered inside `<AppShell>` (`app/components/layout/AppShell.tsx`),
-which:
-- Mounts `useTeams()` **once** at the top of the tree and hands data down via props
-  to `Navbar` and `LiveAnnouncementsBanner`.
-- Runs a `Lenis` smooth-scroll instance for the whole app.
-- Shows the `LoadingScreen` splash animation on first paint.
-- Renders `BackgroundVeins`, an animated particle-canvas background.
-
-Individual route pages (`app/(routes)/**/page.tsx`) call `useTeams()` **again**
-themselves to get `teams`, `activeTeam`, `setActiveTeam`, `refreshData`, etc. — since
-each call to the hook re-fetches independently, this means the app effectively runs
-**two or more parallel polling loops** (one from `AppShell`, one from whatever page
-is active). This is a real duplication (see
-[Known Inconsistencies](#known-inconsistencies--gotchas)), not an intentional
-architecture — but harmless functionally since all instances read the same backend.
 
 ---
 
-## Authentication — Four Separate Systems
+### Organiser Admin Verification & Export Flow
 
-This system has **four independent, non-interoperating auth mechanisms**, one per
-audience. There is no shared session or SSO between them.
+```mermaid
+sequenceDiagram
+    actor Admin as DSC Organizer
+    participant App as Admin Console (/admin)
+    participant Auth as Firebase Auth
+    participant API as Backend API
+    participant DB as Neon PostgreSQL
+    participant Redis as Upstash Redis
 
-| Audience | Mechanism | Where | Persistence |
+    Admin->>App: Sign in with Google (@vitbhopal.ac.in)
+    App->>Auth: signInWithPopup()
+    Auth-->>App: ID Token & Email
+    App->>App: Whitelist verification against Admin list
+
+    Admin->>App: View Pending Registrations
+    App->>API: GET /api/teams (Header: x-admin-email)
+    API->>Redis: GET origin:teams
+    alt Cache Miss
+        API->>DB: SELECT * FROM teams ORDER BY created_at DESC
+        API->>Redis: SET origin:teams (TTL: 3600s)
+    end
+    API-->>App: Teams list + S3 Receipt URLs
+
+    Admin->>App: Inspect S3 receipt thumbnail & Click "Verify Payment"
+    App->>API: PATCH /api/teams/:id/status { paymentStatus: 'verified' }
+    API->>DB: UPDATE teams SET payment_status='verified'
+    API->>Redis: Invalidate origin:teams
+    API-->>App: Status updated (Team unlocked for PPT submission)
+
+    Admin->>App: Click "Export to Excel"
+    App->>API: GET /api/admin/export-excel
+    API->>DB: Query complete dataset
+    API-->>App: Streamed .xlsx file with S3 links
+    App-->>Admin: Download completed
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Role | Free Tier / Availability |
 |---|---|---|---|
-| **Team members** | Team ID or leader email + 4-digit PIN (`accessCode`) | `TeamLoginModal` → `POST /api/teams/auth/team-login` | `localStorage: origin_active_team_id/_data` |
-| **Admins (primary)** | Clerk (`@clerk/nextjs`) — full OAuth/email sign-in UI | `AdminPortal.tsx`, gated by `useUser()`/`useClerk()` | Clerk's own session cookie |
-| **Admins (legacy/fallback)** | Custom 6-digit OTP flow talking to the backend | `AdminPortal.tsx` `handleVerifyOtp` → `/api/admin/auth/verify-otp` | `localStorage: origin_active_admin` |
-| **Jury members** | Hardcoded static passcode `"JURY2026"` checked **entirely client-side** | `JuryPortal.tsx` `handleLogin` | `localStorage: origin_jury_auth` |
-
-### Admin auth is unusually layered
-`AdminPortal.tsx` actually wires up **both** Clerk and the backend's OTP system
-simultaneously:
-1. If the person is signed in via **Clerk** and their email matches an entry in the
-   admin whitelist (fetched from `GET /api/admin/whitelist`, cached in
-   `localStorage: origin_admin_whitelist`), they're treated as authenticated
-   immediately — no OTP required.
-2. If Clerk-signed-in but **not** whitelisted, the UI shows an "Access Denied" card
-   and offers to sign out of Clerk.
-3. The **OTP flow** (`emailInput` → `POST /admin/auth/request-otp` → 6-digit code →
-   `POST /admin/auth/verify-otp`) exists as an alternative path in the same component,
-   though the currently-shipped UI mostly surfaces the Clerk `<SignIn>` widget when
-   no admin is active — the OTP form state (`authStep`, `otpInput`, etc.) is wired up
-   in the component logic but not always rendered, suggesting an in-progress
-   migration from OTP-based auth toward Clerk.
-4. Every subsequent admin-only API call (toggle submissions, verify payment, delete
-   team, etc.) sends the admin's email as a plain HTTP header:
-   `x-admin-email: <email>`. The backend's `requireAdminAuth` middleware checks this
-   header against the whitelist on **every request** — there is no signed token, so
-   this is "trust the client to keep sending the right header," which is acceptable
-   for an internal organizer tool but not hardened for public exposure.
-
-### Jury auth is not real security
-`JURY_PASSCODE = "JURY2026"` is a string literal baked into
-`app/components/jury/JuryPortal.tsx` and compared entirely in the browser. Anyone who
-reads the shipped JS bundle can read the passcode. This is a "soft gate," not an
-access-control boundary — fine for keeping honest people on-track during an event,
-not for anything sensitive.
+| **Frontend** | [Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/) + [Tailwind CSS v4](https://tailwindcss.com/) | Client UI, Routing, Animations | Free / Open Source |
+| **Authentication** | [Google Firebase Auth](https://firebase.google.com/) | OAuth Sign-in & Domain Verification | 50k MAUs / Free tier |
+| **Backend API** | [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/) + [TypeScript](https://www.typescriptlang.org/) | REST API & Business Logic | Free / Open Source |
+| **Object Storage** | [Amazon Web Services (AWS S3)](https://aws.amazon.com/s3/) | PPT, PPTX, PDF & Image Uploads | 5 GB S3 Free Tier |
+| **Database** | [Neon Serverless PostgreSQL](https://neon.tech/) | Primary Persistent Relational Storage | 0.5 GB Free Tier |
+| **Caching Layer** | [Upstash Redis](https://upstash.com/) | Distributed In-Memory Cache | 10k commands/day Free |
+| **Deployment** | [Vercel](https://vercel.com/) | Edge Hosting for Frontend & Serverless API | 100 GB Bandwidth Free |
 
 ---
 
-## End-to-End Data Flows
+## Repository Structure
 
-### 1. Team registration
 ```
-RegistrationForm.tsx (frontend)
-  │ 1. Checks GET /api/admin/registrations-status on mount → shows/hides form
-  │ 2. Validates every member email ends in @vitbhopal.ac.in (lib/clerk.ts)
-  │ 3. Uploads payment screenshot via uploadDirectToImagekit()
-  │     → compresses image client-side (canvas resize to ≤1600px, JPEG @0.82)
-  │     → POST /api/upload (multipart) → falls back to base64 JSON → falls back
-  │       to a pure client-side Data URL if the network call fails entirely
-  │ 4. Computes total fee client-side (₹100/Hosteller, ₹219/Day Scholar) — for
-  │    display only; the backend recomputes this independently and doesn't trust it
-  │ 5. POST /api/teams/register  { teamName, leader, member2..5, transactionRef,
-  │                                 paymentProofUrl, amountPaid }
-  ▼
-teamController.registerTeam() (backend)
-  │ - Checks registration is open (teamService.getRegistrationStatus)
-  │ - Idempotency: if leader email already has a team, returns the existing team
-  │   instead of erroring (protects against double-submit)
-  │ - Rejects duplicate transactionRef (UTR reuse)
-  │ - Generates ORIGIN-XXXX id + 4-digit accessCode
-  │ - Recomputes amountPaid server-side (never trusts the client's number blindly —
-  │   only accepts it if it's a positive number, otherwise recalculates)
-  │ - saveTeam() → Postgres upsert + Redis cache invalidation
-  ▼
-Response: { success: true, team }
-  │
-  ▼
-RegistrationForm.tsx
-  - Fires canvas-confetti
-  - Calls onRegisteredSuccess(team) → parent page calls setActiveTeam(team) →
-    useTeams() persists it to localStorage → router.push('/team')
-```
-
-### 2. Admin payment verification
-```
-AdminPortal "Teams" tab
-  │ Admin clicks "Approve" on a pending team
-  ▼
-onUpdateTeamStatus(teamId, { paymentStatus: 'verified', ticketIssued: true })
-  │ (this callback lives in app/(routes)/admin/page.tsx, wired as a prop)
-  ▼
-PATCH /api/teams/:id/status   headers: { x-admin-email }
-  ▼
-requireAdminAuth middleware → adminController.updateTeamStatus()
-  - Mutates team.paymentStatus, team.ticketIssued
-  - updateTeam() → Postgres UPDATE + Redis invalidate
-  ▼
-refreshData() re-fetches /api/teams, /api/announcements, /api/stats
-  │
-  ▼
-Team's own polling (useTeams every 5s) picks up the change → TeamPassTicket.tsx
-now shows "VERIFIED PASS ISSUED" and unlocks the QR pass + project submission tab
-```
-
-### 3. Project submission (with live deadline + admin kill-switch)
-```
-ProjectSubmissionModal.tsx
-  │ Polls GET /api/admin/submissions-status every 10s (independent of the
-  │ 5s team/announcement/stats poll in useTeams — a THIRD polling loop)
-  │ Renders a live countdown timer computed from `deadline`
-  │ Blocks submission client-side if: !team, team.paymentStatus !== 'verified',
-  │ deadline passed, or admin has closed submissions
-  │ Uploads PPT/PDF via POST /api/upload (10MB hard limit, enforced client- AND
-  │ server-side)
-  ▼
-PUT /api/teams/:id/project
-  ▼
-teamController.submitProject()
-  - Re-checks deadline server-side (utils/deadline.ts) — client-side blocking is UX
-    only, the server is the actual authority
-  - Re-checks isSubmissionsOpen server-side
-  - Re-checks team.paymentStatus === 'verified' server-side
-  - Writes team.project = {...}, preserves any existing score
-  ▼
-Response updates local team state → confetti → AdminPortal "Submissions" tab and
-JuryPortal both see the new submission on their next poll
-```
-
-### 4. Jury evaluation
-```
-JuryPortal.tsx (client-side passcode gate, see Authentication section)
-  │ Filters teams to those with `team.project` set
-  │ Opens scoring modal → 5 rubric fields (0–20 each) + feedback textarea
-  ▼
-onScoreProject(teamId, scores)
-  │ (wired in app/(routes)/jury/page.tsx — NOTE: currently a stub, see
-  │  Known Inconsistencies)
-  ▼
-POST /api/admin/teams/:id/score   headers: { x-admin-email }
-  ▼
-adminController.scoreProject()
-  - Sums the 5 fields into total (out of 100)
-  - Writes team.project.score
-  ▼
-AdminPortal "Leaderboard" tab (sorted by score.total desc) reflects it on next poll
+dsc-hackathon/
+├── ARCHITECTURE.md               # Complete System Architecture & Specifications
+├── README.md                     # Monorepo Master Documentation
+│
+├── backend/                      # Express + TypeScript REST API Layer
+│   ├── api/
+│   │   └── index.ts              # Vercel Serverless Function entrypoint
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── database.ts       # Neon PostgreSQL connection & pool manager
+│   │   │   ├── redis.ts          # Upstash Redis client & cache helpers
+│   │   │   └── s3.ts             # AWS S3 Client & 50MB file upload helper
+│   │   ├── controllers/          # Business logic handlers (team, upload, admin, jury)
+│   │   ├── middleware/           # Auth validation, error handling, rate limiting
+│   │   ├── routes/               # API route definitions (/teams, /upload, /admin)
+│   │   ├── services/             # Data access & caching service layer
+│   │   └── utils/                # Pino logger, types, file signature validation
+│   ├── server.ts                 # Standalone Node.js server (local dev / container)
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vercel.json               # Vercel Serverless rewrites configuration
+│
+└── frontend/                     # Next.js 16 App Router UI
+    ├── app/
+    │   ├── (routes)/
+    │   │   ├── admin/            # Admin Command Console (/admin)
+    │   │   ├── faq/              # Frequently Asked Questions (/faq)
+    │   │   ├── jury/             # Jury Evaluation Portal (/jury)
+    │   │   ├── register/         # Team Registration Form (/register)
+    │   │   ├── schedule/         # Hackathon Timeline & Rules (/schedule)
+    │   │   ├── submit/           # PPT Submission Portal (/submit)
+    │   │   └── team/             # Team Pass & Live Dashboard (/team)
+    │   ├── components/           # UI widgets, Navigation, Modals, Sections
+    │   ├── globals.css           # Tailwind v4 styles + custom theme tokens
+    │   └── layout.tsx            # Global layout with Firebase Auth Provider
+    ├── hooks/                    # useTeams, custom animation & polling hooks
+    ├── lib/                      # Firebase config, S3 helpers, deadline utils
+    ├── types/                    # Shared TypeScript interfaces (Team, Project)
+    ├── next.config.ts            # Next.js production rewrites (/api/* -> Backend)
+    └── package.json
 ```
 
 ---
 
-## State Management on the Frontend
+## Getting Started
 
-There is **no global state library** (no Redux/Zustand/Context beyond Clerk's own).
-All server state flows through one hook:
+### Prerequisites
 
-**`hooks/useTeams.ts`:**
-```ts
-const { teams, announcements, stats, activeTeam, setActiveTeam, refreshData } = useTeams();
-```
-
-- On mount, fires `Promise.all([fetch('/api/teams'), fetch('/api/announcements'),
-  fetch('/api/stats')])` and repeats it on a **5-second `setInterval`** — this is a
-  simple polling architecture, not WebSockets/SSE, so "live" updates (e.g. new
-  announcements banner, admin verifying a payment) have up to a 5-second lag.
-- `activeTeam` (the logged-in team, distinct from the full `teams` list) is persisted
-  to `localStorage` under `origin_active_team_id` / `origin_active_team_data`, and
-  re-synced against the freshly-fetched `teams` array on every poll — so if an admin
-  edits *your* team's data, your own browser tab picks up the change within 5 seconds
-  automatically, without you doing anything.
-- Every page that needs data calls `useTeams()` itself (see the *Frontend
-  Architecture* section above) — each call spins up its own independent poll.
-
-**Other bespoke localStorage keys used across the app** (outside the hook):
-| Key | Set by | Purpose |
-|---|---|---|
-| `origin_active_admin` | `AdminPortal` | Currently signed-in admin's profile |
-| `origin_admin_whitelist` | `AdminPortal` | Cached copy of the admin whitelist |
-| `origin_jury_auth` | `JuryPortal` | `"true"` once the static passcode is entered |
+- **Node.js** >= 20.x
+- **npm** >= 10.x
+- A **Neon PostgreSQL** database account
+- An **AWS S3** bucket (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`)
+- An **Upstash Redis** database (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`)
+- A **Firebase** project with Google Auth enabled
 
 ---
 
-## File Upload Pipeline
-
-Two entry points on the frontend, one shared backend endpoint:
-
-```
-RegistrationForm (payment screenshot)         ProjectSubmissionModal (PPT/PDF)
-        │                                              │
-        ▼                                              ▼
- uploadDirectToImagekit(file, folder)          fetch('/api/upload', {multipart})
-   - compresses images client-side               (no client-side compression;
-     (canvas, max 1600px, JPEG q=0.82)             10MB hard cap enforced before
-   - tries multipart /api/upload                   the request is even sent)
-   - falls back to base64 JSON /api/upload
-   - ultimate fallback: pure client-side
-     Data URL (no network call at all)
-        │                                              │
-        └──────────────────┬───────────────────────────┘
-                            ▼
-              backend: uploadController.uploadFile()
-              - multer (10MB limit) for multipart, manual base64 decode for JSON
-              - validateFileSignature() checks magic bytes (defends against a
-                client lying about file type/extension)
-              - uploadFileToImagekit(): real upload if IMAGEKIT_PRIVATE_KEY is
-                set, otherwise returns a Base64 Data URI as the "url"
-                            ▼
-              Response: { success, url, publicId }
-              → frontend stores `url` directly on the team/project record
-```
-
-The frontend's `imagekitClient.ts` has its **own** three-tier fallback (compress →
-multipart → base64 → pure client Data URL) that is independent of, and layered on
-top of, the backend's own fallback (real ImageKit → Base64 Data URI). In the worst
-case (backend totally unreachable, ImageKit unconfigured), the app still "works" by
-embedding the file directly as a Data URI string in the team record — at the cost of
-a much larger JSON payload stored in Postgres/localStorage.
-
----
-
-## Database Schema
-
-(Owned entirely by the backend — see `backend/src/config/database.ts`.)
-
-```sql
-teams (
-  id, team_name, access_code, track,
-  payment_status, payment_proof_url, transaction_ref, registered_at,
-  checked_in_venue, ticket_issued, notes, amount_paid,
-  data JSONB   -- full Team object: leader + up to 4 members + project + score
-)
-admin_users (email PK, name, role, department, added_at)
-announcements (id PK, title, message, category, timestamp, sender)
-settings (key PK, value)   -- 'submissions_open' | 'registrations_open'
-```
-
-`teams.data` is a JSONB blob holding the **entire nested TypeScript `Team` object**
-(see `types/index.ts` on the frontend and `utils/types.ts` on the backend — these two
-files are hand-kept in sync, not generated from a shared source). The handful of
-duplicated top-level columns (`payment_status`, `checked_in_venue`, etc.) exist purely
-so admin queries and filters don't need to deserialize JSON in application code.
-
----
-
-## API Reference
-
-All endpoints are under `/api` on the backend, reached from the frontend via the
-rewrite proxy described above.
-
-| Method | Path | Auth | Used by (frontend) |
-|---|---|---|---|
-| GET | `/api/health` | none | — (ops check) |
-| GET | `/api/stats` | none | `useTeams()` |
-| GET | `/api/teams` | none | `useTeams()` |
-| GET | `/api/teams/:id` | none | — |
-| POST | `/api/teams/auth/team-login` | none | ⚠️ see note below |
-| POST | `/api/teams/register` | none | `RegistrationForm` |
-| PUT | `/api/teams/:id/project` | none | `ProjectSubmissionModal` |
-| DELETE | `/api/teams/:id` | `x-admin-email` | `AdminPortal` |
-| GET | `/api/announcements` | none | `useTeams()` |
-| POST | `/api/announcements` | `x-admin-email` | `AdminPortal` (broadcast) |
-| DELETE | `/api/announcements/:id` | `x-admin-email` | `AdminPortal` |
-| POST | `/api/admin/auth/request-otp` | none | `AdminPortal` (legacy path) |
-| POST | `/api/admin/auth/verify-otp` | none | `AdminPortal` (legacy path) |
-| GET / POST / DELETE | `/api/admin/whitelist[/:email]` | `x-admin-email` | `AdminPortal` |
-| POST | `/api/admin/submissions-toggle` | `x-admin-email` | `AdminPortal` |
-| POST | `/api/admin/registrations-toggle` | `x-admin-email` | `AdminPortal` |
-| GET | `/api/admin/submissions-status` | none | `AdminPortal`, `ProjectSubmissionModal`, `RegistrationForm` |
-| GET | `/api/admin/registrations-status` | none | `AdminPortal`, `RegistrationForm` |
-| POST | `/api/admin/clear-database` | `x-admin-email` | `AdminPortal` (danger zone) |
-| PATCH | `/api/admin/teams/:id/status` | `x-admin-email` | `AdminPortal` |
-| POST | `/api/admin/teams/:id/score` | `x-admin-email` | `AdminPortal`, intended for `JuryPortal` |
-| POST | `/api/upload` | none (signature-validated) | `imagekitClient.ts` |
-| GET | `/api/export-csv` | `x-admin-email` | `AdminPortal` |
-| GET | `/api/export-excel` | `x-admin-email` | `AdminPortal` |
-
-> ⚠️ **`TeamLoginModal.tsx` calls `POST /api/auth/team-login`**, but the backend only
-> registers this route as `POST /api/teams/auth/team-login` (mounted under
-> `router.use('/teams', teamRoutes)`). This is a real path mismatch in the current
-> code — `TeamLoginModal`'s login call will 404 against the backend as documented.
-> `TeamPassTicket`'s "not logged in" screen and the register-page's flow don't go
-> through this modal, so the bug is currently isolated to that one component; fix by
-> pointing the fetch at `/api/teams/auth/team-login`, or by adding a route alias on
-> the backend.
-
----
-
-## Environment Variables
-
-### Backend (`backend/.env`)
-| Variable | Required? | Purpose |
-|---|---|---|
-| `DATABASE_URL` / `NEON_DATABASE_URL` | Recommended | NeonDB Postgres connection |
-| `UPSTASH_REDIS_REST_URL` / `_TOKEN` | Optional | Redis caching |
-| `IMAGEKIT_PRIVATE_KEY` | Optional | Real file hosting (else Base64 fallback) |
-| `SUBMISSION_DEADLINE` | Optional | ISO datetime, overrides the hardcoded default |
-| `PORT` | Optional | Default `4000` |
-| `NODE_ENV` | Optional | `'production'` disables Vite dev middleware |
-
-### Frontend (`frontend/.env.local`)
-| Variable | Required? | Purpose |
-|---|---|---|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes (for admin login) | Clerk client SDK |
-| `CLERK_SECRET_KEY` | Yes (for Clerk server-side, if using Clerk middleware) | Clerk server SDK |
-| `NODE_ENV` | Set by Next.js | Determines which backend URL `next.config.ts` proxies to |
-
-You must also **manually edit** the production backend URL hardcoded in
-`frontend/next.config.ts` (`https://your-backend-url.com`) — it is not read from an
-environment variable in the current code.
-
----
-
-## Running Everything Locally
-
-Two terminals, one per repo:
+### 1. Clone & Install Dependencies
 
 ```bash
-# Terminal 1 — backend
-cd backend
-npm install
-cp .env.example .env   # fill in DATABASE_URL etc. if you have them; all optional
-npm run dev
-# → 🚀 Origin Hackathon Backend running at http://localhost:4000
+# Clone the repository
+git clone https://github.com/N-PCs/dsc-hackathon.git
+cd dsc-hackathon
 
-# Terminal 2 — frontend
-cd frontend
+# Install root, frontend, and backend packages
 npm install
-# create frontend/.env.local with your Clerk keys
-npm run dev
-# → Next.js dev server on http://localhost:3000
-#   /api/* requests are proxied to http://localhost:4000/api/* automatically
+npm --prefix frontend install
+npm --prefix backend install
 ```
 
-Open `http://localhost:3000` — the browser only ever talks to port 3000; Next.js
-transparently forwards `/api/*` calls to port 4000 behind the scenes.
+---
 
-Smoke test once both are running:
+### 2. Configure Environment Variables
+
+Create `.env` in the root directory (and copy to `backend/.env` & `frontend/.env.local`):
+
+```env
+# 🐘 Neon PostgreSQL Database
+DATABASE_URL=postgresql://neondb_owner:password@ep-host.aws.neon.tech/neondb?sslmode=require
+
+# 📦 AWS S3 Storage (PPT Submissions & Receipts)
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET=dsc-hackathon-storage
+
+# 🔐 Google Firebase Authentication
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# ⚡ Upstash Redis Cache
+UPSTASH_REDIS_REST_URL=https://your-redis-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+
+# 🌐 Service Routing (Production)
+NEXT_PUBLIC_BACKEND_URL=https://backend-git-master-n-pcs-projects.vercel.app
+```
+
+---
+
+### 3. Start Development Server
+
+Run both Next.js frontend and Express backend concurrently:
+
 ```bash
-curl http://localhost:3000/api/health     # should proxy through to the backend
-curl http://localhost:3000/api/stats
+npm run dev
 ```
 
----
-
-## Deployment
-
-The two halves deploy **independently** and are stitched together only by the
-`next.config.ts` rewrite target:
-
-- **Backend**: deploy `backend/` to Vercel (via `api/index.ts`), Render, Railway, or
-  any Node host. Set `DATABASE_URL`, Redis creds, `IMAGEKIT_PRIVATE_KEY` there.
-- **Frontend**: deploy `frontend/` to Vercel. Set the Clerk env vars there, and update
-  the hardcoded production backend URL inside `next.config.ts`'s `rewrites()` to
-  point at wherever you deployed the backend.
-
-Because the frontend proxies API calls server-side (Next.js rewrites happen on the
-Vercel edge/server, not in the browser), **the backend never needs CORS
-configuration** even across two different Vercel projects/domains — from the
-browser's perspective, everything is same-origin.
+* **Frontend**: `http://localhost:3000`
+* **Backend API**: `http://localhost:4000`
+* **API Health Check**: `http://localhost:4000/api/health`
 
 ---
 
-## Known Inconsistencies & Gotchas
+### 4. Available Scripts
 
-These are real characteristics of the current codebase worth knowing before you
-extend it:
-
-- **Team login path mismatch** — `TeamLoginModal.tsx` posts to `/api/auth/team-login`;
-  the backend only exposes `/api/teams/auth/team-login`. See the API Reference note
-  above.
-- **Three independent polling loops** — `useTeams()` (5s, called from multiple
-  components including `AppShell` itself), `AdminPortal`'s own status polls (on
-  mount only, not intervalled), and `ProjectSubmissionModal`'s submissions-status
-  poll (10s). None of these are deduplicated or shared via context.
-- **Admin auth has two live code paths** (Clerk + legacy OTP) simultaneously wired
-  into `AdminPortal.tsx`; which one a given admin uses depends on how they arrive at
-  the page. Both are functional, but this suggests the OTP system was the original
-  design and Clerk was layered on top later without fully removing it.
-- **Jury scoring wiring is incomplete** — `app/(routes)/jury/page.tsx`'s
-  `handleScoreProject` is a stub (`// implement`) that never actually calls the
-  backend; `JuryPortal.tsx` itself calls the `onScoreProject` prop expecting it to
-  persist, so as shipped, jury scores entered through `/jury` are **not saved**. The
-  admin dashboard's own scoring UI (`AdminPortal` → Submissions/Leaderboard tabs)
-  *is* fully wired and does persist correctly via the same
-  `POST /api/admin/teams/:id/score` endpoint.
-- **Client-computed fees/deadlines are UX-only** — the frontend independently
-  recomputes registration fees (`RegistrationForm`) and deadline status
-  (`lib/deadline.ts`, mirrored from the backend's `utils/deadline.ts`) purely for
-  responsive UI; the backend always re-derives the authoritative values itself on
-  every write, so a modified/stale frontend can't bypass business rules.
-- **Two copies of shared logic** — `fileValidation.ts`, `deadline.ts`, and the
-  `Team`/`Announcement`/etc. type definitions all exist once in `backend/src` and
-  again in `frontend/lib` or `frontend/types`, hand-synced rather than shared via a
-  common package. Changing a validation rule or type shape means editing it in two
-  places.
+| Command | Description |
+| :--- | :--- |
+| `npm run dev` | Runs both frontend and backend concurrently with colored logs |
+| `npm run dev:frontend` | Starts Next.js frontend dev server (`localhost:3000`) |
+| `npm run dev:backend` | Starts Express backend server with `tsx` hot-reloading (`localhost:4000`) |
+| `npm run build` | Builds the frontend for production deployment |
+| `npm run backend:build` | Bundles the backend using `esbuild` to `dist/server.cjs` |
+| `npm run lint` | Typechecks and lints both frontend and backend |
 
 ---
 
-## Design Decisions & Trade-offs
+## 🚀 Production Deployment on Vercel
 
-| Decision | Why | Trade-off |
-|---|---|---|
-| Rewrite-proxy instead of direct cross-origin fetch | Zero CORS config, same-origin cookies/headers work naturally | Backend URL is a build-time constant in `next.config.ts`, not runtime-configurable |
-| Polling instead of WebSockets/SSE | Much simpler to implement and reason about; fine for a single-event, hundreds-of-teams scale | Up to 5–10s staleness on "live" features (announcements, admin actions) |
-| Four separate auth systems | Each audience (team/admin/jury) has wildly different security needs and UX expectations | No unified session; four different code paths to maintain |
-| Client-side + server-side duplicate validation everywhere | Fast, responsive UI feedback without waiting on a round-trip; server remains authoritative | Two places to update every time a business rule changes |
-| JSONB blob per team instead of normalized member tables | Simple schema, no joins needed for up to 5 members + project + score | Some data duplication between JSONB and flat columns |
+### Backend Project Setup
+1. In the [Vercel Dashboard](https://vercel.com/dashboard), open your **Backend Project** (`backend`).
+2. Go to **Settings** $\rightarrow$ **General**:
+   - **Root Directory**: Set to **`backend`** (Click Edit $\rightarrow$ type `backend` $\rightarrow$ Save).
+   - **Framework Preset**: Set to **`Other`** (Do *not* select Next.js).
+3. Go to **Settings** $\rightarrow$ **Environment Variables** and add:
+   - `DATABASE_URL`
+   - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`
+   - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+4. Click **Deployments** $\rightarrow$ **Redeploy**.
 
-For the backend's own internal architecture in more depth (caching, DB fallback
-mechanics, upload validation internals), see the inline documentation throughout
-`backend/src/` — the code is intentionally verbose with comments at every fallback
-branch.
+### Frontend Project Setup
+1. Open your **Frontend Project** (`dsc-hackathon`).
+2. Go to **Settings** $\rightarrow$ **General**:
+   - **Root Directory**: Set to **`frontend`**.
+   - **Framework Preset**: **Next.js** (auto-detected).
+3. Add Environment Variables:
+   - `NEXT_PUBLIC_BACKEND_URL` $\rightarrow$ `https://your-backend-url.vercel.app`
+   - `NEXT_PUBLIC_FIREBASE_*` variables.
+4. Click **Redeploy**.
+
+---
+
+## Contributing
+
+We welcome contributions! Please feel free to open Issues or pull requests.
+
+<div align="center">
+
+<a href="https://github.com/N-PCs/dsc-hackathon/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=N-PCs/dsc-hackathon" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
+
+</div>
+
+---
+
+## License
+
+Distributed under the **MIT License**. See `LICENSE` for more information.
