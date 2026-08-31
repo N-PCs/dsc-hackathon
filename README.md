@@ -1,9 +1,6 @@
 # 🚀 ORIGIN '26 — Full-Stack Hackathon Platform
 
-A two-repo, full-stack system that runs the **Origin Hackathon** (Data Science Club,
-VIT Bhopal): a **Next.js 16** marketing site + team/admin/jury dashboard, talking to a
-standalone **Express + TypeScript API** backed by **NeonDB (Postgres)**, **Upstash
-Redis**, and **ImageKit**.
+A two-repo, full-stack platform powering the **Origin Hackathon** (Data Science Club, VIT Bhopal): a modern **Next.js 16** responsive frontend with interactive dashboards, talking to an **Express + TypeScript API** backed by **Amazon S3** (PPT/presentation storage), **Google Firebase Auth** (authentication), **Neon DB** (Serverless PostgreSQL data storage), **Upstash Redis** (caching), and deployed on **Vercel**.
 
 This README documents the *whole system* — both repos, how they're wired together,
 every major data flow, and how to run/extend it.

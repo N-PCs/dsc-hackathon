@@ -448,7 +448,7 @@ Key characteristics:
 
 ---
 
-## File Upload Pipeline
+## File Upload Pipeline (Amazon S3 & Storage)
 
 ```
 Client
@@ -458,36 +458,31 @@ Client
   ▼
 uploadController.uploadFile()
   │
-  ├─▶ (a) multer.single('file')  — 10MB limit, mimetype/extension allow-list
+  ├─▶ (a) multer.single('file')  — 50MB limit, mimetype/extension allow-list (.ppt, .pptx, .pdf, images)
   │        │
   │        ▼
   │   validateFileSignature(buffer, mimetype, filename)
-  │        — checks magic bytes (PDF: %PDF, JPEG: FFD8FF, PNG: 89504E47)
+  │        — checks magic bytes (PDF: %PDF, JPEG: FFD8FF, PNG: 89504E47, presentations)
   │        — this defends against a client lying about the Content-Type/extension
   │
   └─▶ (b) handleBase64Upload() — decodes the Data URI / raw base64 into a Buffer,
            then runs the same signature validation
   ▼
-uploadFileToImagekit(buffer, filename, mimetype)
+uploadFileToS3(buffer, filename, mimetype, folder='presentations')
   │
-  ├─ if IMAGEKIT_PRIVATE_KEY set:
-  │     POST https://upload.imagekit.io/api/v1/files/upload
-  │     (multipart form: file=<dataUri>, fileName, folder, useUniqueFileName=true)
-  │     → returns { url, publicId, format }
+  ├─ if AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY configured:
+  │     Executes PutObjectCommand on Amazon S3 client
+  │     Bucket: AWS_S3_BUCKET (default: dsc-hackathon-storage)
+  │     Key: presentations/<timestamp>_<random>_<filename>
+  │     → returns { url: "https://<bucket>.s3.<region>.amazonaws.com/<key>", key, filename, size }
   │
-  └─ if not set (or the upload call throws):
-        falls back to returning the Base64 Data URI itself as the "url"
-        (i.e. the file is embedded directly, no external storage needed)
+  └─ fallback / offline mode:
+        returns secure structured S3 URI reference and metadata
   ▼
-Response: { success: true, url, publicId, filename }
+Response: { success: true, url, key, publicId, filename, size }
 ```
 
-This is used for two things in the domain: **payment proof screenshots** at
-registration time, and **project presentation files** (PPT/PDF) at submission time.
-
-The Base64 fallback is a deliberate "never fail the user's flow because a third-party
-integration wasn't configured" decision — at the cost of much larger payloads stored
-inline in the `teams.data` JSONB blob if ImageKit isn't set up.
+This is used for **project presentation files** (PPT/PPTX/PDF up to 50MB) at submission time and **payment proof screenshots** at registration time.
 
 ---
 

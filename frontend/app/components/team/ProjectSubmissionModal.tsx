@@ -151,8 +151,8 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMsg(`File size exceeds 10MB limit. Selected file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+    if (file.size > 50 * 1024 * 1024) {
+      setErrorMsg(`File size exceeds 50MB limit. Selected file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
 
@@ -183,7 +183,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       }
 
       setPresentationUrl(data.url);
-      setSuccessMsg(`PPT/PDF document successfully uploaded to Imagekit! (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+      setSuccessMsg(`PPT/PDF document successfully uploaded to AWS S3 Storage! (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
     } catch (err: any) {
       setErrorMsg(err.message || "Error uploading PPT/PDF document.");
     } finally {
