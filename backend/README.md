@@ -1,12 +1,26 @@
 # 🚀 Origin Hackathon — Backend
 
+<div align="center">
+
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
+[![Neon DB](https://img.shields.io/badge/Neon_PostgreSQL-00E599?style=for-the-badge&logo=postgresql&logoColor=black)](https://neon.tech/)
+[![Upstash Redis](https://img.shields.io/badge/Upstash_Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
+[![Vercel](https://img.shields.io/badge/Vercel_Serverless-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+
+</div>
+
+---
+
 A production-grade **Node.js + TypeScript + Express** backend that powers a hackathon
 management platform: team registration, payment verification, project submission,
-judging/scoring, admin OTP auth, announcements, and live stats.
+judging/scoring, admin auth, announcements, and live stats.
 
 It is built to run **both** as a traditional long-running Node server (`server.ts`)
 **and** as a **Vercel Serverless Function** (`api/index.ts`), with a resilient
-multi-tier storage strategy: **NeonDB (Postgres) → Upstash Redis cache → in-memory fallback**.
+multi-tier storage strategy: **NeonDB (Postgres) → Upstash Redis cache → in-memory fallback**, with **Amazon S3** for PPT and presentation files.
 
 ---
 

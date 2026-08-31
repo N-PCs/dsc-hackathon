@@ -1,4 +1,18 @@
-# ORIGIN '26 — Hackathon Platform
+# 🚀 ORIGIN '26 — Frontend Platform
+
+<div align="center">
+
+[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Google Firebase](https://img.shields.io/badge/Firebase_Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
+[![Vercel](https://img.shields.io/badge/Vercel_Deploy-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+
+</div>
+
+---
 
 **Origin '26** is the web platform for the Data Science Club's (VIT Bhopal University) flagship 18‑hour overnight hackathon. It is a **Next.js 16 (App Router) frontend** that handles the entire participant lifecycle — marketing/landing page, team registration, payment-proof upload, digital ID pass, project submission, jury evaluation, and an admin command console — talking to a **separate backend API** over `/api/*`.
 
