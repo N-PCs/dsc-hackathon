@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { TeamPassTicket } from "@/components/team/TeamPassTicket";
 import { TeamLoginModal } from "@/components/team/TeamLoginModal";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/context/TeamsContext"; // ← changed import
 import { useRouter } from "next/navigation";
 
 export default function TeamPage() {
@@ -34,4 +34,4 @@ export default function TeamPage() {
       />
     </>
   );
-}
+}

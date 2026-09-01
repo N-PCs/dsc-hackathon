@@ -33,8 +33,7 @@ if (accessKeyId && secretAccessKey) {
 
 export const s3 = s3Client;
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB limit for PPTs and presentations
-
+const MAX_FILE_SIZE = 50 * 1024 * 1024; 
 export interface S3UploadResult {
   url: string;
   key: string;

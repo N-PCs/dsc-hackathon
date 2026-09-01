@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ProjectSubmissionModal } from "@/components/team/ProjectSubmissionModal";
 import { TeamLoginModal } from "@/components/team/TeamLoginModal";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/context/TeamsContext"; // ← changed import
 import { useRouter } from "next/navigation";
 
 export default function SubmitPage() {
@@ -38,4 +38,4 @@ export default function SubmitPage() {
       />
     </>
   );
-}
+}

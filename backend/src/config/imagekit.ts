@@ -10,7 +10,7 @@ export async function uploadFileToImagekit(
   folder = '/origin-hackathon'
 ): Promise<{ url: string; publicId: string; format: string }> {
   if (fileBuffer.length > MAX_FILE_SIZE) {
-    throw new Error(`File size exceeds 10MB limit. Current: ${(fileBuffer.length / (1024 * 1024)).toFixed(2)}MB`);
+    throw new Error(`File size exceeds 50MB limit. Current: ${(fileBuffer.length / (1024 * 1024)).toFixed(2)}MB`);
   }
 
   const isImage = mimeType ? mimeType.startsWith('image/') : true;

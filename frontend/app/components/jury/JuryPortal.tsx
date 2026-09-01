@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Award,
   Search,
@@ -10,24 +9,40 @@ import {
   Eye,
   GitBranch,
   Globe,
-  FileText,
   Radio,
   Layers,
   KeyRound,
-  ShieldCheck,
   LogOut,
   ChevronRight,
-  Filter,
-  ExternalLink,
-  Users,
-  Sparkles,
   RefreshCw,
+  FileText,
+  Video,
+  ExternalLink,
+  File,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
-import { Team, TrackType } from "@/types";
-import { HACKATHON_TRACKS } from "@/data/mockData";
+import { Team } from "@/types";
 
 interface JuryPortalProps {
-  teams: Team[];
+  paginatedTeams: Team[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    evaluatedCount: number;
+    pendingCount: number;
+  };
+  isLoading: boolean;
+  onFetchData: (filters: {
+    page: number;
+    limit: number;
+    search: string;
+    track: string;
+    status: "all" | "evaluated" | "pending";
+  }) => void;
+  onRefreshData: () => void;
   onScoreProject: (
     teamId: string,
     score: {
@@ -39,30 +54,52 @@ interface JuryPortalProps {
       feedback: string;
     }
   ) => void;
-  onRefreshData: () => void;
 }
 
-export const JuryPortal: React.FC<JuryPortalProps> = ({
-  teams,
-  onScoreProject,
-  onRefreshData,
-}) => {
-  const router = useRouter();
+// Storage key for filter persistence
+const FILTER_STORAGE_KEY = "origin_jury_filters";
 
+export const JuryPortal: React.FC<JuryPortalProps> = ({
+  paginatedTeams,
+  pagination,
+  isLoading,
+  onFetchData,
+  onRefreshData,
+  onScoreProject,
+}) => {
   // Jury Auth State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("origin_jury_auth") === "true";
-    }
-    return false;
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  const [juryEmail, setJuryEmail] = useState("");
   const [accessCodeInput, setAccessCodeInput] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Search & Filter State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTrack, setSelectedTrack] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "evaluated" | "pending">("all");
+  // Search & Filter State – initialised from sessionStorage
+  const loadFilterState = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem(FILTER_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          search: parsed.search || "",
+          status: parsed.status || "all",
+          page: parsed.page || 1,
+          limit: parsed.limit || 10,
+        };
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  const savedFilters = loadFilterState();
+
+  const [searchTerm, setSearchTerm] = useState(savedFilters?.search || "");
+  const [statusFilter, setStatusFilter] = useState<"all" | "evaluated" | "pending">(
+    savedFilters?.status || "all"
+  );
+  const [currentPage, setCurrentPage] = useState(savedFilters?.page || 1);
+  const [pageSize, setPageSize] = useState(savedFilters?.limit || 10);
 
   // Selected Team for Details Modal & Scoring Modal
   const [selectedDetailTeam, setSelectedDetailTeam] = useState<Team | null>(null);
@@ -78,26 +115,111 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
     feedback: "",
   });
 
-  // Default Jury Passcode
   const JURY_PASSCODE = "JURY2026";
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (accessCodeInput.trim().toUpperCase() === JURY_PASSCODE) {
-      setIsAuthenticated(true);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("origin_jury_auth", "true");
-      }
-      setAuthError("");
-    } else {
-      setAuthError("Invalid Jury Access Code. Please contact the lead organiser.");
+  // Skip initial fetch on first render (parent already fetches)
+  const isFirstRender = useRef(true);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Read localStorage only on client
+  useEffect(() => {
+    const auth = localStorage.getItem("origin_jury_auth") === "true";
+    setIsAuthenticated(auth);
+    setIsAuthLoading(false);
+  }, []);
+
+  // Persist filter state to sessionStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.setItem(
+        FILTER_STORAGE_KEY,
+        JSON.stringify({
+          search: searchTerm,
+          status: statusFilter,
+          page: currentPage,
+          limit: pageSize,
+        })
+      );
+    } catch (_) {}
+  }, [searchTerm, statusFilter, currentPage, pageSize]);
+
+  // Fetch data – with debounce only for search changes
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
+
+    // Clear any pending timeout
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    searchTimeout.current = setTimeout(() => {
+      onFetchData({
+        page: currentPage,
+        limit: pageSize,
+        search: searchTerm,
+        track: "all", // always pass "all" – track filter removed from UI
+        status: statusFilter,
+      });
+    }, 300);
+
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, [currentPage, pageSize, searchTerm, statusFilter, onFetchData]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+
+    const trimmedCode = accessCodeInput.trim().toUpperCase();
+    const trimmedEmail = juryEmail.trim();
+
+    if (!trimmedEmail) {
+      setAuthError("Please enter your jury email address.");
+      return;
+    }
+
+    if (trimmedCode !== JURY_PASSCODE) {
+      setAuthError("Invalid Jury Access Code. Please check with the lead organiser.");
+      return;
+    }
+
+    // Optional: validate email against backend allowed list
+    // For now, we accept any email after the passcode is correct.
+    // To enable backend validation, uncomment the following and add a POST /api/jury/validate endpoint.
+    /*
+    try {
+      const res = await fetch("/api/jury/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
+      if (!res.ok) {
+        setAuthError("Your email is not authorised for jury evaluation. Please contact the lead organiser.");
+        return;
+      }
+    } catch (_) {
+      setAuthError("Network error while validating your email. Please try again.");
+      return;
+    }
+    */
+
+    // Success
+    setIsAuthenticated(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("origin_jury_auth", "true");
+      localStorage.setItem("origin_jury_email", trimmedEmail.toLowerCase());
+    }
+    setAuthError("");
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     if (typeof window !== "undefined") {
       localStorage.removeItem("origin_jury_auth");
+      localStorage.removeItem("origin_jury_email");
     }
   };
 
@@ -128,41 +250,29 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
   const handleSaveScore = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedScoringTeam) return;
-
     onScoreProject(selectedScoringTeam.id, scores);
     setSelectedScoringTeam(null);
   };
 
-  // Only consider teams that have submitted a project
-  const submittedTeams = teams.filter((t) => !!t.project);
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
-  // Filtered teams
-  const filteredTeams = submittedTeams.filter((team) => {
-    const proj = team.project;
-    if (!proj) return false;
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
-    const matchesTrack = selectedTrack === "all" || team.track === selectedTrack;
-    const matchesSearch =
-      team.teamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proj.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proj.tagline.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proj.techStack.some((ts) => ts.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const isEvaluated = !!proj.score && proj.score.total > 0;
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "evaluated" && isEvaluated) ||
-      (statusFilter === "pending" && !isEvaluated);
-
-    return matchesTrack && matchesSearch && matchesStatus;
-  });
-
-  // Calculate metrics
-  const totalSubmissions = submittedTeams.length;
-  const evaluatedCount = submittedTeams.filter(
-    (t) => !!t.project?.score && (t.project?.score?.total ?? 0) > 0
-  ).length;
-  const pendingCount = totalSubmissions - evaluatedCount;
+  // Show loading spinner while checking auth status
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   // Render Access Code Screen if not authenticated
   if (!isAuthenticated) {
@@ -177,11 +287,25 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               Jury Portal Access
             </h2>
             <p className="text-xs text-neutral-400">
-              Enter your Jury Access Code to view project submission details and access evaluation rubrics.
+              Enter your Jury Access Code and your email address. Only authorised jury emails are allowed.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-[11px] text-neutral-500 font-mono mb-1.5 uppercase tracking-wider">
+                Your Jury Email
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="jury@yourdomain.com"
+                value={juryEmail}
+                onChange={(e) => setJuryEmail(e.target.value)}
+                className="w-full bg-black border border-neutral-800 focus:border-orange-500 px-4 py-3 text-xs text-white font-mono placeholder:text-neutral-600 focus:outline-none transition-colors"
+              />
+            </div>
+
             <div>
               <label className="block text-[11px] text-neutral-500 font-mono mb-1.5 uppercase tracking-wider">
                 Jury Access Code
@@ -215,6 +339,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
     );
   }
 
+  // Authenticated view
   return (
     <div className="min-h-screen pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
       {/* Header Banner */}
@@ -234,6 +359,12 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             </div>
             <p className="text-xs text-neutral-400 mt-1">
               Review project submission details, inspect code & demos, and record rubric scores.
+            </p>
+            <p className="text-xs text-orange-400 font-mono mt-0.5">
+              Logged in as:{" "}
+              <span className="font-bold text-white">
+                {typeof window !== "undefined" && localStorage.getItem("origin_jury_email")}
+              </span>
             </p>
           </div>
         </div>
@@ -257,14 +388,14 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
         </div>
       </div>
 
-      {/* Metrics Banner — Site Dark Grid */}
+      {/* Metrics Banner – counts are now filter‑aware (from backend) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-neutral-800 border border-neutral-800">
         <div className="bg-black p-6 flex items-center justify-between">
           <div>
             <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">
               Total Submissions
             </span>
-            <span className="text-3xl font-extrabold font-mono text-white">{totalSubmissions}</span>
+            <span className="text-3xl font-extrabold font-mono text-white">{pagination.total}</span>
           </div>
           <div className="p-3 bg-black border border-neutral-800 text-orange-500">
             <Layers className="w-5 h-5" />
@@ -276,7 +407,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">
               Evaluated Projects
             </span>
-            <span className="text-3xl font-extrabold font-mono text-orange-500">{evaluatedCount}</span>
+            <span className="text-3xl font-extrabold font-mono text-orange-500">{pagination.evaluatedCount}</span>
           </div>
           <div className="p-3 bg-black border border-neutral-800 text-orange-500">
             <CheckCircle className="w-5 h-5" />
@@ -288,7 +419,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">
               Pending Evaluation
             </span>
-            <span className="text-3xl font-extrabold font-mono text-amber-500">{pendingCount}</span>
+            <span className="text-3xl font-extrabold font-mono text-amber-500">{pagination.pendingCount}</span>
           </div>
           <div className="p-3 bg-black border border-neutral-800 text-amber-500">
             <Clock className="w-5 h-5" />
@@ -299,7 +430,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
       {/* Filters & Search */}
       <div className="bg-black border border-neutral-800 p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Search bar */}
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-neutral-500" />
             <input
@@ -311,7 +441,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             />
           </div>
 
-          {/* Status filter buttons */}
           <div className="flex items-center gap-2">
             {(["all", "evaluated", "pending"] as const).map((st) => (
               <button
@@ -328,50 +457,30 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             ))}
           </div>
         </div>
-
-        {/* Track Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <button
-            onClick={() => setSelectedTrack("all")}
-            className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider cursor-pointer transition-colors border ${
-              selectedTrack === "all"
-                ? "bg-orange-600 text-white font-semibold border-orange-500"
-                : "bg-black text-neutral-500 border-neutral-800 hover:text-white"
-            }`}
-          >
-            All Tracks
-          </button>
-          {HACKATHON_TRACKS.map((t) => (
-            <button
-              key={t.name}
-              onClick={() => setSelectedTrack(t.name)}
-              className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider cursor-pointer transition-colors border ${
-                selectedTrack === t.name
-                  ? "bg-orange-600 text-white font-semibold border-orange-500"
-                  : "bg-black text-neutral-500 border-neutral-800 hover:text-white"
-              }`}
-            >
-              {t.name}
-            </button>
-          ))}
-        </div>
+        {/* Track filter buttons removed */}
       </div>
 
       {/* Submissions List Grid */}
       <div className="space-y-4">
         <h2 className="text-base font-semibold text-white flex items-center gap-2" style={{ fontFamily: "var(--font-heading)" }}>
-          <span>Submitted Projects ({filteredTeams.length})</span>
+          <span>Submitted Projects ({pagination.total})</span>
         </h2>
 
-        {filteredTeams.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-black border border-neutral-800 p-12 text-center text-neutral-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent mx-auto mb-3" />
+            <p className="text-xs font-mono">Loading submissions...</p>
+          </div>
+        ) : paginatedTeams.length === 0 ? (
           <div className="bg-black border border-neutral-800 p-12 text-center text-neutral-500 space-y-2">
             <Layers className="w-8 h-8 mx-auto text-neutral-600" />
             <p className="text-xs font-mono">No project submissions match your filter criteria.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-neutral-800 border border-neutral-800">
-            {filteredTeams.map((team) => {
-              const proj = team.project!;
+            {paginatedTeams.map((team) => {
+              const proj = team.project;
+              if (!proj) return null;
               const hasScore = !!proj.score && proj.score.total > 0;
 
               return (
@@ -380,11 +489,10 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                   className="bg-black p-6 sm:p-8 space-y-5 hover:bg-neutral-950 transition-colors flex flex-col justify-between group"
                 >
                   <div className="space-y-3">
-                    {/* Header line */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <span className="text-[10px] font-mono text-orange-400 bg-orange-500/10 px-2 py-0.5 border border-orange-500/30 uppercase tracking-wider">
-                          {team.track}
+                          {proj.track || team.track}
                         </span>
                         <h3 className="text-lg sm:text-xl font-bold text-white mt-2 group-hover:text-orange-500 transition-colors" style={{ fontFamily: "var(--font-heading)" }}>
                           {proj.title}
@@ -405,14 +513,12 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                       )}
                     </div>
 
-                    {/* Team & Member info */}
                     <div className="text-xs font-mono text-neutral-400 flex items-center gap-3 pt-1">
                       <span className="font-semibold text-white">Team: {team.teamName}</span>
                       <span>•</span>
                       <span>Leader: {team.leader.name}</span>
                     </div>
 
-                    {/* Tech Stack Pills */}
                     {proj.techStack && proj.techStack.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {proj.techStack.map((tech, idx) => (
@@ -426,8 +532,33 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                       </div>
                     )}
 
-                    {/* Links row */}
-                    <div className="flex items-center gap-4 pt-3 border-t border-neutral-900 text-xs font-mono">
+                    {/* Attachment Links */}
+                    {(proj.presentationPdfUrl || proj.presentationPptUrl) && (
+                      <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-neutral-800/50 pt-2">
+                        {proj.presentationPdfUrl && (
+                          <a
+                            href={proj.presentationPdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-mono text-blue-400 hover:underline flex items-center gap-1 transition-colors"
+                          >
+                            <FileText className="w-3 h-3" /> PDF
+                          </a>
+                        )}
+                        {proj.presentationPptUrl && (
+                          <a
+                            href={proj.presentationPptUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-mono text-purple-400 hover:underline flex items-center gap-1 transition-colors"
+                          >
+                            <File className="w-3 h-3" /> PPT/PPTX
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 pt-1 text-xs font-mono">
                       {proj.githubUrl && (
                         <a
                           href={proj.githubUrl}
@@ -464,7 +595,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex items-center gap-3 pt-4 border-t border-neutral-900">
                     <button
                       onClick={() => setSelectedDetailTeam(team)}
@@ -488,11 +618,67 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
         )}
       </div>
 
-      {/* POPUP 1: FULL SUBMISSION DETAILS MODAL */}
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black border border-neutral-800 p-4">
+        <div className="flex items-center gap-3 text-xs font-mono text-neutral-400">
+          <span>Rows per page:</span>
+          <select
+            value={pageSize}
+            onChange={handlePageSizeChange}
+            className="bg-black border border-neutral-800 px-2 py-1 text-white focus:outline-none"
+          >
+            {[10, 25, 50, 100].map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+          <span>
+            {pagination.total === 0
+              ? "0 items"
+              : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, pagination.total)} of ${pagination.total}`}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="px-3 py-1.5 border border-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+            let pageNum: number;
+            if (pagination.totalPages <= 5) pageNum = i + 1;
+            else if (currentPage <= 3) pageNum = i + 1;
+            else if (currentPage >= pagination.totalPages - 2) pageNum = pagination.totalPages - 4 + i;
+            else pageNum = currentPage - 2 + i;
+            if (pageNum < 1 || pageNum > pagination.totalPages) return null;
+            return (
+              <button
+                key={pageNum}
+                onClick={() => goToPage(pageNum)}
+                className={`px-3 py-1.5 border ${currentPage === pageNum ? "border-orange-500 bg-orange-500/10 text-orange-400" : "border-transparent text-neutral-400 hover:text-white"}`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage >= pagination.totalPages}
+            className="px-3 py-1.5 border border-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRightIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Detail Modal */}
       {selectedDetailTeam && selectedDetailTeam.project && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-black border border-neutral-800 max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
             <div className="flex items-start justify-between pb-4 border-b border-neutral-800">
               <div>
                 <span className="text-[10px] font-mono text-orange-400 bg-orange-500/10 px-2.5 py-1 border border-orange-500/30 uppercase tracking-wider">
@@ -513,7 +699,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               </button>
             </div>
 
-            {/* Tagline */}
             <div>
               <h4 className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider mb-1">Tagline / Summary</h4>
               <p className="text-xs text-neutral-200 bg-black p-3 border border-neutral-800">
@@ -521,7 +706,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               </p>
             </div>
 
-            {/* Problem Statement */}
             <div>
               <h4 className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider mb-1">Problem Statement</h4>
               <p className="text-xs text-neutral-300 leading-relaxed bg-black p-4 border border-neutral-800 whitespace-pre-wrap">
@@ -529,7 +713,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               </p>
             </div>
 
-            {/* Solution Description */}
             <div>
               <h4 className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider mb-1">Solution Description</h4>
               <p className="text-xs text-neutral-300 leading-relaxed bg-black p-4 border border-neutral-800 whitespace-pre-wrap">
@@ -537,7 +720,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               </p>
             </div>
 
-            {/* Tech Stack */}
             {selectedDetailTeam.project.techStack && (
               <div>
                 <h4 className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider mb-2">Tech Stack</h4>
@@ -551,7 +733,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               </div>
             )}
 
-            {/* Links Grid */}
             <div>
               <h4 className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider mb-2">Submission Artifact Links</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -581,10 +762,48 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
+                {selectedDetailTeam.project.presentationPdfUrl && (
+                  <a
+                    href={selectedDetailTeam.project.presentationPdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3 bg-black hover:bg-neutral-900 border border-neutral-800 flex items-center justify-between text-xs text-blue-400 font-mono transition-colors"
+                  >
+                    <span className="flex items-center gap-2 font-semibold">
+                      <FileText className="w-4 h-4" /> PDF Document
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {selectedDetailTeam.project.presentationPptUrl && (
+                  <a
+                    href={selectedDetailTeam.project.presentationPptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3 bg-black hover:bg-neutral-900 border border-neutral-800 flex items-center justify-between text-xs text-purple-400 font-mono transition-colors"
+                  >
+                    <span className="flex items-center gap-2 font-semibold">
+                      <File className="w-4 h-4" /> PPT/PPTX Presentation
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {selectedDetailTeam.project.videoUrl && (
+                  <a
+                    href={selectedDetailTeam.project.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3 bg-black hover:bg-neutral-900 border border-neutral-800 flex items-center justify-between text-xs text-rose-400 font-mono transition-colors"
+                  >
+                    <span className="flex items-center gap-2 font-semibold">
+                      <Video className="w-4 h-4" /> Video Demo
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
             </div>
 
-            {/* Actions */}
             <div className="pt-4 border-t border-neutral-800 flex items-center justify-end gap-3">
               <button
                 onClick={() => {
@@ -601,7 +820,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
         </div>
       )}
 
-      {/* POPUP 2: JURY RUBRIC SCORING MODAL */}
+      {/* Scoring Modal */}
       {selectedScoringTeam && selectedScoringTeam.project && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-black border border-neutral-800 max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl">

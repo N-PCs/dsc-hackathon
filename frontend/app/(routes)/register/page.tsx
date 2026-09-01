@@ -2,7 +2,7 @@
 
 import { RegistrationForm } from "@/components/team/RegistrationForm";
 import { useRouter } from "next/navigation";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/context/TeamsContext"; // ← changed import
 
 export default function RegisterPage() {
   const router = useRouter();

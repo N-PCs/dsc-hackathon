@@ -3,6 +3,7 @@ import teamRoutes from './teamRoutes.js';
 import adminRoutes from './adminRoutes.js';
 import announcementRoutes from './announcementRoutes.js';
 import publicRoutes from './publicRoutes.js';
+import juryRoutes from './juryRoutes.js';
 import { uploadFile } from '../controllers/uploadController.js';
 import { exportCsv, exportExcel } from '../controllers/exportController.js';
 import { requireAdminAuth } from '../middleware/auth.js';
@@ -32,5 +33,8 @@ router.post('/upload', uploadFile);
 // Exports (admin only)
 router.get('/export-csv', requireAdminAuth, exportCsv);
 router.get('/export-excel', requireAdminAuth, exportExcel);
+
+//jury 
+router.use('/jury', juryRoutes);
 
 export default router;

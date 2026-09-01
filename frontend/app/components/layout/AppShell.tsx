@@ -8,16 +8,13 @@ import { Footer } from "./Footer";
 import { LiveAnnouncementsBanner } from "./LiveAnnouncementsBanner";
 import { BackgroundVeins } from "./BackgroundVeins";
 import { LoadingScreen } from "./LoadingScreen";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/context/TeamsContext"; // ← import from context
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
-  const activeTab = pathname === "/" ? "home" : pathname.slice(1);
-
-  const { teams, announcements, stats, activeTeam, setActiveTeam, refreshData } =
-    useTeams();
+  const { teams, announcements, activeTeam, refreshData } = useTeams(); // ← use context
 
   const hasAnnouncement = announcements.length > 0 && !bannerDismissed;
 
@@ -41,12 +38,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [pathname]);
 
-  // ✅ NEW: Handle pending scroll after navigation
   useEffect(() => {
     const pending = sessionStorage.getItem("pendingScroll");
     if (pending && pathname === "/") {
       sessionStorage.removeItem("pendingScroll");
-      // Wait a tiny bit for the DOM to settle
       setTimeout(() => {
         const el = document.getElementById(pending);
         if (el) {
@@ -65,11 +60,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         onDismiss={() => setBannerDismissed(true)}
       />
       <Navbar
-        activeTab={activeTab}
+        activeTab={pathname === "/" ? "home" : pathname.slice(1)}
         hasActiveTeam={!!activeTeam}
         hasAnnouncement={hasAnnouncement}
         registeredTeamCount={teams.length}
         onOpenLogin={() => {}}
+        // activeTeamName removed – Navbar will read from context itself
       />
       <main className={`flex-1 ${hasAnnouncement ? "pt-10" : ""}`}>
         {children}

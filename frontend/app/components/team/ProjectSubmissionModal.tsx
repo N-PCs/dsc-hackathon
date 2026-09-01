@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import {
@@ -17,14 +17,18 @@ import {
   Upload,
   Lock,
   Plus,
-  X,
   FileCheck,
   Clock,
+  User,
+  LogOut,
+  File,
+  X,
 } from "lucide-react";
 import { Team, TrackType } from "@/types";
 import { HACKATHON_TRACKS } from "@/data/mockData";
-import { uploadDirectToImagekit } from "@/lib/imagekitClient";
 import { DEFAULT_SUBMISSION_DEADLINE, isDeadlinePassed as checkDeadlinePassed } from "@/lib/deadline";
+import { useTeams } from "@/context/TeamsContext";
+import { useAuth } from "@/lib/authContext";
 
 interface ProjectSubmissionModalProps {
   team: Team | null;
@@ -39,11 +43,72 @@ const COMMON_TECH_STACK = [
 ];
 
 export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
-  team,
+  team: propTeam,
   onProjectSubmitted,
   onSwitchToTeamLogin,
 }) => {
   const router = useRouter();
+  const { user, signOut } = useAuth();
+  const { teams, activeTeam, setActiveTeam, clearActiveTeam, refreshData } = useTeams();
+
+  const team = propTeam || activeTeam;
+
+  const [isDirectLoginLoading, setIsDirectLoginLoading] = useState(false);
+  const [directLoginError, setDirectLoginError] = useState<string | null>(null);
+  const loginAttempted = useRef(false);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    if (team) return;
+    if (loginAttempted.current) return;
+    if (teams.length === 0) return;
+
+    // ✅ Fix 1: store email in a local constant (TypeScript now knows it's not null)
+    const userEmail = user.email;
+
+    const loginWithEmail = async () => {
+      loginAttempted.current = true;
+      const cleanEmail = userEmail.trim().toLowerCase();
+
+      const matched = teams.find((t) =>
+        t.leader.email.toLowerCase() === cleanEmail ||
+        t.member2?.email?.toLowerCase() === cleanEmail ||
+        t.member3?.email?.toLowerCase() === cleanEmail ||
+        t.member4?.email?.toLowerCase() === cleanEmail ||
+        t.member5?.email?.toLowerCase() === cleanEmail
+      );
+
+      if (matched) {
+        setActiveTeam(matched);
+        return;
+      }
+
+      setIsDirectLoginLoading(true);
+      setDirectLoginError(null);
+      try {
+        const res = await fetch("/api/auth/team-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: cleanEmail }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success && data.team) {
+          setActiveTeam(data.team);
+          refreshData();
+        } else {
+          setDirectLoginError(data.message || "No team found with this email.");
+        }
+      } catch (err) {
+        setDirectLoginError("Failed to check team registration.");
+      } finally {
+        setIsDirectLoginLoading(false);
+      }
+    };
+
+    loginWithEmail();
+  }, [user, team, teams, setActiveTeam, refreshData]);
+
   const existingProject = team?.project;
 
   const [title, setTitle] = useState(existingProject?.title || "");
@@ -55,8 +120,16 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
   const [customTagInput, setCustomTagInput] = useState("");
   const [githubUrl, setGithubUrl] = useState(existingProject?.githubUrl || "");
   const [deploymentUrl, setDeploymentUrl] = useState(existingProject?.deploymentUrl || "");
-  const [presentationUrl, setPresentationUrl] = useState(existingProject?.presentationUrl || "");
-  const [presentationFileName, setPresentationFileName] = useState("");
+
+  // Two separate file upload states
+  const [presentationPdfUrl, setPresentationPdfUrl] = useState(existingProject?.presentationPdfUrl || "");
+  const [presentationPptUrl, setPresentationPptUrl] = useState(existingProject?.presentationPptUrl || "");
+  const [presentationPdfFile, setPresentationPdfFile] = useState<File | null>(null);
+  const [presentationPptFile, setPresentationPptFile] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [isUploadingPpt, setIsUploadingPpt] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
   const [videoUrl, setVideoUrl] = useState(existingProject?.videoUrl || "");
 
   const [deadline, setDeadline] = useState<string>(DEFAULT_SUBMISSION_DEADLINE);
@@ -85,7 +158,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
   });
   const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -102,7 +174,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         })
         .catch(() => {});
     };
-
     fetchStatus();
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
@@ -143,51 +214,83 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     }
   };
 
-  const handleRemoveTag = (tag: string) => {
-    setTechStack(techStack.filter((t) => t !== tag));
+  const uploadFileToS3 = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    let data: any;
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      throw new Error(text || `Server returned non-JSON response (${res.status})`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data?.message || "File upload failed");
+    }
+
+    return data.url;
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (file: File, type: "pdf" | "ppt") => {
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      setErrorMsg(`File size exceeds 50MB limit. Selected file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setUploadError(`File size exceeds 50MB limit. Selected file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
 
-    setPresentationFileName(file.name);
-    setIsUploadingDoc(true);
-    setErrorMsg("");
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (type === "pdf" && ext !== "pdf") {
+      setUploadError("Please select a PDF file for the PDF attachment.");
+      return;
+    }
+    if (type === "ppt" && !["ppt", "pptx"].includes(ext || "")) {
+      setUploadError("Please select a PPT or PPTX file for the presentation attachment.");
+      return;
+    }
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      let data: any;
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        throw new Error(text || `Server returned non-JSON response (${res.status})`);
+    setUploadError("");
+    if (type === "pdf") {
+      setPresentationPdfFile(file);
+      setIsUploadingPdf(true);
+      try {
+        const url = await uploadFileToS3(file);
+        setPresentationPdfUrl(url);
+      } catch (err: any) {
+        setUploadError(err.message || "Failed to upload PDF file.");
+      } finally {
+        setIsUploadingPdf(false);
       }
-
-      if (!res.ok || !data.success) {
-        throw new Error(data?.message || "File upload failed");
+    } else {
+      setPresentationPptFile(file);
+      setIsUploadingPpt(true);
+      try {
+        const url = await uploadFileToS3(file);
+        setPresentationPptUrl(url);
+      } catch (err: any) {
+        setUploadError(err.message || "Failed to upload PPT/PPTX file.");
+      } finally {
+        setIsUploadingPpt(false);
       }
+    }
+  };
 
-      setPresentationUrl(data.url);
-      setSuccessMsg(`PPT/PDF document successfully uploaded to AWS S3 Storage! (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Error uploading PPT/PDF document.");
-    } finally {
-      setIsUploadingDoc(false);
+  const handleRemoveFile = (type: "pdf" | "ppt") => {
+    if (type === "pdf") {
+      setPresentationPdfFile(null);
+      setPresentationPdfUrl("");
+    } else {
+      setPresentationPptFile(null);
+      setPresentationPptUrl("");
     }
   };
 
@@ -198,11 +301,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
     if (!team) {
       setErrorMsg("Please log in with your Team ID first.");
-      return;
-    }
-
-    if (team.paymentStatus !== "verified") {
-      setErrorMsg("Project submission is locked! Admin payment verification is required.");
       return;
     }
 
@@ -222,6 +320,12 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       return;
     }
 
+    // At least one presentation file or URL required
+    if (!presentationPdfUrl && !presentationPptUrl) {
+      setErrorMsg("Please upload at least one presentation file (PDF or PPT/PPTX) or provide a Google Slides/Canva link.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -234,7 +338,8 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         techStack,
         githubUrl: githubUrl.trim(),
         deploymentUrl: deploymentUrl.trim() || undefined,
-        presentationUrl: presentationUrl.trim() || undefined,
+        presentationPdfUrl: presentationPdfUrl || undefined,
+        presentationPptUrl: presentationPptUrl || undefined,
         videoUrl: videoUrl.trim() || undefined,
       };
 
@@ -253,7 +358,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         throw new Error(errorText);
       }
 
-      setSuccessMsg("Project details and 10MB presentation saved! Jury members can now evaluate your project.");
+      setSuccessMsg("Project details and presentation files saved! Jury members can now evaluate your project.");
 
       try {
         confetti({
@@ -271,12 +376,12 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     }
   };
 
-  if (!team) {
+  if (!user) {
     return (
       <div className="max-w-xl mx-auto px-4 pt-28 sm:pt-32 pb-16 text-center">
         <div className="bg-black border border-neutral-800 p-8 sm:p-12 space-y-6 shadow-2xl">
           <div className="w-14 h-14 bg-black border border-neutral-800 mx-auto flex items-center justify-center text-orange-500 mb-3">
-            <Send className="w-7 h-7" />
+            <User className="w-7 h-7" />
           </div>
           <span className="px-2.5 py-0.5 bg-orange-500/10 border border-orange-500/30 text-orange-400 font-mono text-[10px] font-bold uppercase tracking-wider inline-block">
             AUTHENTICATION REQUIRED
@@ -285,7 +390,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             Team Authentication Required
           </h3>
           <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed font-mono">
-            To submit or edit your project and upload your presentation slides (up to 10MB limit), please sign in with your Team ID or Leader Email.
+            To submit or edit your project and upload your presentation slides (up to 50MB limit), please sign in with your Team ID or Leader Email.
           </p>
           <button
             onClick={onSwitchToTeamLogin}
@@ -293,6 +398,59 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           >
             <span>Sign In to Team Workspace</span>
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isDirectLoginLoading) {
+    return (
+      <div className="max-w-xl mx-auto px-4 pt-28 sm:pt-32 pb-16 text-center">
+        <div className="bg-black border border-neutral-800 p-8 sm:p-12 space-y-6 shadow-2xl">
+          <div className="w-14 h-14 bg-black border border-neutral-800 mx-auto flex items-center justify-center text-orange-500 mb-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent" />
+          </div>
+          <h3 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+            Verifying Team Membership...
+          </h3>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && !team && !isDirectLoginLoading) {
+    return (
+      <div className="max-w-xl mx-auto px-4 pt-28 sm:pt-32 pb-16 text-center">
+        <div className="bg-black border border-neutral-800 p-8 sm:p-12 space-y-6 shadow-2xl">
+          <div className="w-14 h-14 bg-black border border-neutral-800 mx-auto flex items-center justify-center text-amber-400 mb-3">
+            <AlertCircle className="w-7 h-7" />
+          </div>
+          <span className="px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px] font-bold uppercase tracking-wider inline-block">
+            NOT A TEAM LEADER
+          </span>
+          <h3 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+            Only Team Leaders Can Submit Projects
+          </h3>
+          <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed font-mono">
+            You are signed in as <span className="text-white font-bold">{user.email}</span>, but this email is not the leader of any registered team.
+          </p>
+          {directLoginError && (
+            <div className="p-3 bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs font-mono">
+              {directLoginError}
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              onClick={async () => {
+                await signOut();
+                clearActiveTeam();
+              }}
+              className="px-6 py-3 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 font-mono text-xs uppercase tracking-wider font-bold flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out & Try Another Account</span>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -314,60 +472,20 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           <p className="text-neutral-400 text-xs font-mono leading-relaxed max-w-md mx-auto">
             The 24-hour project submission window is currently disabled by the DSC Executive Panel.
           </p>
-          <div className="bg-black border border-neutral-800 p-4 text-center max-w-md mx-auto space-y-1">
-            <p className="text-xs text-neutral-300 font-mono">
-              Submissions will open when enabled by the hackathon conveners. Please stay tuned to live broadcast updates!
-            </p>
-          </div>
         </div>
       </div>
     );
   }
 
-  if (team.paymentStatus !== "verified") {
-    return (
-      <div className="max-w-2xl mx-auto px-4 pt-28 sm:pt-32 pb-16 text-center">
-        <div className="bg-black border border-neutral-800 p-8 sm:p-12 space-y-6 shadow-2xl">
-          <div className="w-16 h-16 bg-black border border-neutral-800 mx-auto flex items-center justify-center text-amber-400 mb-2">
-            <Lock className="w-8 h-8" />
-          </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono uppercase tracking-wider">
-            <span>PORTAL STATUS: LOCKED BY ADMIN</span>
-          </div>
-          <h3 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-            Project Submission Locked
-          </h3>
-          <p className="text-neutral-400 text-xs font-mono leading-relaxed max-w-md mx-auto">
-            Team <span className="text-white font-bold">{team.teamName}</span> ({team.id}) is currently <span className="text-amber-400 font-semibold font-mono">pending_verification</span> by the ORIGIN Admin Panel.
-          </p>
-          <div className="bg-black border border-neutral-800 p-5 text-left max-w-md mx-auto space-y-3 font-mono">
-            <div className="flex items-center gap-2 text-xs text-neutral-300 font-semibold">
-              <CheckCircle className="w-4 h-4 text-orange-400" />
-              <span>Registration details saved to Neon DB</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-300 font-semibold">
-              <CheckCircle className="w-4 h-4 text-orange-400" />
-              <span>Payment screenshot uploaded to Imagekit</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-amber-300 font-semibold">
-              <Lock className="w-4 h-4 text-amber-400" />
-              <span>Awaiting Admin Payment Release to unlock Project Portal & Pass</span>
-            </div>
-          </div>
-          <p className="text-[11px] font-mono text-neutral-500">
-            Once an administrator verifies your payment, project submissions and PPT uploads (up to 10MB limit) will unlock automatically.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // ✅ Fix 2: guard against null team before rendering the main form
+  if (!team) return null;
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-28 sm:pt-32 pb-16 space-y-8">
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-mono font-bold uppercase tracking-wider">
           <Code className="w-3.5 h-3.5" />
-          <span>PROJECT SUBMISSION PORTAL • UNLOCKED BY ADMIN</span>
+          <span>PROJECT SUBMISSION PORTAL • UNLOCKED</span>
         </div>
         <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
           Submit Your Hackathon Project
@@ -380,8 +498,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       <div className={`p-6 border transition-all ${
         isDeadlinePassed
           ? "bg-rose-950/20 border-rose-800/80 shadow-2xl"
-          : !isSubmissionsOpen
-          ? "bg-amber-950/20 border-amber-800/80 shadow-2xl"
           : "bg-black border-neutral-800 shadow-2xl"
       }`}>
         <div className="flex flex-col md:flex-row items-center justify-between gap-5">
@@ -389,8 +505,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             <div className={`w-12 h-12 flex items-center justify-center shrink-0 border ${
               isDeadlinePassed
                 ? "bg-rose-950/40 text-rose-400 border-rose-800/80"
-                : !isSubmissionsOpen
-                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
                 : "bg-orange-500/10 text-orange-400 border-orange-500/30"
             }`}>
               <Clock className="w-6 h-6" />
@@ -403,22 +517,14 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
                 <span className={`text-[11px] font-mono px-2.5 py-0.5 border font-bold uppercase tracking-wider ${
                   isDeadlinePassed
                     ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
-                    : !isSubmissionsOpen
-                    ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
                     : "bg-orange-500/20 border-orange-500/40 text-orange-300 animate-pulse"
                 }`}>
-                  {isDeadlinePassed
-                    ? "DEADLINE PASSED • CLOSED"
-                    : !isSubmissionsOpen
-                    ? "PAUSED BY ADMIN"
-                    : "LIVE COUNTDOWN"}
+                  {isDeadlinePassed ? "DEADLINE PASSED • CLOSED" : "LIVE COUNTDOWN"}
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mt-1 font-mono">
                 {isDeadlinePassed
                   ? "The submission deadline has officially ended. Late submissions are strictly rejected."
-                  : !isSubmissionsOpen
-                  ? "Submissions are currently paused by hackathon organizers."
                   : "Submissions strictly lock at 11:00 AM Code Freeze."}
               </p>
             </div>
@@ -474,6 +580,13 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         </div>
       )}
 
+      {uploadError && (
+        <div className="p-4 bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs font-mono flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
+          <span>{uploadError}</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-black border border-neutral-800 p-6 sm:p-8 space-y-6 shadow-2xl">
           <div className="flex items-center gap-2.5 pb-4 border-b border-neutral-800 text-white font-bold text-base" style={{ fontFamily: "var(--font-heading)" }}>
@@ -487,7 +600,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
                 Project Title <span className="text-orange-500">*</span>
               </label>
               <input
-                id="submit-input-title"
                 type="text"
                 required
                 placeholder="e.g. NeuroVision AI, ZeroFraud Gateway"
@@ -502,7 +614,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
                 Catchy Tagline
               </label>
               <input
-                id="submit-input-tagline"
                 type="text"
                 placeholder="e.g. Real-time UPI transaction interceptor."
                 value={tagline}
@@ -517,7 +628,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
               Problem Statement <span className="text-orange-500">*</span>
             </label>
             <textarea
-              id="submit-input-problem"
               required
               rows={3}
               placeholder="What problem does your project solve?"
@@ -532,7 +642,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
               Proposed Solution <span className="text-orange-500">*</span>
             </label>
             <textarea
-              id="submit-input-solution"
               required
               rows={3}
               placeholder="Describe your technical architecture and solution."
@@ -544,10 +653,9 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
           <div>
             <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">
-              Target Track
+              Target Track (Domain)
             </label>
             <select
-              id="submit-select-track"
               value={track}
               onChange={(e) => setTrack(e.target.value as TrackType)}
               className="w-full bg-black border border-neutral-800 focus:border-orange-500 px-4 py-3 text-xs text-white font-mono focus:outline-none transition-colors cursor-pointer"
@@ -561,6 +669,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           </div>
         </div>
 
+        {/* TECHNOLOGIES USED */}
         <div className="bg-black border border-neutral-800 p-6 sm:p-8 space-y-5 shadow-2xl">
           <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
             <div className="flex items-center gap-2.5 text-white font-bold text-base" style={{ fontFamily: "var(--font-heading)" }}>
@@ -570,7 +679,31 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             <span className="text-xs font-mono text-neutral-400">{techStack.length} selected</span>
           </div>
 
+          {/* Selected tags (pills) */}
           <div className="flex flex-wrap gap-2">
+            {techStack.length === 0 ? (
+              <span className="text-xs text-neutral-500 font-mono">No technologies selected yet.</span>
+            ) : (
+              techStack.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600/20 border border-orange-500/50 text-orange-400 font-mono text-xs font-semibold uppercase tracking-wider"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => setTechStack(techStack.filter((t) => t !== tag))}
+                    className="text-orange-400 hover:text-orange-200 transition-colors"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+
+          {/* Common tags (click to toggle) */}
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-800">
             {COMMON_TECH_STACK.map((tag) => {
               const isSelected = techStack.includes(tag);
               return (
@@ -581,7 +714,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
                   className={`px-3 py-1.5 font-mono text-xs uppercase tracking-wider cursor-pointer transition-colors border ${
                     isSelected
                       ? "bg-orange-600 text-white font-bold border-orange-500"
-                      : "bg-black text-neutral-400 border-neutral-800 hover:text-white"
+                      : "bg-black text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-600"
                   }`}
                 >
                   {tag}
@@ -590,7 +723,8 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             })}
           </div>
 
-          <div className="flex items-center gap-2 pt-2">
+          {/* Add custom tag */}
+          <div className="flex items-center gap-2 pt-2 border-t border-neutral-800">
             <input
               type="text"
               placeholder="Add other technologies..."
@@ -610,10 +744,11 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           </div>
         </div>
 
+        {/* CODE & PRESENTATION DELIVERABLES */}
         <div className="bg-black border border-neutral-800 p-6 sm:p-8 space-y-6 shadow-2xl">
           <div className="flex items-center gap-2.5 pb-4 border-b border-neutral-800 text-white font-bold text-base" style={{ fontFamily: "var(--font-heading)" }}>
             <Globe className="w-5 h-5 text-orange-500" />
-            <h3>3. Code & Presentation Deliverables (PPT/PDF up to 10MB Limit)</h3>
+            <h3>3. Code & Presentation Deliverables</h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -623,7 +758,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
                 GitHub Repository URL <span className="text-orange-500">*</span>
               </label>
               <input
-                id="submit-input-github"
                 type="url"
                 required
                 placeholder="https://github.com/your-team/origin-hack"
@@ -639,7 +773,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
                 Live Demo URL (Optional)
               </label>
               <input
-                id="submit-input-deployment"
                 type="url"
                 placeholder="https://your-demo.vercel.app"
                 value={deploymentUrl}
@@ -649,59 +782,125 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             </div>
           </div>
 
-          <div className="p-5 bg-black border border-neutral-800 space-y-4 font-mono">
+          <div className="p-5 bg-black border border-neutral-800 space-y-6 font-mono">
             <div className="flex items-center justify-between">
-              <label className="text-xs text-neutral-300 flex items-center gap-1.5 uppercase tracking-wider font-semibold">
-                <FileText className="w-4 h-4 text-orange-500" />
-                Upload Presentation Slide Deck (PPT / PPTX / PDF)
-              </label>
+              <span className="text-xs text-neutral-300 uppercase tracking-wider font-semibold">Upload Presentation Files (Max 2 files)</span>
               <span className="text-[10px] text-orange-400 px-2 py-0.5 bg-orange-500/10 border border-orange-500/30 uppercase font-bold">
-                MAX SIZE: 10MB
+                MAX SIZE: 50MB EACH
               </span>
             </div>
 
-            <div className="relative border border-dashed border-neutral-800 hover:border-orange-500/60 p-6 text-center cursor-pointer transition-colors bg-black">
-              <input
-                type="file"
-                accept=".pdf,.ppt,.pptx"
-                onChange={handleFileUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <Upload className="w-6 h-6 mx-auto text-orange-500 mb-2" />
-              <span className="text-xs text-neutral-300 font-mono block">
-                {isUploadingDoc
-                  ? "Uploading document to Imagekit..."
-                  : presentationFileName
-                  ? presentationFileName
-                  : "Click or Drag PDF/PPT Deck (Strict 10MB Limit)"}
-              </span>
-            </div>
-
-            {presentationUrl && (
-              <div className="flex items-center justify-between p-3 bg-black border border-orange-500/30 text-xs">
-                <span className="text-orange-400 font-mono flex items-center gap-1.5 font-bold">
-                  <FileCheck className="w-4 h-4" /> Imagekit Document Attached
-                </span>
-                <a
-                  href={presentationUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-orange-400 hover:underline font-semibold"
-                >
-                  Preview Slide Deck &rarr;
-                </a>
+            {/* PDF Upload */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] text-neutral-400 font-mono flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-orange-500" />
+                  PDF Document (Optional)
+                </label>
+                {presentationPdfUrl && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile("pdf")}
+                    className="text-rose-400 hover:text-rose-300 text-[10px] font-mono flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" /> Remove
+                  </button>
+                )}
               </div>
-            )}
+              {!presentationPdfUrl ? (
+                <div className="relative border border-dashed border-neutral-800 hover:border-orange-500/60 p-4 text-center cursor-pointer transition-colors bg-black">
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, "pdf");
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={isUploadingPdf}
+                  />
+                  <Upload className="w-5 h-5 mx-auto text-orange-500 mb-1" />
+                  <span className="text-xs text-neutral-300 font-mono block">
+                    {isUploadingPdf ? "Uploading PDF..." : "Click or drag PDF (max 50MB)"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 bg-black border border-orange-500/30 text-xs">
+                  <span className="text-orange-400 font-mono flex items-center gap-1.5 font-bold">
+                    <FileCheck className="w-4 h-4" /> PDF Attached
+                  </span>
+                  <a
+                    href={presentationPdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-orange-400 hover:underline font-semibold"
+                  >
+                    Preview PDF &rarr;
+                  </a>
+                </div>
+              )}
+            </div>
 
-            <div>
-              <label className="block text-[11px] text-neutral-500 mb-1 uppercase tracking-wider">
-                Or paste direct Google Slides / Canva Presentation link:
+            {/* PPT/PPTX Upload */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] text-neutral-400 font-mono flex items-center gap-1.5">
+                  <File className="w-3.5 h-3.5 text-orange-500" />
+                  PPT / PPTX Presentation (Optional)
+                </label>
+                {presentationPptUrl && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile("ppt")}
+                    className="text-rose-400 hover:text-rose-300 text-[10px] font-mono flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" /> Remove
+                  </button>
+                )}
+              </div>
+              {!presentationPptUrl ? (
+                <div className="relative border border-dashed border-neutral-800 hover:border-orange-500/60 p-4 text-center cursor-pointer transition-colors bg-black">
+                  <input
+                    type="file"
+                    accept=".ppt,.pptx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, "ppt");
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={isUploadingPpt}
+                  />
+                  <Upload className="w-5 h-5 mx-auto text-orange-500 mb-1" />
+                  <span className="text-xs text-neutral-300 font-mono block">
+                    {isUploadingPpt ? "Uploading PPT/PPTX..." : "Click or drag PPT/PPTX (max 50MB)"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 bg-black border border-orange-500/30 text-xs">
+                  <span className="text-orange-400 font-mono flex items-center gap-1.5 font-bold">
+                    <FileCheck className="w-4 h-4" /> PPT/PPTX Attached
+                  </span>
+                  <a
+                    href={presentationPptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-orange-400 hover:underline font-semibold"
+                  >
+                    Preview PPT &rarr;
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-neutral-800">
+              <label className="block text-[11px] text-neutral-400 uppercase tracking-wider mb-1">
+                Or paste direct Google Slides / Canva Presentation link (optional):
               </label>
               <input
                 type="url"
                 placeholder="https://docs.google.com/presentation/d/..."
-                value={presentationUrl}
-                onChange={(e) => setPresentationUrl(e.target.value)}
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
                 className="w-full bg-black border border-neutral-800 focus:border-orange-500 px-3 py-2 text-xs text-white font-mono placeholder:text-neutral-600 focus:outline-none transition-colors"
               />
             </div>
@@ -715,18 +914,11 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
               <span>Submissions are closed. The hackathon deadline has officially passed.</span>
             </p>
           )}
-          {!isDeadlinePassed && !isSubmissionsOpen && (
-            <p className="text-xs text-amber-400 font-mono font-semibold flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>Submissions are temporarily paused by hackathon organizers.</span>
-            </p>
-          )}
           <button
-            id="submit-btn-save-project"
             type="submit"
-            disabled={isSubmitting || isUploadingDoc || !isSubmissionsOpen || isDeadlinePassed}
+            disabled={isSubmitting || isUploadingPdf || isUploadingPpt || isDeadlinePassed}
             className={`w-full sm:w-auto min-w-[280px] px-8 py-4 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-3 transition-colors border ${
-              isDeadlinePassed || !isSubmissionsOpen
+              isDeadlinePassed
                 ? "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed opacity-60"
                 : "bg-orange-600 hover:bg-orange-500 text-white border-orange-500 cursor-pointer"
             }`}
@@ -737,11 +929,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
               <>
                 <Lock className="w-4 h-4 text-neutral-500" />
                 <span>Submissions Closed (Deadline Passed)</span>
-              </>
-            ) : !isSubmissionsOpen ? (
-              <>
-                <Lock className="w-4 h-4 text-neutral-500" />
-                <span>Submissions Disabled by Admin</span>
               </>
             ) : (
               <>

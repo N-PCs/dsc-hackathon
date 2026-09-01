@@ -6,8 +6,48 @@ import { Team } from '../utils/types.js';
 import { logger } from '../utils/logger.js';
 
 export const listTeams = async (req: Request, res: Response) => {
-  const teams = await teamService.getAllTeams();
-  res.json({ success: true, teams });
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || '';
+    const status = (req.query.status as string) || 'all';
+    const track = (req.query.track as string) || 'all';
+    const hasProject = req.query.hasProject === 'true' ? true : req.query.hasProject === 'false' ? false : undefined;
+    const scoredParam = req.query.scored;
+    const scored: 'all' | 'true' | 'false' = scoredParam === 'true' || scoredParam === 'false' ? scoredParam : 'all';
+
+    // If no pagination params, return all teams (backward compatibility)
+    if (!req.query.page && !req.query.limit) {
+      const teams = await teamService.getAllTeams();
+      return res.json({ success: true, teams });
+    }
+
+    const result = await teamService.getTeamsPaginated({
+      page,
+      limit,
+      search,
+      status,
+      track,
+      hasProject,
+      scored,
+    });
+
+    res.json({
+      success: true,
+      teams: result.teams,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: Math.ceil(result.total / result.limit),
+        evaluatedCount: result.evaluatedCount || 0,
+        pendingCount: result.pendingCount || 0,
+      },
+    });
+  } catch (err: any) {
+    logger.error({ err }, 'listTeams error');
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 export const getTeam = async (req: Request, res: Response) => {
@@ -17,7 +57,7 @@ export const getTeam = async (req: Request, res: Response) => {
 };
 
 export const teamLogin = async (req: Request, res: Response) => {
-  const { identifier, accessCode } = req.body;
+  const { identifier } = req.body; // accessCode removed
   if (!identifier) {
     return res.status(400).json({ success: false, message: 'Team ID or Leader Email required' });
   }
@@ -25,9 +65,7 @@ export const teamLogin = async (req: Request, res: Response) => {
   if (!team) {
     return res.status(404).json({ success: false, message: 'No registered team found' });
   }
-  if (accessCode && String(team.accessCode) !== String(accessCode).trim()) {
-    return res.status(401).json({ success: false, message: 'Invalid Access Code' });
-  }
+  // access code check removed – any valid identifier logs the team in
   res.json({ success: true, team });
 };
 
@@ -127,13 +165,35 @@ export const submitProject = async (req: Request, res: Response) => {
 
   const team = await teamService.findTeamById(req.params.id);
   if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
-  if (team.paymentStatus !== 'verified') {
-    return res.status(403).json({ success: false, message: 'Team not verified – cannot submit project.' });
-  }
 
-  const { title, tagline, problemStatement, solutionDescription, track, techStack, githubUrl, deploymentUrl, presentationUrl, videoUrl } = req.body;
+  const {
+    title,
+    tagline,
+    problemStatement,
+    solutionDescription,
+    track,
+    techStack,
+    githubUrl,
+    deploymentUrl,
+    presentationUrl,
+    presentationPdfUrl,
+    presentationPptUrl,
+    videoUrl,
+  } = req.body;
+
   if (!title || !problemStatement || !solutionDescription || !githubUrl) {
     return res.status(400).json({ success: false, message: 'Missing required project fields' });
+  }
+
+  // ✅ FIX: Keep the team's top-level `track` (registration-time field, used by
+  // SQL filtering / the jury "track" filter buttons) in sync with whatever track
+  // is chosen at project-submission time. Without this, `team.track` stays frozen
+  // at whatever was picked (or defaulted) during registration, while the badge
+  // shown on cards displays `project.track` — causing the mismatch where a team
+  // submits under "Web3 & Blockchain" but still only appears under the
+  // "AI & Machine Learning" filter.
+  if (track) {
+    team.track = track;
   }
 
   team.project = {
@@ -146,6 +206,8 @@ export const submitProject = async (req: Request, res: Response) => {
     githubUrl: githubUrl.trim(),
     deploymentUrl: deploymentUrl ? deploymentUrl.trim() : undefined,
     presentationUrl: presentationUrl ? presentationUrl.trim() : undefined,
+    presentationPdfUrl: presentationPdfUrl ? presentationPdfUrl.trim() : undefined,
+    presentationPptUrl: presentationPptUrl ? presentationPptUrl.trim() : undefined,
     videoUrl: videoUrl ? videoUrl.trim() : undefined,
     submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
     score: team.project?.score,

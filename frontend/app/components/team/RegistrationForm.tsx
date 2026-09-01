@@ -160,7 +160,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      setErrorMsg("Receipt file size is too large (max 10MB limit).");
+      setErrorMsg("Receipt file size is too large (max 50MB limit).");
       return;
     }
 
@@ -673,7 +673,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       ? "Uploading..."
                       : paymentImageName
                       ? paymentImageName
-                      : "Drop or click to upload (max 10MB)"}
+                      : "Drop or click to upload (max 50MB)"}
                   </span>
                 </div>
 
