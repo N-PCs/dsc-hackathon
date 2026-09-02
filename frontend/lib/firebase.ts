@@ -14,7 +14,7 @@ import {
 const cleanEnv = (val?: string) => (val ? val.trim().replace(/[\r\n\s\t]+/g, "") : "");
 
 export const firebaseConfig = {
-  apiKey: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
+  apiKey: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) || "dummy_key",
   authDomain: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
   projectId: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
   storageBucket: cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET),

@@ -35,11 +35,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
-      (currentUser) => {
+      (currentUser: User | null) => {
         setUser(currentUser);
         setLoading(false);
       },
-      (err) => {
+      (err: Error) => {
         console.error("Auth state observer error:", err);
         setError(err.message);
         setLoading(false);
