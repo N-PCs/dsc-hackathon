@@ -340,6 +340,9 @@ AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 AWS_REGION=ap-south-1
 AWS_S3_BUCKET=dsc-hackathon-storage
 
+//here add the email for jury memebers 
+JURY_ALLOWED_EMAILS=jury2@domain.org,judge@hackathon.com
+
 #  Google Firebase Authentication
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com

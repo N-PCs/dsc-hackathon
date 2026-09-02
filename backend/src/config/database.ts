@@ -19,7 +19,6 @@ if (connectionString) {
     const clean = connectionString.replace(/&channel_binding=require/g, '').replace(/\?channel_binding=require/g, '');
     pool = new Pool({ connectionString: clean });
 
-    // ✅ Catch pool-level errors to prevent crash
     pool.on('error', (err: any) => {
       logger.error({ err }, '[NeonDB] Pool error – switching to memory fallback');
       useNeon = false;
@@ -31,11 +30,11 @@ if (connectionString) {
   } catch (err) {
     logger.warn({ err }, '[NeonDB] Failed to create pool – using memory fallback');
   }
-}else {
+} else {
   logger.info('[NeonDB] No DATABASE_URL – using in‑memory store');
 }
 
-// Dummy verified lead team for end-to-end testing
+// Dummy verified lead team
 const DUMMY_LEAD_TEAM: Team = {
   id: 'ORIGIN-101',
   teamName: 'NeuralPulse AI',
@@ -74,14 +73,59 @@ const DUMMY_LEAD_TEAM: Team = {
   paymentProofUrl: 'https://ik.imagekit.io/origin/demo-receipt.png',
   transactionRef: 'UPI/ORIGIN/NEEL24BCE10303',
   amountPaid: 419,
-  registeredAt: 'Sep 4, 2026, 6:00 PM',
+  registeredAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
   checkedInVenue: true,
   ticketIssued: true,
   notes: 'Verified Lead Team - Ready for Project Submission',
 };
 
+// 🔬 Test team
+const TEST_TEAM: Team = {
+  id: 'ORIGIN-TEST-999',
+  teamName: 'Test Team Varun',
+  accessCode: '1234',
+  track: 'AI & Machine Learning',
+  leader: {
+    name: 'Varun saini',
+    email: 'varum.25bce10360@vitbhopal.ac.in',
+    phone: '+91 98765 43210',
+    college: 'VIT Bhopal University',
+    role: 'Team Lead',
+    registrationNumber: '25BCE10360',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
+  },
+  member2: {
+    name: 'Demo Member 2',
+    email: 'demo2@vitbhopal.ac.in',
+    phone: '+91 98765 11111',
+    registrationNumber: '25BCE10001',
+    college: 'VIT Bhopal University',
+    role: 'Member',
+    residentialStatus: 'Hosteller',
+    messName: 'Anchor (Boys)',
+  },
+  member3: {
+    name: 'Demo Member 3',
+    email: 'demo3@vitbhopal.ac.in',
+    phone: '+91 98765 22222',
+    registrationNumber: '25BCE10002',
+    college: 'VIT Bhopal University',
+    role: 'Member',
+    residentialStatus: 'Day Scholar',
+  },
+  paymentStatus: 'verified',
+  paymentProofUrl: 'https://ik.imagekit.io/origin/demo-receipt.png',
+  transactionRef: 'UPI/TEST/VARUN',
+  amountPaid: 419,
+  registeredAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+  checkedInVenue: false,
+  ticketIssued: true,
+  notes: 'Test team – remove after testing',
+};
+
 // In‑memory fallback
-let localTeams: Team[] = [DUMMY_LEAD_TEAM];
+let localTeams: Team[] = [DUMMY_LEAD_TEAM, TEST_TEAM];
 let localAnnouncements: Announcement[] = [];
 let localAdmins: AdminUser[] = [
   { email: 'admin@vitbhopal.ac.in', name: 'Admin', role: 'Superadmin', department: 'DSC' },
@@ -137,7 +181,6 @@ export async function initDatabase() {
           value TEXT NOT NULL
         );
       `);
-      // Seed default admins
       for (const admin of localAdmins) {
         await client.query(
           `INSERT INTO admin_users (email, name, role, department, added_at)
@@ -145,7 +188,7 @@ export async function initDatabase() {
           [admin.email, admin.name, admin.role, admin.department, admin.addedAt || new Date().toISOString()]
         );
       }
-      // Seed dummy verified team for testing
+      // Seed dummy
       await client.query(
         `INSERT INTO teams (id, team_name, access_code, track, payment_status, payment_proof_url, transaction_ref, registered_at, checked_in_venue, ticket_issued, notes, amount_paid, data)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
@@ -166,7 +209,28 @@ export async function initDatabase() {
           JSON.stringify(DUMMY_LEAD_TEAM),
         ]
       );
-      logger.info('[NeonDB] Tables ready');
+      // Seed test team
+      await client.query(
+        `INSERT INTO teams (id, team_name, access_code, track, payment_status, payment_proof_url, transaction_ref, registered_at, checked_in_venue, ticket_issued, notes, amount_paid, data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          TEST_TEAM.id,
+          TEST_TEAM.teamName,
+          TEST_TEAM.accessCode,
+          TEST_TEAM.track,
+          TEST_TEAM.paymentStatus,
+          TEST_TEAM.paymentProofUrl || '',
+          TEST_TEAM.transactionRef || '',
+          TEST_TEAM.registeredAt,
+          TEST_TEAM.checkedInVenue || false,
+          TEST_TEAM.ticketIssued || false,
+          TEST_TEAM.notes || '',
+          TEST_TEAM.amountPaid || 150,
+          JSON.stringify(TEST_TEAM),
+        ]
+      );
+      logger.info('[NeonDB] Tables ready and test team seeded');
     } finally {
       client.release();
     }
@@ -194,6 +258,196 @@ export async function getAllTeams(): Promise<Team[]> {
     return cached;
   }
   return localTeams;
+}
+
+// Helper to build WHERE clauses and parameters
+function buildWhereClauses(options: {
+  search: string;
+  status: string;
+  track: string;
+  hasProject?: boolean;
+  scored?: 'all' | 'true' | 'false';
+}): { whereClauses: string[]; params: any[]; paramIndex: number } {
+  const whereClauses: string[] = [];
+  const params: any[] = [];
+  let paramIndex = 1;
+
+  const { search, status, track, hasProject, scored } = options;
+
+  if (search) {
+    whereClauses.push(`
+      (
+        team_name ILIKE $${paramIndex}
+        OR data->'leader'->>'name' ILIKE $${paramIndex}
+        OR data->'leader'->>'email' ILIKE $${paramIndex}
+        OR id ILIKE $${paramIndex}
+        OR transaction_ref ILIKE $${paramIndex}
+      )
+    `);
+    params.push(`%${search}%`);
+    paramIndex++;
+  }
+
+  if (status !== 'all') {
+    whereClauses.push(`payment_status = $${paramIndex}`);
+    params.push(status);
+    paramIndex++;
+  }
+
+  if (track !== 'all') {
+    whereClauses.push(`track = $${paramIndex}`);
+    params.push(track);
+    paramIndex++;
+  }
+
+  if (hasProject) {
+    whereClauses.push(`data->'project' IS NOT NULL`);
+  }
+
+  if (scored && scored !== 'all') {
+    const isScored = scored === 'true';
+    whereClauses.push(`(data->'project'->'score' IS ${isScored ? 'NOT' : ''} NULL)`);
+  }
+
+  return { whereClauses, params, paramIndex };
+}
+
+export async function getPaginatedTeams(options: {
+  page: number;
+  limit: number;
+  search: string;
+  status: string;
+  track: string;
+  hasProject?: boolean;
+  scored?: 'all' | 'true' | 'false';
+}) {
+  const { page, limit, search, status, track, hasProject, scored } = options;
+  const offset = (page - 1) * limit;
+
+  // Build WHERE clauses once
+  const { whereClauses, params, paramIndex } = buildWhereClauses({
+    search,
+    status,
+    track,
+    hasProject,
+    scored,
+  });
+  const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  // --- In‑memory fallback (if not using Neon) ---
+  if (!useNeon || !pool) {
+    let allTeams = await getAllTeams();
+    // Apply filters
+    if (search) {
+      const s = search.toLowerCase();
+      allTeams = allTeams.filter(t =>
+        t.teamName.toLowerCase().includes(s) ||
+        t.leader.name.toLowerCase().includes(s) ||
+        t.leader.email.toLowerCase().includes(s) ||
+        t.id.toLowerCase().includes(s) ||
+        t.transactionRef?.toLowerCase().includes(s)
+      );
+    }
+    if (status !== 'all') {
+      allTeams = allTeams.filter(t => t.paymentStatus === status);
+    }
+    if (track !== 'all') {
+      allTeams = allTeams.filter(t => t.track === track);
+    }
+    if (hasProject) {
+      allTeams = allTeams.filter(t => !!t.project);
+    }
+    if (scored && scored !== 'all') {
+      const hasScore = scored === 'true';
+      allTeams = allTeams.filter(t => hasScore ? !!t.project?.score : !t.project?.score);
+    }
+    const total = allTeams.length;
+    const paginated = allTeams.slice(offset, offset + limit);
+
+    // Count evaluated/pending based on the same filters, but ignoring scored
+    // We need to re‑apply filters without the scored condition
+    let filteredTeams = allTeams;
+    // Remove the scored filter by re‑filtering from the start (or copy allTeams before applying scored)
+    // Since we already have allTeams after all filters, we can't easily remove scored.
+    // Better: apply all filters except scored to a fresh list.
+    let baseTeams = await getAllTeams();
+    if (search) {
+      const s = search.toLowerCase();
+      baseTeams = baseTeams.filter(t =>
+        t.teamName.toLowerCase().includes(s) ||
+        t.leader.name.toLowerCase().includes(s) ||
+        t.leader.email.toLowerCase().includes(s) ||
+        t.id.toLowerCase().includes(s) ||
+        t.transactionRef?.toLowerCase().includes(s)
+      );
+    }
+    if (status !== 'all') {
+      baseTeams = baseTeams.filter(t => t.paymentStatus === status);
+    }
+    if (track !== 'all') {
+      baseTeams = baseTeams.filter(t => t.track === track);
+    }
+    if (hasProject) {
+      baseTeams = baseTeams.filter(t => !!t.project);
+    }
+    // Now count evaluated/pending among baseTeams (which have a project)
+    const projectTeams = baseTeams.filter(t => !!t.project);
+    const evaluatedCount = projectTeams.filter(t => !!t.project?.score).length;
+    const pendingCount = projectTeams.length - evaluatedCount;
+
+    return { teams: paginated, total, page, limit, evaluatedCount, pendingCount };
+  }
+
+  // --- Neon DB path ---
+
+  // 1. Count total (with all filters including scored)
+  const countQuery = `SELECT COUNT(*) FROM teams ${whereSql}`;
+  const countRes = await pool.query(countQuery, params);
+  const total = parseInt(countRes.rows[0].count, 10);
+
+  // 2. Get paginated teams
+  const dataQuery = `
+    SELECT data FROM teams
+    ${whereSql}
+    ORDER BY registered_at DESC NULLS LAST
+    LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+  `;
+  const dataParams = [...params, limit, offset];
+  const dataRes = await pool.query(dataQuery, dataParams);
+  const teams = dataRes.rows.map(r => r.data as Team);
+
+  // 3. Build WHERE clauses without the scored condition for counts
+  const { whereClauses: countWhereClauses, params: countParams, paramIndex: countParamIndex } = buildWhereClauses({
+    search,
+    status,
+    track,
+    hasProject,
+    // scored: undefined → excludes scored condition
+  });
+  const countWhereSql = countWhereClauses.length ? `WHERE ${countWhereClauses.join(' AND ')}` : '';
+
+  // Count evaluated (score exists) among teams that have a project
+  const evalCountQuery = `
+    SELECT COUNT(*) FROM teams
+    ${countWhereSql}
+    AND data->'project' IS NOT NULL
+    AND data->'project'->'score' IS NOT NULL
+  `;
+  // Count pending (score is null) among teams that have a project
+  const pendingCountQuery = `
+    SELECT COUNT(*) FROM teams
+    ${countWhereSql}
+    AND data->'project' IS NOT NULL
+    AND data->'project'->'score' IS NULL
+  `;
+
+  const evalRes = await pool.query(evalCountQuery, countParams);
+  const pendingRes = await pool.query(pendingCountQuery, countParams);
+  const evaluatedCount = parseInt(evalRes.rows[0].count, 10);
+  const pendingCount = parseInt(pendingRes.rows[0].count, 10);
+
+  setCachedData(CACHE_KEYS.TEAMS, teams).catch(() => {});
+  return { teams, total, page, limit, evaluatedCount, pendingCount };
 }
 
 export async function findTeamByIdentifier(identifier: string): Promise<Team | null> {
@@ -292,20 +546,28 @@ export async function saveTeam(team: Team): Promise<Team> {
   return team;
 }
 
+/**
+ * ✅ FIXED: `track` and `team_name` are now included in the UPDATE statement.
+ * This keeps the SQL column in sync with the JSONB data.
+ */
 export async function updateTeam(team: Team): Promise<Team> {
   if (useNeon && pool) {
     try {
       await pool.query(
         `UPDATE teams SET 
-          payment_status = $1, 
-          payment_proof_url = $2, 
-          checked_in_venue = $3, 
-          ticket_issued = $4, 
-          notes = $5, 
-          amount_paid = $6,
-          data = $7 
-         WHERE UPPER(id) = UPPER($8)`,
+          team_name = $1,
+          track = $2,
+          payment_status = $3, 
+          payment_proof_url = $4, 
+          checked_in_venue = $5, 
+          ticket_issued = $6, 
+          notes = $7, 
+          amount_paid = $8,
+          data = $9 
+         WHERE UPPER(id) = UPPER($10)`,
         [
+          team.teamName,
+          team.track,
           team.paymentStatus,
           team.paymentProofUrl || '',
           team.checkedInVenue || false,

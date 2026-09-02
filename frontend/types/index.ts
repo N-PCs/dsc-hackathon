@@ -29,6 +29,8 @@ export interface ProjectSubmission {
   githubUrl: string;
   deploymentUrl?: string;
   presentationUrl?: string;
+  presentationPdfUrl?: string;   
+  presentationPptUrl?: string;
   videoUrl?: string;
   architectureDiagramUrl?: string;
   submittedAt: string;

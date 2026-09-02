@@ -2,9 +2,35 @@
 
 import { AdminPortal } from "@/components/admin/AdminPortal";
 import { useTeams } from "@/hooks/useTeams";
+import { useState, useEffect } from "react";
 
 export default function AdminPage() {
-  const { teams, announcements, refreshData } = useTeams();
+  const {
+    paginatedTeams,
+    pagination,
+    isLoadingPaginated,
+    fetchPaginated,
+    refreshData,
+    announcements,
+  } = useTeams();
+
+  // Local state for filters (mirroring the AdminPortal's internal state)
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "verified" | "rejected">("all");
+  const [trackFilter, setTrackFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Fetch when any filter changes
+  useEffect(() => {
+    fetchPaginated({
+      page: currentPage,
+      limit: pageSize,
+      search,
+      status: statusFilter,
+      track: trackFilter,
+    });
+  }, [currentPage, pageSize, search, statusFilter, trackFilter, fetchPaginated]);
 
   // Helper to get admin email from localStorage
   const getAdminHeaders = (): Record<string, string> => {
@@ -30,7 +56,7 @@ export default function AdminPage() {
     }
   ) => {
     try {
-      await fetch(`/api/teams/${teamId}/status`, {
+      await fetch(`/api/admin/teams/${teamId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -38,7 +64,14 @@ export default function AdminPage() {
         },
         body: JSON.stringify(status),
       });
-      refreshData();
+      // Refetch paginated data
+      fetchPaginated({
+        page: currentPage,
+        limit: pageSize,
+        search,
+        status: statusFilter,
+        track: trackFilter,
+      });
     } catch (err) {
       console.error("Failed to update team status:", err);
     }
@@ -56,7 +89,7 @@ export default function AdminPage() {
     }
   ) => {
     try {
-      await fetch(`/api/teams/${teamId}/score`, {
+      await fetch(`/api/admin/teams/${teamId}/score`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -64,7 +97,13 @@ export default function AdminPage() {
         },
         body: JSON.stringify(score),
       });
-      refreshData();
+      fetchPaginated({
+        page: currentPage,
+        limit: pageSize,
+        search,
+        status: statusFilter,
+        track: trackFilter,
+      });
     } catch (err) {
       console.error("Failed to score project:", err);
     }
@@ -78,7 +117,13 @@ export default function AdminPage() {
           ...getAdminHeaders(),
         },
       });
-      refreshData();
+      fetchPaginated({
+        page: currentPage,
+        limit: pageSize,
+        search,
+        status: statusFilter,
+        track: trackFilter,
+      });
     } catch (err) {
       console.error("Failed to delete team:", err);
     }
@@ -98,20 +143,52 @@ export default function AdminPage() {
         },
         body: JSON.stringify({ title, message, category }),
       });
-      refreshData();
+      refreshData(); // refresh announcements
     } catch (err) {
       console.error("Failed to send announcement:", err);
     }
   };
 
+  // ✅ NEW: Delete announcement handler
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    try {
+      const res = await fetch(`/api/announcements/${announcementId}`, {
+        method: "DELETE",
+        headers: {
+          ...getAdminHeaders(),
+        },
+      });
+      if (res.ok) {
+        refreshData(); // refresh announcements and other data
+      } else {
+        console.error("Failed to delete announcement");
+      }
+    } catch (err) {
+      console.error("Failed to delete announcement:", err);
+    }
+  };
+
   return (
     <AdminPortal
-      teams={teams}
+      paginatedTeams={paginatedTeams}
+      pagination={pagination}
+      isLoading={isLoadingPaginated}
       announcements={announcements}
+      search={search}
+      setSearch={setSearch}
+      statusFilter={statusFilter}
+      setStatusFilter={setStatusFilter}
+      trackFilter={trackFilter}
+      setTrackFilter={setTrackFilter}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      pageSize={pageSize}
+      setPageSize={setPageSize}
       onUpdateTeamStatus={handleUpdateTeamStatus}
       onScoreProject={handleScoreProject}
       onDeleteTeam={handleDeleteTeam}
       onSendAnnouncement={handleSendAnnouncement}
+      onDeleteAnnouncement={handleDeleteAnnouncement} // ← pass the new handler
       onRefreshData={refreshData}
     />
   );

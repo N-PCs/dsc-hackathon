@@ -112,13 +112,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               Themes will be revealed on the day of the hackathon. Compete for ₹15,000 in cash prizes and ₹50,000+ in goodies, evaluated live by esteemed educators from <strong className="text-white">Sheryians Coding Academy</strong>.
             </p>
             <div className="flex items-center gap-3 pt-2">
-              <button
-                id="hero-btn-register-team"
-                onClick={() => window.open(EXTERNAL_REGISTRATION_URL, "_blank")}
-                className="gsap-cta btn-primary"
-              >
-                REGISTER TEAM &gt;
-              </button>
+             
               <button
                 id="hero-btn-schedule"
                 onClick={() => onNavigate("schedule")}

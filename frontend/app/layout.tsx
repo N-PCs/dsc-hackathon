@@ -3,6 +3,7 @@ import { Bebas_Neue, Oswald, Space_Grotesk, Inter, JetBrains_Mono } from "next/f
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { AuthProvider } from "@/lib/authContext";
+import { TeamsProvider } from "@/context/TeamsContext"; // ← import
 
 const bebasNeue = Bebas_Neue({
   weight: "400",
@@ -39,14 +40,16 @@ export default function RootLayout({
 }) {
   return (
     <AuthProvider>
-      <html
-        lang="en"
-        className={`${bebasNeue.variable} ${oswald.variable} ${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full`}
-      >
-        <body className="min-h-full flex flex-col bg-black text-white antialiased">
-          <AppShell>{children}</AppShell>
-        </body>
-      </html>
+      <TeamsProvider> {/* ← wrap here */}
+        <html
+          lang="en"
+          className={`${bebasNeue.variable} ${oswald.variable} ${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full`}
+        >
+          <body className="min-h-full flex flex-col bg-black text-white antialiased">
+            <AppShell>{children}</AppShell>
+          </body>
+        </html>
+      </TeamsProvider>
     </AuthProvider>
   );
 }

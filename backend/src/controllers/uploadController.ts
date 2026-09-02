@@ -36,7 +36,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 🔥 50MB limit (was 50MB)
   fileFilter,
 });
 
@@ -110,4 +110,4 @@ async function handleBase64Upload(req: Request, res: Response) {
     logger.error({ err }, 'Base64 upload error');
     res.status(500).json({ success: false, message: err.message || 'Upload failed' });
   }
-}   
+}

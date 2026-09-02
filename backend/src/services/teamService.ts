@@ -9,10 +9,25 @@ import {
   getSubmissionStatus as getStoredSubmissionStatus,
   setRegistrationStatus as setStoredRegistrationStatus,
   setSubmissionStatus as setStoredSubmissionStatus,
+  getPaginatedTeams,
 } from '../config/database.js';
 import { getCachedData, setCachedData, invalidateCache, CACHE_KEYS } from '../config/redis.js';
 import { Team } from '../utils/types.js';
 import { logger } from '../utils/logger.js';
+
+export interface TeamQueryOptions {
+  page: number;
+  limit: number;
+  search: string;
+  status: string;
+  track: string;
+  hasProject?: boolean;
+  scored?: 'all' | 'true' | 'false';
+}
+
+export async function getTeamsPaginated(options: TeamQueryOptions) {
+  return getPaginatedTeams(options);
+}
 
 export async function getAllTeams(): Promise<Team[]> {
   const cached = await getCachedData<Team[]>(CACHE_KEYS.TEAMS);

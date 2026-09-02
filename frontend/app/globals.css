@@ -223,3 +223,25 @@ html.lenis, html.lenis body { height: auto; }
   0% { background-position: 0 0; }
   100% { background-position: 32px 0; }
 }
+
+
+
+
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:border {
+    border: 1px solid #333 !important;
+  }
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  .print\:bg-black {
+    background-color: #000 !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}

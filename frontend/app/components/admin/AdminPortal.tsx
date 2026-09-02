@@ -31,12 +31,16 @@ import {
   LogOut,
   ChevronRight,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
+  File,
 } from "lucide-react";
 import { Team, Announcement, TrackType, PaymentStatus, AdminUser } from "@/types";
 import { HACKATHON_TRACKS } from "@/data/mockData";
 
 const DEFAULT_AUTHORIZED_ADMINS: AdminUser[] = [
   { email: "neelpandeyofficial@gmail.com", name: "Neel Pandey", role: "Superadmin", department: "Data Science Club Lead", addedAt: "2026-08-20" },
+  { email: "varun.25bce10360@vitbhopal.ac.in", name: "Neel Pandey", role: "Superadmin", department: "Data Science Club Lead", addedAt: "2026-08-20" },
   { email: "dsc.vitbhopal@gmail.com", name: "DSC Executive Council", role: "Lead Organizer", department: "Core Operations", addedAt: "2026-08-15" },
   { email: "admin@vitbhopal.ac.in", name: "VIT Operations Head", role: "Superadmin", department: "Academic & Event Affairs", addedAt: "2026-08-10" },
   { email: "lead.origin@vitbhopal.ac.in", name: "Origin Convener", role: "Lead Organizer", department: "Hackathon Operations", addedAt: "2026-08-12" },
@@ -45,8 +49,20 @@ const DEFAULT_AUTHORIZED_ADMINS: AdminUser[] = [
 ];
 
 interface AdminPortalProps {
-  teams: Team[];
+  paginatedTeams: Team[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  isLoading: boolean;
   announcements: Announcement[];
+  search: string;
+  setSearch: (val: string) => void;
+  statusFilter: "all" | "pending" | "verified" | "rejected";
+  setStatusFilter: (val: "all" | "pending" | "verified" | "rejected") => void;
+  trackFilter: string;
+  setTrackFilter: (val: string) => void;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (size: number) => void;
   onUpdateTeamStatus: (teamId: string, status: { paymentStatus?: PaymentStatus; checkedInVenue?: boolean; ticketIssued?: boolean; notes?: string }) => void;
   onScoreProject: (teamId: string, score: { innovation: number; technicalComplexity: number; uiUx: number; presentation: number; impact: number; feedback: string }) => void;
   onDeleteTeam: (teamId: string) => void;
@@ -56,8 +72,20 @@ interface AdminPortalProps {
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
-  teams,
+  paginatedTeams,
+  pagination,
+  isLoading,
   announcements,
+  search,
+  setSearch,
+  statusFilter,
+  setStatusFilter,
+  trackFilter,
+  setTrackFilter,
+  currentPage,
+  setCurrentPage,
+  pageSize,
+  setPageSize,
   onUpdateTeamStatus,
   onScoreProject,
   onDeleteTeam,
@@ -68,6 +96,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const router = useRouter();
   const { user: firebaseUser, signOut: firebaseSignOut, signInWithGoogle, signInWithEmail, loading: isAuthLoading } = useAuth();
 
+  // ----- Admin auth state -----
   const [adminWhitelist, setAdminWhitelist] = useState<AdminUser[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("origin_admin_whitelist");
@@ -113,9 +142,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [addAdminSuccess, setAddAdminSuccess] = useState("");
 
   const [adminTab, setAdminTab] = useState<"teams" | "submissions" | "leaderboard" | "broadcast" | "access">("teams");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "verified" | "rejected">("all");
-  const [trackFilter, setTrackFilter] = useState<string>("all");
 
   const [selectedProofTeam, setSelectedProofTeam] = useState<Team | null>(null);
   const [selectedScoringTeam, setSelectedScoringTeam] = useState<Team | null>(null);
@@ -142,6 +168,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [isTogglingRegistrations, setIsTogglingRegistrations] = useState(false);
   const [isClearingDb, setIsClearingDb] = useState(false);
 
+  // --- Fetch statuses ---
   useEffect(() => {
     fetch("/api/admin/submissions-status")
       .then((res) => res.json())
@@ -199,6 +226,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   }, [firebaseUser, adminWhitelist]);
 
+  // --- Admin action handlers ---
   const handleToggleSubmissions = async () => {
     if (!currentAdmin) return;
     const nextState = !isSubmissionsOpen;
@@ -438,28 +466,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     return fee || 100;
   };
 
-  const verifiedEarnings = teams
+  const verifiedEarnings = paginatedTeams
     .filter((t) => t.paymentStatus === "verified")
     .reduce((sum, t) => sum + calcTeamFee(t), 0);
 
-  const potentialEarnings = teams.reduce((sum, t) => sum + calcTeamFee(t), 0);
+  const potentialEarnings = paginatedTeams.reduce((sum, t) => sum + calcTeamFee(t), 0);
 
-  const filteredTeams = teams.filter((team) => {
-    const matchesSearch =
-      team.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.teamName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.leader.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.leader.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.transactionRef.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus = statusFilter === "all" || team.paymentStatus === statusFilter;
-    const matchesTrack = trackFilter === "all" || team.track === trackFilter;
-
-    return matchesSearch && matchesStatus && matchesTrack;
-  });
-
-  const submittedTeams = teams.filter((t) => !!t.project);
-
+  const submittedTeams = paginatedTeams.filter((t) => !!t.project);
   const leaderboardTeams = [...submittedTeams].sort((a, b) => {
     const scoreA = a.project?.score?.total || 0;
     const scoreB = b.project?.score?.total || 0;
@@ -506,6 +519,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     setTimeout(() => setAnnSuccess(false), 3000);
   };
 
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  // ----- Render: Not authenticated -----
   if (!currentAdmin) {
     return (
       <div className="max-w-xl mx-auto px-4 pt-28 sm:pt-32 pb-16">
@@ -557,7 +582,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
               )}
 
-              {/* Google Sign In */}
               <button
                 type="button"
                 onClick={async () => {
@@ -648,12 +672,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     );
   }
 
-  const totalTeams = teams.length;
-  const verifiedTeams = teams.filter((t) => t.paymentStatus === "verified").length;
-  const pendingTeams = teams.filter((t) => t.paymentStatus === "pending").length;
-
+  // ----- Authenticated view -----
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 space-y-8">
+      {/* Header */}
       <div className="bg-black border border-neutral-800 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -766,18 +788,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
+      {/* Stats cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-neutral-800 border border-neutral-800">
         <div className="bg-black p-5">
           <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Total Teams</span>
-          <div className="text-3xl font-extrabold text-white font-mono">{totalTeams}</div>
+          <div className="text-3xl font-extrabold text-white font-mono">{pagination.total}</div>
         </div>
         <div className="bg-black p-5">
           <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Verified Badges</span>
-          <div className="text-3xl font-extrabold text-orange-500 font-mono">{verifiedTeams}</div>
+          <div className="text-3xl font-extrabold text-orange-500 font-mono">
+            {paginatedTeams.filter((t) => t.paymentStatus === "verified").length}
+          </div>
         </div>
         <div className="bg-black p-5">
           <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider block mb-1">Pending Review</span>
-          <div className="text-3xl font-extrabold text-amber-500 font-mono">{pendingTeams}</div>
+          <div className="text-3xl font-extrabold text-amber-500 font-mono">
+            {paginatedTeams.filter((t) => t.paymentStatus === "pending").length}
+          </div>
         </div>
         <div className="bg-black p-5 border-l border-neutral-800 bg-emerald-950/20">
           <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider block mb-1 font-bold">Live Verified Revenue</span>
@@ -790,6 +817,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
+      {/* Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-neutral-800">
         <button
           onClick={() => setAdminTab("teams")}
@@ -800,7 +828,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           }`}
         >
           <Users className="w-4 h-4 inline mr-1.5" />
-          <span>Teams ({teams.length})</span>
+          <span>Teams ({pagination.total})</span>
         </button>
 
         <button
@@ -852,16 +880,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </button>
       </div>
 
+      {/* TEAMS TAB – modified: removed Track column, UTR column, Action column; simplified payment status (no badge) */}
       {adminTab === "teams" && (
         <div className="space-y-4">
+          {/* Search & Filters – removed track filter dropdown */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-black p-4 border border-neutral-800">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
               <input
                 type="text"
-                placeholder="Search Team ID, Team Name, Leader Name, Email, UTR..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Team ID, Team Name, Leader Name, Email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-black border border-neutral-800 pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono placeholder:text-neutral-600"
               />
             </div>
@@ -877,53 +907,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <option value="pending">Pending Only</option>
                 <option value="rejected">Rejected</option>
               </select>
-
-              <select
-                value={trackFilter}
-                onChange={(e) => setTrackFilter(e.target.value)}
-                className="bg-black border border-neutral-800 px-3 py-2 text-xs text-white font-mono focus:border-orange-500 outline-none"
-              >
-                <option value="all">All Tracks</option>
-                {HACKATHON_TRACKS.map((t, idx) => (
-                  <option key={idx} value={t.name}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
+          {/* Table – columns: Team & ID, Leader Details, Payment, Check-In */}
           <div className="bg-black border border-neutral-800 overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-neutral-900 text-neutral-500 font-mono uppercase text-[11px] tracking-wider border-b border-neutral-800">
                 <tr>
                   <th className="p-3.5">Team & ID</th>
-                  <th className="p-3.5">Track</th>
                   <th className="p-3.5">Leader Details</th>
-                  <th className="p-3.5">UTR / Txn Ref</th>
                   <th className="p-3.5">Payment</th>
                   <th className="p-3.5">Check-In</th>
-                  <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-900 font-mono">
-                {filteredTeams.length === 0 ? (
+                {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-neutral-500 font-mono">
+                    <td colSpan={4} className="p-8 text-center text-neutral-500 font-mono">
+                      Loading teams...
+                    </td>
+                  </tr>
+                ) : paginatedTeams.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-neutral-500 font-mono">
                       No teams match the filter criteria.
                     </td>
                   </tr>
                 ) : (
-                  filteredTeams.map((team) => (
+                  paginatedTeams.map((team) => (
                     <tr key={team.id} className="hover:bg-neutral-950 transition-colors text-neutral-300">
                       <td className="p-3.5">
                         <div className="font-bold text-white">{team.teamName}</div>
                         <div className="font-mono text-[10px] text-orange-500">{team.id}</div>
-                      </td>
-                      <td className="p-3.5">
-                        <span className="px-2 py-0.5 bg-black text-neutral-400 font-mono text-[10px] border border-neutral-800 uppercase">
-                          {team.track}
-                        </span>
                       </td>
                       <td className="p-3.5">
                         <div className="text-white font-medium flex items-center gap-1.5 flex-wrap">
@@ -950,33 +966,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         </div>
                       </td>
                       <td className="p-3.5">
-                        <div className="font-mono text-neutral-300">{team.transactionRef}</div>
-                        {team.paymentProofUrl && (
-                          <button
-                            onClick={() => setSelectedProofTeam(team)}
-                            className="text-[10px] text-orange-400 hover:underline flex items-center gap-1 mt-0.5 cursor-pointer uppercase tracking-wider"
-                          >
-                            <Eye className="w-3 h-3" /> View Screenshot
-                          </button>
-                        )}
-                      </td>
-                      <td className="p-3.5">
-                        {team.paymentStatus === "verified" ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/30 uppercase tracking-wider">
-                            <CheckCircle className="w-3 h-3" /> Verified
-                          </span>
-                        ) : team.paymentStatus === "pending" ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 font-mono text-[10px] font-bold border border-amber-500/30 uppercase tracking-wider">
-                            <Clock className="w-3 h-3" /> Pending Review
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 text-rose-400 font-mono text-[10px] font-bold border border-rose-500/30 uppercase tracking-wider">
-                            <XCircle className="w-3 h-3" /> Rejected
-                          </span>
-                        )}
-                        <div className="font-bold text-white font-mono mt-1 text-xs flex items-center gap-1">
+                        <div className="text-xs font-mono">
+                          {team.paymentStatus === "verified" ? (
+                            <span className="text-emerald-400">Verified</span>
+                          ) : team.paymentStatus === "pending" ? (
+                            <span className="text-amber-400">Pending</span>
+                          ) : (
+                            <span className="text-rose-400">Rejected</span>
+                          )}
+                        </div>
+                        <div className="font-bold text-white font-mono mt-1 text-xs">
                           <span className="text-orange-400">₹{calcTeamFee(team)}</span>
-                          <span className="text-[9px] text-neutral-500 uppercase font-normal">paid</span>
+                          <span className="text-[9px] text-neutral-500 uppercase ml-1 font-normal">paid</span>
                         </div>
                       </td>
                       <td className="p-3.5">
@@ -991,55 +992,73 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           className="bg-black border-neutral-800 text-orange-500 focus:ring-0 cursor-pointer"
                         />
                       </td>
-                      <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                        {team.paymentStatus !== "verified" && (
-                          <button
-                            onClick={() =>
-                              onUpdateTeamStatus(team.id, {
-                                paymentStatus: "verified",
-                                ticketIssued: true,
-                              })
-                            }
-                            className="px-2.5 py-1 bg-orange-600 hover:bg-orange-500 text-white font-mono font-bold text-[10px] uppercase tracking-wider cursor-pointer border border-orange-500"
-                            title="Verify payment and issue pass"
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {team.paymentStatus !== "rejected" && (
-                          <button
-                            onClick={() =>
-                              onUpdateTeamStatus(team.id, {
-                                paymentStatus: "rejected",
-                              })
-                            }
-                            className="px-2.5 py-1 bg-black border border-neutral-800 hover:bg-rose-950 text-rose-400 font-mono font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-colors"
-                            title="Reject payment"
-                          >
-                            Reject
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete ${team.teamName}?`)) {
-                              onDeleteTeam(team.id);
-                            }
-                          }}
-                          className="p-1 text-neutral-500 hover:text-rose-400 cursor-pointer"
-                          title="Delete team"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black border border-neutral-800 p-4">
+            <div className="flex items-center gap-3 text-xs font-mono text-neutral-400">
+              <span>Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="bg-black border border-neutral-800 px-2 py-1 text-white focus:outline-none"
+              >
+                {[10, 25, 50, 100].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              <span>
+                {pagination.total === 0
+                  ? "0 items"
+                  : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, pagination.total)} of ${pagination.total}`}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="px-3 py-1.5 border border-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (pagination.totalPages <= 5) pageNum = i + 1;
+                else if (currentPage <= 3) pageNum = i + 1;
+                else if (currentPage >= pagination.totalPages - 2) pageNum = pagination.totalPages - 4 + i;
+                else pageNum = currentPage - 2 + i;
+                if (pageNum < 1 || pageNum > pagination.totalPages) return null;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => goToPage(pageNum)}
+                    className={`px-3 py-1.5 border ${currentPage === pageNum ? "border-orange-500 bg-orange-500/10 text-orange-400" : "border-transparent text-neutral-400 hover:text-white"}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage >= pagination.totalPages}
+                className="px-3 py-1.5 border border-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* SUBMISSIONS TAB (unchanged) */}
       {adminTab === "submissions" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-neutral-800 border border-neutral-800">
@@ -1081,10 +1100,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <div className="flex flex-wrap gap-1 pt-1 font-mono">
                         {proj.techStack?.map((t, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[10px] px-2 py-0.5 bg-black border border-neutral-800 text-neutral-400"
-                          >
+                          <span key={idx} className="text-[10px] px-2 py-0.5 bg-black border border-neutral-800 text-neutral-400">
                             {t}
                           </span>
                         ))}
@@ -1092,23 +1108,38 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
 
                     <div className="pt-3 border-t border-neutral-900 space-y-3 font-mono">
+                      {/* Attachment Links */}
+                      {(proj.presentationPdfUrl || proj.presentationPptUrl) && (
+                        <div className="flex flex-wrap items-center gap-3 pb-2 border-b border-neutral-800/50">
+                          {proj.presentationPdfUrl && (
+                            <a
+                              href={proj.presentationPdfUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] font-mono text-blue-400 hover:underline flex items-center gap-1 transition-colors"
+                            >
+                              <FileText className="w-3 h-3" /> PDF
+                            </a>
+                          )}
+                          {proj.presentationPptUrl && (
+                            <a
+                              href={proj.presentationPptUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] font-mono text-purple-400 hover:underline flex items-center gap-1 transition-colors"
+                            >
+                              <File className="w-3 h-3" /> PPT/PPTX
+                            </a>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-xs">
-                        <a
-                          href={proj.githubUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-orange-500 hover:underline flex items-center gap-1 text-[11px]"
-                        >
+                        <a href={proj.githubUrl} target="_blank" rel="noreferrer" className="text-orange-500 hover:underline flex items-center gap-1 text-[11px]">
                           <GitBranch className="w-3.5 h-3.5" /> Repository &rarr;
                         </a>
-
                         {proj.deploymentUrl && (
-                          <a
-                            href={proj.deploymentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-emerald-400 hover:underline flex items-center gap-1 text-[11px]"
-                          >
+                          <a href={proj.deploymentUrl} target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline flex items-center gap-1 text-[11px]">
                             <Globe className="w-3.5 h-3.5" /> Live Demo &rarr;
                           </a>
                         )}
@@ -1127,9 +1158,67 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               })
             )}
           </div>
+
+          {/* Pagination Controls for Submissions */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black border border-neutral-800 p-4">
+            <div className="flex items-center gap-3 text-xs font-mono text-neutral-400">
+              <span>Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="bg-black border border-neutral-800 px-2 py-1 text-white focus:outline-none"
+              >
+                {[10, 25, 50, 100].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              <span>
+                {pagination.total === 0
+                  ? "0 items"
+                  : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, pagination.total)} of ${pagination.total}`}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="px-3 py-1.5 border border-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (pagination.totalPages <= 5) pageNum = i + 1;
+                else if (currentPage <= 3) pageNum = i + 1;
+                else if (currentPage >= pagination.totalPages - 2) pageNum = pagination.totalPages - 4 + i;
+                else pageNum = currentPage - 2 + i;
+                if (pageNum < 1 || pageNum > pagination.totalPages) return null;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => goToPage(pageNum)}
+                    className={`px-3 py-1.5 border ${currentPage === pageNum ? "border-orange-500 bg-orange-500/10 text-orange-400" : "border-transparent text-neutral-400 hover:text-white"}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage >= pagination.totalPages}
+                className="px-3 py-1.5 border border-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* LEADERBOARD TAB (unchanged) */}
       {adminTab === "leaderboard" && (
         <div className="space-y-4">
           <div className="bg-black border border-neutral-800 overflow-x-auto">
@@ -1157,7 +1246,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 ) : (
                   leaderboardTeams.map((team, idx) => {
                     const score = team.project?.score;
-
                     return (
                       <tr key={team.id} className="hover:bg-neutral-950 transition-colors text-neutral-300">
                         <td className="p-3.5 font-bold">
@@ -1167,9 +1255,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         </td>
                         <td className="p-3.5">
                           <div className="font-bold text-white text-sm" style={{ fontFamily: "var(--font-heading)" }}>{team.project?.title}</div>
-                          <div className="text-[11px] text-neutral-400 font-mono">
-                            {team.teamName} ({team.id})
-                          </div>
+                          <div className="text-[11px] text-neutral-400 font-mono">{team.teamName} ({team.id})</div>
                         </td>
                         <td className="p-3.5 text-neutral-300">{team.track}</td>
                         <td className="p-3.5 text-neutral-400">{score ? `${score.innovation}/20` : "-"}</td>
@@ -1190,6 +1276,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
+      {/* BROADCAST TAB (unchanged) */}
       {adminTab === "broadcast" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-6 bg-black border border-neutral-800 p-6 sm:p-8 space-y-5">
@@ -1198,9 +1285,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <Radio className="w-5 h-5 text-orange-500" />
                 <span>Send Real-Time Broadcast</span>
               </h3>
-              <p className="text-xs text-neutral-400 mt-1 font-mono">
-                Dispatches immediately to the live ticker banner across all participant screens.
-              </p>
+              <p className="text-xs text-neutral-400 mt-1 font-mono">Dispatches immediately to the live ticker banner across all participant screens.</p>
             </div>
 
             {annSuccess && (
@@ -1250,10 +1335,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold font-mono text-xs uppercase tracking-wider border border-orange-500 flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
+              <button type="submit" className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold font-mono text-xs uppercase tracking-wider border border-orange-500 flex items-center justify-center gap-2 transition-colors cursor-pointer">
                 <Send className="w-4 h-4" />
                 <span>Publish Broadcast Alert</span>
               </button>
@@ -1268,10 +1350,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
             ) : (
               announcements.map((ann) => (
-                <div
-                  key={ann.id}
-                  className="p-4 bg-black border border-neutral-800 space-y-1.5 relative group"
-                >
+                <div key={ann.id} className="p-4 bg-black border border-neutral-800 space-y-1.5 relative group">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-white font-mono">{ann.title}</span>
                     <div className="flex items-center gap-2">
@@ -1293,12 +1372,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                   <p className="text-xs text-neutral-400 leading-relaxed">{ann.message}</p>
                   <div className="flex items-center justify-between text-[10px] font-mono pt-1">
-                    <span className="text-orange-400">
-                      Sent by: {ann.sender}
-                    </span>
-                    <span className="text-neutral-600 uppercase">
-                      Category: {ann.category}
-                    </span>
+                    <span className="text-orange-400">Sent by: {ann.sender}</span>
+                    <span className="text-neutral-600 uppercase">Category: {ann.category}</span>
                   </div>
                 </div>
               ))
@@ -1307,6 +1382,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
+      {/* ACCESS TAB (unchanged) */}
       {adminTab === "access" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 bg-black border border-neutral-800 p-6 sm:p-8 space-y-5">
@@ -1316,9 +1392,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <ShieldCheck className="w-5 h-5 text-orange-500" />
                   <span>Authorized Email Whitelist</span>
                 </h3>
-                <p className="text-xs text-neutral-400 mt-1 font-mono">
-                  Only email addresses listed here can access the Admin Console and Jury Evaluation sheets.
-                </p>
+                <p className="text-xs text-neutral-400 mt-1 font-mono">Only email addresses listed here can access the Admin Console and Jury Evaluation sheets.</p>
               </div>
               <span className="text-xs font-mono font-bold text-orange-400 bg-orange-500/10 px-2.5 py-1 border border-orange-500/30 uppercase tracking-wider">
                 {adminWhitelist.length} Admins
@@ -1328,12 +1402,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className="space-y-3 font-mono">
               {adminWhitelist.map((admin) => {
                 const isSelf = currentAdmin.email.toLowerCase() === admin.email.toLowerCase();
-
                 return (
-                  <div
-                    key={admin.email}
-                    className="p-4 bg-black border border-neutral-800 flex items-center justify-between gap-4"
-                  >
+                  <div key={admin.email} className="p-4 bg-black border border-neutral-800 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-9 h-9 bg-black border border-neutral-800 flex items-center justify-center text-orange-500 font-mono text-sm font-bold shrink-0">
                         {admin.name.charAt(0)}
@@ -1342,19 +1412,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         <div className="text-xs font-bold text-white flex items-center gap-2">
                           <span>{admin.name}</span>
                           {isSelf && (
-                            <span className="text-[9px] px-1.5 py-0.2 bg-orange-500/10 text-orange-400 font-mono font-bold border border-orange-500/30">
-                              YOU
-                            </span>
+                            <span className="text-[9px] px-1.5 py-0.2 bg-orange-500/10 text-orange-400 font-mono font-bold border border-orange-500/30">YOU</span>
                           )}
-                          <span className="text-[10px] px-2 py-0.2 bg-black text-neutral-400 font-mono border border-neutral-800 uppercase">
-                            {admin.role}
-                          </span>
+                          <span className="text-[10px] px-2 py-0.2 bg-black text-neutral-400 font-mono border border-neutral-800 uppercase">{admin.role}</span>
                         </div>
                         <div className="text-xs font-mono text-neutral-400 truncate">{admin.email}</div>
                         <div className="text-[10px] text-neutral-500">{admin.department || "Data Science Club"}</div>
                       </div>
                     </div>
-
                     {!isSelf && (
                       <button
                         onClick={() => handleRemoveAdmin(admin.email)}
@@ -1376,9 +1441,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <UserPlus className="w-5 h-5 text-orange-500" />
                 <span>Authorize New Email</span>
               </h3>
-              <p className="text-xs text-neutral-400 mt-1 font-mono">
-                Grant executive council or jury evaluation privileges to an official email.
-              </p>
+              <p className="text-xs text-neutral-400 mt-1 font-mono">Grant executive council or jury evaluation privileges to an official email.</p>
             </div>
 
             {addAdminSuccess && (
@@ -1391,35 +1454,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <form onSubmit={handleAddNewAdmin} className="space-y-4 text-xs">
               <div>
                 <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Official Email Address *</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. mentor.ai@vitbhopal.ac.in"
-                  value={newAdminEmail}
-                  onChange={(e) => setNewAdminEmail(e.target.value)}
-                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
-                />
+                <input type="email" required placeholder="e.g. mentor.ai@vitbhopal.ac.in" value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500" />
               </div>
-
               <div>
                 <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Prof. Priya Sharma"
-                  value={newAdminName}
-                  onChange={(e) => setNewAdminName(e.target.value)}
-                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
-                />
+                <input type="text" required placeholder="e.g. Prof. Priya Sharma" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500" />
               </div>
-
               <div>
                 <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Administrative Role</label>
-                <select
-                  value={newAdminRole}
-                  onChange={(e) => setNewAdminRole(e.target.value as any)}
-                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
-                >
+                <select value={newAdminRole} onChange={(e) => setNewAdminRole(e.target.value as any)} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500">
                   <option value="Lead Organizer">Lead Organizer (DSC Core)</option>
                   <option value="Jury Chair">Jury Member / Evaluator</option>
                   <option value="Operations Lead">Operations & Check-In Lead</option>
@@ -1427,22 +1470,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <option value="Superadmin">Superadmin</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Department / Organization</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Data Science Club or Dept of AI"
-                  value={newAdminDept}
-                  onChange={(e) => setNewAdminDept(e.target.value)}
-                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500"
-                />
+                <input type="text" placeholder="e.g. Data Science Club or Dept of AI" value={newAdminDept} onChange={(e) => setNewAdminDept(e.target.value)} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono focus:outline-none focus:border-orange-500" />
               </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold font-mono text-xs uppercase tracking-wider border border-orange-500 flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
+              <button type="submit" className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold font-mono text-xs uppercase tracking-wider border border-orange-500 flex items-center justify-center gap-2 transition-colors cursor-pointer">
                 <Plus className="w-4 h-4" />
                 <span>Add Email to Authorized Whitelist</span>
               </button>
@@ -1451,70 +1483,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
+      {/* Modals – only the scoring modal and payment proof modal are kept; removed the old proof modal because UTR column removed, but we keep it for completeness */}
       {selectedProofTeam && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-black border border-neutral-800 max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div>
                 <h4 className="text-base font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>Payment Screenshot & UTR</h4>
-                <p className="text-xs text-neutral-400 font-mono mt-0.5">
-                  {selectedProofTeam.teamName} ({selectedProofTeam.id})
-                </p>
+                <p className="text-xs text-neutral-400 font-mono mt-0.5">{selectedProofTeam.teamName} ({selectedProofTeam.id})</p>
               </div>
-              <button
-                onClick={() => setSelectedProofTeam(null)}
-                className="text-neutral-400 hover:text-white text-xs px-3 py-1 bg-black border border-neutral-800 cursor-pointer font-mono uppercase"
-              >
-                ✕ Close
-              </button>
+              <button onClick={() => setSelectedProofTeam(null)} className="text-neutral-400 hover:text-white text-xs px-3 py-1 bg-black border border-neutral-800 cursor-pointer font-mono uppercase">✕ Close</button>
             </div>
-
             <div className="bg-black p-3 text-xs font-mono space-y-1 border border-neutral-800">
-              <div>
-                Transaction Ref: <span className="text-orange-400 font-bold">{selectedProofTeam.transactionRef}</span>
-              </div>
+              <div>Transaction Ref: <span className="text-orange-400 font-bold">{selectedProofTeam.transactionRef}</span></div>
               <div>Leader: {selectedProofTeam.leader.name} ({selectedProofTeam.leader.phone})</div>
             </div>
-
             {selectedProofTeam.paymentProofUrl ? (
               <div className="max-h-72 overflow-auto border border-neutral-800 flex justify-center bg-black p-2">
-                <img
-                  src={selectedProofTeam.paymentProofUrl}
-                  alt="Payment Proof"
-                  className="max-h-64 object-contain"
-                />
+                <img src={selectedProofTeam.paymentProofUrl} alt="Payment Proof" className="max-h-64 object-contain" />
               </div>
             ) : (
-              <div className="py-8 text-center text-neutral-500 text-xs font-mono">
-                No screenshot file was uploaded. Verified via direct UTR ref.
-              </div>
+              <div className="py-8 text-center text-neutral-500 text-xs font-mono">No screenshot file was uploaded. Verified via direct UTR ref.</div>
             )}
-
             <div className="flex items-center justify-end gap-3 pt-2 font-mono">
-              <button
-                onClick={() => {
-                  onUpdateTeamStatus(selectedProofTeam.id, {
-                    paymentStatus: "rejected",
-                  });
-                  setSelectedProofTeam(null);
-                }}
-                className="px-4 py-2 bg-black border border-neutral-800 hover:bg-rose-950 text-rose-400 text-xs font-bold uppercase cursor-pointer"
-              >
-                Reject Proof
-              </button>
-
-              <button
-                onClick={() => {
-                  onUpdateTeamStatus(selectedProofTeam.id, {
-                    paymentStatus: "verified",
-                    ticketIssued: true,
-                  });
-                  setSelectedProofTeam(null);
-                }}
-                className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white border border-orange-500 text-xs font-bold uppercase tracking-wider cursor-pointer"
-              >
-                Approve & Issue ID Badge
-              </button>
+              <button onClick={() => { onUpdateTeamStatus(selectedProofTeam.id, { paymentStatus: "rejected" }); setSelectedProofTeam(null); }} className="px-4 py-2 bg-black border border-neutral-800 hover:bg-rose-950 text-rose-400 text-xs font-bold uppercase cursor-pointer">Reject Proof</button>
+              <button onClick={() => { onUpdateTeamStatus(selectedProofTeam.id, { paymentStatus: "verified", ticketIssued: true }); setSelectedProofTeam(null); }} className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white border border-orange-500 text-xs font-bold uppercase tracking-wider cursor-pointer">Approve & Issue ID Badge</button>
             </div>
           </div>
         </div>
@@ -1526,125 +1519,44 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div>
                 <h4 className="text-base font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>Jury Evaluation Sheet</h4>
-                <p className="text-xs text-neutral-400 font-mono mt-0.5">
-                  {selectedScoringTeam.project?.title} • {selectedScoringTeam.teamName}
-                </p>
+                <p className="text-xs text-neutral-400 font-mono mt-0.5">{selectedScoringTeam.project?.title} • {selectedScoringTeam.teamName}</p>
               </div>
-              <button
-                onClick={() => setSelectedScoringTeam(null)}
-                className="text-neutral-400 hover:text-white text-xs px-3 py-1 bg-black border border-neutral-800 cursor-pointer font-mono uppercase"
-              >
-                ✕ Close
-              </button>
+              <button onClick={() => setSelectedScoringTeam(null)} className="text-neutral-400 hover:text-white text-xs px-3 py-1 bg-black border border-neutral-800 cursor-pointer font-mono uppercase">✕ Close</button>
             </div>
-
             <form onSubmit={handleSaveScore} className="space-y-4 text-xs font-mono">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
-                    Innovation (/20)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={scores.innovation}
-                    onChange={(e) => setScores({ ...scores, innovation: Number(e.target.value) })}
-                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
-                  />
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Innovation (/20)</label>
+                  <input type="number" min="0" max="20" value={scores.innovation} onChange={(e) => setScores({ ...scores, innovation: Number(e.target.value) })} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500" />
                 </div>
-
                 <div>
-                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
-                    Tech Depth (/20)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={scores.technicalComplexity}
-                    onChange={(e) => setScores({ ...scores, technicalComplexity: Number(e.target.value) })}
-                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
-                  />
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Tech Depth (/20)</label>
+                  <input type="number" min="0" max="20" value={scores.technicalComplexity} onChange={(e) => setScores({ ...scores, technicalComplexity: Number(e.target.value) })} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500" />
                 </div>
-
                 <div>
-                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
-                    UI/UX (/20)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={scores.uiUx}
-                    onChange={(e) => setScores({ ...scores, uiUx: Number(e.target.value) })}
-                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
-                  />
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">UI/UX (/20)</label>
+                  <input type="number" min="0" max="20" value={scores.uiUx} onChange={(e) => setScores({ ...scores, uiUx: Number(e.target.value) })} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500" />
                 </div>
-
                 <div>
-                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
-                    Presentation (/20)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={scores.presentation}
-                    onChange={(e) => setScores({ ...scores, presentation: Number(e.target.value) })}
-                    className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
-                  />
+                  <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Presentation (/20)</label>
+                  <input type="number" min="0" max="20" value={scores.presentation} onChange={(e) => setScores({ ...scores, presentation: Number(e.target.value) })} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500" />
                 </div>
               </div>
-
               <div>
-                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
-                  Impact & Feasibility (/20)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={scores.impact}
-                  onChange={(e) => setScores({ ...scores, impact: Number(e.target.value) })}
-                  className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500"
-                />
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Impact & Feasibility (/20)</label>
+                <input type="number" min="0" max="20" value={scores.impact} onChange={(e) => setScores({ ...scores, impact: Number(e.target.value) })} className="w-full bg-black border border-neutral-800 p-2.5 text-white font-mono outline-none focus:border-orange-500" />
               </div>
-
               <div>
-                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">
-                  Jury Feedback / Recommendations
-                </label>
-                <textarea
-                  rows={2}
-                  value={scores.feedback}
-                  onChange={(e) => setScores({ ...scores, feedback: e.target.value })}
-                  placeholder="Outstanding work on the model quantization..."
-                  className="w-full bg-black border border-neutral-800 p-2.5 text-white resize-none placeholder:text-neutral-600 focus:border-orange-500 outline-none"
-                />
+                <label className="block text-neutral-400 font-semibold mb-1 uppercase tracking-wider text-[11px]">Jury Feedback / Recommendations</label>
+                <textarea rows={2} value={scores.feedback} onChange={(e) => setScores({ ...scores, feedback: e.target.value })} placeholder="Outstanding work on the model quantization..." className="w-full bg-black border border-neutral-800 p-2.5 text-white resize-none placeholder:text-neutral-600 focus:border-orange-500 outline-none" />
               </div>
-
               <div className="p-3.5 bg-orange-500/10 border border-orange-500/30 flex items-center justify-between font-mono">
                 <span className="text-orange-400 font-bold uppercase tracking-wider text-[11px]">TOTAL SCORE:</span>
-                <span className="text-base font-extrabold text-white">
-                  {scores.innovation + scores.technicalComplexity + scores.uiUx + scores.presentation + scores.impact} / 100
-                </span>
+                <span className="text-base font-extrabold text-white">{scores.innovation + scores.technicalComplexity + scores.uiUx + scores.presentation + scores.impact} / 100</span>
               </div>
-
               <div className="flex items-center justify-end gap-3 pt-2 font-mono">
-                <button
-                  type="button"
-                  onClick={() => setSelectedScoringTeam(null)}
-                  className="px-4 py-2 bg-black border border-neutral-800 text-neutral-300 text-xs uppercase cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold uppercase tracking-wider border border-orange-500 cursor-pointer"
-                >
-                  Save Score & Update Rank
-                </button>
+                <button type="button" onClick={() => setSelectedScoringTeam(null)} className="px-4 py-2 bg-black border border-neutral-800 text-neutral-300 text-xs uppercase cursor-pointer">Cancel</button>
+                <button type="submit" className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold uppercase tracking-wider border border-orange-500 cursor-pointer">Save Score & Update Rank</button>
               </div>
             </form>
           </div>

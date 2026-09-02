@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  QrCode,
   ArrowRight,
   UserCheck,
   ShieldCheck,
@@ -16,10 +15,9 @@ import {
   LogOut,
   CheckCircle,
   Clock,
-  Copy,
   Sparkles,
-  Award,
   Users,
+  Printer,
 } from "lucide-react";
 import { Team } from "@/types";
 import { ProjectSubmissionModal } from "./ProjectSubmissionModal";
@@ -41,20 +39,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
 }) => {
   const router = useRouter();
   const handleLoginClick = onSwitchTeamLogin || onSwitchToTeamLogin || (() => router.push("/team"));
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"pass" | "roster" | "submission">("pass");
-  const [copiedPin, setCopiedPin] = useState(false);
-
-  const handleCopyPin = () => {
-    if (team?.accessCode) {
-      navigator.clipboard.writeText(team.accessCode);
-      setCopiedPin(true);
-      setTimeout(() => setCopiedPin(false), 2000);
-    }
-  };
-
-  const handlePrintPass = () => {
-    window.print();
-  };
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"pass" | "members" | "submission">("pass");
 
   if (!team) {
     return (
@@ -101,14 +86,14 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
     name: string;
     email: string;
     phone?: string;
-    regNo?: string;
-    isVitStudent?: boolean;
-    gender?: string;
-    residenceType?: "hosteller" | "day_scholar";
-    hostelBlock?: string;
-    roomNo?: string;
-    messCategory?: string;
+    registrationNumber?: string;
+    residentialStatus?: "Hosteller" | "Day Scholar";
+    messName?: string;
   }>;
+
+  const handlePrintPass = () => {
+    window.print();
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 pt-24 sm:pt-28 pb-16 space-y-8">
@@ -142,20 +127,6 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="bg-black border border-neutral-800 px-4 py-2 flex items-center gap-3">
-              <div>
-                <span className="text-[9px] font-mono text-neutral-500 uppercase block">ACCESS PIN</span>
-                <span className="text-sm font-mono font-bold text-orange-500">{team.accessCode}</span>
-              </div>
-              <button
-                onClick={handleCopyPin}
-                className="text-neutral-500 hover:text-white transition-colors cursor-pointer"
-                title="Copy Access PIN"
-              >
-                {copiedPin ? <CheckCircle className="w-4 h-4 text-orange-500" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-
             <button
               onClick={handleLoginClick}
               className="px-3.5 py-2.5 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white font-mono text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
@@ -166,6 +137,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="flex items-center gap-2 border-b border-neutral-800 pb-0 overflow-x-auto">
           <button
             onClick={() => setActiveWorkspaceTab("pass")}
@@ -175,20 +147,20 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                 : "border-transparent text-neutral-400 hover:text-white"
             }`}
           >
-            <QrCode className="w-4 h-4" />
+            <Printer className="w-4 h-4" />
             <span>Digital ID Ticket</span>
           </button>
 
           <button
-            onClick={() => setActiveWorkspaceTab("roster")}
+            onClick={() => setActiveWorkspaceTab("members")}
             className={`px-5 py-3 font-mono text-xs uppercase tracking-wider font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
-              activeWorkspaceTab === "roster"
+              activeWorkspaceTab === "members"
                 ? "border-orange-500 text-orange-500 bg-orange-500/5"
                 : "border-transparent text-neutral-400 hover:text-white"
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Team Roster ({members.length})</span>
+            <span>Team Members ({members.length})</span>
           </button>
 
           <button
@@ -204,6 +176,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
           </button>
         </div>
 
+        {/* Tab content */}
         {activeWorkspaceTab === "pass" && (
           <div className="space-y-6 pt-2">
             {!isVerified && (
@@ -212,7 +185,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                 <div>
                   <span className="font-bold block uppercase">Pass Locked — Verification Pending</span>
                   <span className="text-neutral-400 text-[11px]">
-                    Your registration payment (UTR: {team.transactionRef || "N/A"}) is currently being audited by the financial team. The pass QR code and project submission portal will automatically activate once confirmed.
+                    Your registration payment (UTR: {team.transactionRef || "N/A"}) is currently being audited. The pass and project submission portal will automatically activate once confirmed.
                   </span>
                 </div>
               </div>
@@ -221,15 +194,16 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
             <div className="flex justify-end">
               <button
                 onClick={handlePrintPass}
-                className="px-4 py-2 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-colors"
+                className="px-4 py-2 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-colors print:hidden"
               >
                 <Download className="w-3.5 h-3.5 text-orange-500" />
                 <span>Print / Save Pass (PDF)</span>
               </button>
             </div>
 
-            <div className="border border-neutral-700 bg-black text-white shadow-2xl relative">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+            {/* Digital Pass Card */}
+            <div className="border border-neutral-700 bg-black text-white shadow-2xl relative print:border print:shadow-none">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950 print:bg-black">
                 <div className="flex items-center gap-3">
                   <span
                     className="text-lg font-bold text-white tracking-wider"
@@ -245,89 +219,67 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-neutral-800">
-                <div className="md:col-span-2 p-6 sm:p-8 space-y-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <span className="text-[10px] font-mono text-neutral-500 uppercase block mb-1">
-                        TEAM NAME
-                      </span>
-                      <h3
-                        className="text-3xl font-bold text-white tracking-tight"
-                        style={{ fontFamily: "var(--font-heading)" }}
-                      >
-                        {team.teamName}
-                      </h3>
-                      <span className="text-xs font-mono text-neutral-400 mt-1 block">
-                        Team ID: <span className="text-white font-semibold">{team.id}</span> · PIN: <span className="text-orange-400 font-bold">{team.accessCode}</span>
-                      </span>
-                    </div>
-
-                    <div className="text-right font-mono">
-                      <span className="text-[10px] text-neutral-500 uppercase block">TRACK</span>
-                      <span className="text-xs font-bold text-orange-400">{team.track}</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-800 font-mono text-xs">
-                    <div>
-                      <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">LEADER NAME</span>
-                      <span className="text-white font-semibold">{team.leader.name}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">PAYMENT UTR</span>
-                      <span className="text-neutral-300">{team.transactionRef || "N/A"}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">LEADER CONTACT</span>
-                      <span className="text-neutral-300">{team.leader.phone || team.leader.email}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">REGISTRATION FEE</span>
-                      <span className="text-orange-400 font-bold">₹{team.amountPaid || 150} PAID</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-neutral-800">
-                    <span className="text-[10px] font-mono text-neutral-500 uppercase block mb-2">
-                      CONFIRMED TEAM MEMBERS ({members.length})
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-mono text-neutral-500 uppercase block mb-1">
+                      TEAM NAME
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      {members.map((m, idx) => (
-                        <div
-                          key={idx}
-                          className="text-[11px] font-mono px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-neutral-200 flex items-center gap-1.5"
-                        >
-                          <span className="text-orange-500 font-bold">{idx === 0 ? "★ Leader:" : `M${idx + 1}:`}</span>
-                          <span>{m.name}</span>
-                          {m.residenceType && (
-                            <span className="text-[9px] px-1.5 py-0.2 bg-black border border-neutral-800 text-neutral-400 uppercase">
-                              {m.residenceType === "hosteller" ? `Hostel ${m.hostelBlock || ""}` : "Day Scholar"}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <h3
+                      className="text-3xl font-bold text-white tracking-tight"
+                      style={{ fontFamily: "var(--font-heading)" }}
+                    >
+                      {team.teamName}
+                    </h3>
+                    <span className="text-xs font-mono text-neutral-400 mt-1 block">
+                      Team ID: <span className="text-white font-semibold">{team.id}</span>
+                    </span>
+                  </div>
+
+                  <div className="text-right font-mono">
+                    <span className="text-[10px] text-neutral-500 uppercase block">TRACK</span>
+                    <span className="text-xs font-bold text-orange-400">{team.track}</span>
                   </div>
                 </div>
 
-                <div className="p-6 sm:p-8 flex flex-col items-center justify-center text-center bg-black">
-                  <div className="p-4 bg-white border border-neutral-200 shadow-xl mb-3">
-                    <QrCode className="w-32 h-32 text-black" />
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-800 font-mono text-xs">
+                  <div>
+                    <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">LEADER NAME</span>
+                    <span className="text-white font-semibold">{team.leader.name}</span>
                   </div>
-                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider block">
-                    VENUE ENTRY PASS
+                  <div>
+                    <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">PAYMENT UTR</span>
+                    <span className="text-neutral-300">{team.transactionRef || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">LEADER CONTACT</span>
+                    <span className="text-neutral-300">{team.leader.phone || team.leader.email}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-neutral-500 uppercase block mb-0.5">REGISTRATION FEE</span>
+                    <span className="text-orange-400 font-bold">₹{team.amountPaid || 150} PAID</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-neutral-800">
+                  <span className="text-[10px] font-mono text-neutral-500 uppercase block mb-2">
+                    CONFIRMED TEAM MEMBERS ({members.length})
                   </span>
-                  <span className="text-[11px] font-mono text-orange-500 font-semibold mt-1">
-                    {team.id}
-                  </span>
-                  <span className="text-[10px] font-mono text-neutral-500 mt-2">
-                    Show QR code at Registration Desk for Badge Release & Swag Kits
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {members.map((m, idx) => (
+                      <div
+                        key={idx}
+                        className="text-[11px] font-mono px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-neutral-200 flex items-center gap-1.5"
+                      >
+                        <span className="text-orange-500 font-bold">{idx === 0 ? "★ Leader:" : `M${idx + 1}:`}</span>
+                        <span>{m.name}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-800 text-xs font-mono text-neutral-400 bg-neutral-950">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-800 text-xs font-mono text-neutral-400 bg-neutral-950 print:bg-black">
                 <span>VENUE: AB02 Auditorium 1 & 2 · VIT Bhopal University</span>
                 <span className={team.checkedInVenue ? "text-orange-500 font-bold" : "text-neutral-500"}>
                   {team.checkedInVenue ? "VENUE CHECK-IN COMPLETE ✓" : "AWAITING DESK CHECK-IN"}
@@ -337,7 +289,7 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
           </div>
         )}
 
-        {activeWorkspaceTab === "roster" && (
+        {activeWorkspaceTab === "members" && (
           <div className="space-y-6 pt-2 font-mono">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {members.map((m, idx) => (
@@ -349,11 +301,6 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                       </span>
                       <span className="text-white font-bold text-sm">{m.name}</span>
                     </div>
-                    {m.isVitStudent !== false && (
-                      <span className="text-[10px] text-neutral-500 border border-neutral-800 px-2 py-0.5">
-                        VIT Student
-                      </span>
-                    )}
                   </div>
 
                   <div className="space-y-1.5 text-xs text-neutral-300">
@@ -367,18 +314,18 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                         <span>{m.phone}</span>
                       </div>
                     )}
-                    {m.regNo && (
+                    {m.registrationNumber && (
                       <div className="flex items-center gap-2 text-neutral-400">
                         <FileText className="w-3.5 h-3.5 text-neutral-500" />
-                        <span>Reg No: {m.regNo}</span>
+                        <span>Reg No: {m.registrationNumber}</span>
                       </div>
                     )}
-                    {m.residenceType && (
+                    {m.residentialStatus && (
                       <div className="flex items-center gap-2 text-neutral-400">
                         <Building2 className="w-3.5 h-3.5 text-neutral-500" />
                         <span className="capitalize">
-                          {m.residenceType === "hosteller"
-                            ? `Hosteller (Block ${m.hostelBlock || "N/A"} · Room ${m.roomNo || "N/A"} · Mess ${m.messCategory || "N/A"})`
+                          {m.residentialStatus === "Hosteller"
+                            ? `Hosteller (Mess: ${m.messName || "N/A"})`
                             : "Day Scholar"}
                         </span>
                       </div>

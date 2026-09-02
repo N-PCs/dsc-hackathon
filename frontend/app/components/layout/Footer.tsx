@@ -49,7 +49,6 @@ export const Footer: React.FC = () => {
             </span>
             <div className="space-y-3">
               {[
-                { label: "REGISTER TEAM", tab: "register" },
                 { label: "DIGITAL ID PASS", tab: "team" },
                 { label: "SUBMIT PROJECT", tab: "submit" },
               ].map((link) => (
@@ -68,12 +67,7 @@ export const Footer: React.FC = () => {
             <span className="font-heading text-xs text-neutral-400 uppercase tracking-widest block mb-4 font-bold">
               READY TO BUILD?
             </span>
-            <button
-              onClick={() => window.open(EXTERNAL_REGISTRATION_URL, "_blank")}
-              className="btn-primary text-xs mb-6"
-            >
-              REGISTER TEAM NOW &gt;
-            </button>
+           
             <div className="space-y-2 font-heading text-xs text-neutral-500 uppercase tracking-wider">
               <p>
                 <button

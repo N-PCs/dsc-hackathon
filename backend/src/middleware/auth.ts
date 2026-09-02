@@ -31,3 +31,25 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
   (req as any).adminUser = admin;
   next();
 }
+
+
+export async function requireJuryAuth(req: Request, res: Response, next: NextFunction) {
+  const juryEmail = (req.headers['x-jury-email'] as string || '').trim().toLowerCase();
+  if (!juryEmail) {
+    return res.status(401).json({
+      success: false,
+      message: 'Jury email header (x-jury-email) is required',
+    });
+  }
+
+  const allowed = process.env.JURY_ALLOWED_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+  if (!allowed.includes(juryEmail)) {
+    return res.status(403).json({
+      success: false,
+      message: `Jury email "${juryEmail}" is not authorized.`,
+    });
+  }
+
+  (req as any).juryUser = { email: juryEmail };
+  next();
+}

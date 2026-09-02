@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Ticket, AlertCircle, Sparkles, Shield, ArrowRight } from "lucide-react";
+import { Ticket, AlertCircle, Sparkles } from "lucide-react";
 import { Team } from "@/types";
 
 interface TeamLoginModalProps {
@@ -28,7 +28,7 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
     setErrorMsg("");
 
     if (!identifier.trim()) {
-      setErrorMsg("Please enter your Team ID (e.g. ORIGIN-101) or Leader Email.");
+      setErrorMsg("Please enter your Team ID or Leader Email.");
       return;
     }
 
@@ -38,22 +38,13 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
       const res = await fetch("/api/auth/team-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          identifier: identifier.trim(),
-        }),
+        body: JSON.stringify({ identifier: identifier.trim() }),
       });
 
-      let data: any;
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        throw new Error(text || `Server error during login (${res.status})`);
-      }
+      const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "No registered team or authorized admin found with this email or ID.");
+        throw new Error(data.message || "No registered team found with this email or ID.");
       }
 
       onLoginSuccess(data.team);
@@ -86,7 +77,7 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
             Team Login
           </h3>
           <p className="text-xs text-neutral-400 mt-1">
-            Retrieve your Digital ID Pass, check verification status, or submit 24h project deliverables.
+            Sign in with your Team ID or Leader Email to access your pass and submit your project.
           </p>
         </div>
 
@@ -122,7 +113,7 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Sign In to Team Pass & Submissions</span>
+                <span>Sign In to Team Workspace</span>
               </>
             )}
           </button>
