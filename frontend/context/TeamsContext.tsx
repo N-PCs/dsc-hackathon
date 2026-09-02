@@ -37,17 +37,8 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // State
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
-  const [activeTeam, setActiveTeam] = useState<Team | null>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("origin_active_team_data");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (_) {}
-      }
-    }
-    return null;
-  });
+  // ✅ FIX: initialise to null, not from localStorage (hydration fix)
+  const [activeTeam, setActiveTeam] = useState<Team | null>(null);
   const [stats, setStats] = useState<HackathonStats>({
     totalTeams: 0,
     verifiedTeams: 0,

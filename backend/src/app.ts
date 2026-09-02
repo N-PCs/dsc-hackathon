@@ -2,6 +2,7 @@ import express from 'express';
 import { logger } from './utils/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import routes from './routes/index.js';
+import { initDatabase } from './config/database.js';  
 
 const app = express();
 
@@ -31,6 +32,11 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   logger.info({ method: req.method, url: req.url, ip: req.ip }, 'Incoming request');
   next();
+});
+
+// ✅ Initialize database tables BEFORE any route is hit
+initDatabase().catch(err => {
+  logger.error({ err }, '❌ Failed to initialize database');
 });
 
 // Health check & base status
