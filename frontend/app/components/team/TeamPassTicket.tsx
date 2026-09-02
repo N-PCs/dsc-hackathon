@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   ArrowRight,
   UserCheck,
@@ -13,12 +13,20 @@ import {
   Send,
   Download,
   LogOut,
-  CheckCircle,
   Clock,
-  Sparkles,
   Users,
   Printer,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+// ⚠️ Use html2canvas-pro, NOT html2canvas.
+// Regular html2canvas throws on modern CSS `oklch()`/`oklab()` colors
+// (which Tailwind v4 generates for every utility class), so any capture
+// of a Tailwind-styled node silently fails. html2canvas-pro is a
+// maintained drop-in fork that supports those color functions.
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
 import { Team } from "@/types";
 import { ProjectSubmissionModal } from "./ProjectSubmissionModal";
 import { useRouter } from "next/navigation";
@@ -40,6 +48,12 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
   const router = useRouter();
   const handleLoginClick = onSwitchTeamLogin || onSwitchToTeamLogin || (() => router.push("/team"));
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"pass" | "members" | "submission">("pass");
+
+  const passCardRef = useRef<HTMLDivElement>(null);
+
+  // --- Download state ---------------------------------------------------
+  const [downloadState, setDownloadState] = useState<"idle" | "png" | "pdf" | "error">("idle");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   if (!team) {
     return (
@@ -91,9 +105,92 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
     messName?: string;
   }>;
 
-  const handlePrintPass = () => {
-    window.print();
+  const publicUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/team/${team.id}`
+    : `https://dsc-hackathon.vercel.app/team/${team.id}`;
+
+  // -----------------------------------------------------------------------
+  // Shared: render the pass card node to a canvas.
+  // Capturing the node in-place (instead of cloning it into an offscreen
+  // wrapper) avoids a whole class of bugs: CSS variables, web fonts, and
+  // the QR code SVG can all fail to paint correctly on a detached clone
+  // because computed styles / font loading don't always transfer.
+  // -----------------------------------------------------------------------
+  const captureCanvas = async (): Promise<HTMLCanvasElement> => {
+    const node = passCardRef.current;
+    if (!node) throw new Error("Pass card not found in DOM");
+
+    // Make sure any web fonts (e.g. var(--font-heading)) are actually
+    // painted before we snapshot, otherwise text can render in a
+    // fallback font or be measured incorrectly.
+    if (typeof document !== "undefined" && "fonts" in document) {
+      await document.fonts.ready;
+    }
+
+    const canvas = await html2canvas(node, {
+      scale: 2.5,
+      backgroundColor: "#000000",
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      // Improves reliability for the QR <svg> and any <img> logos.
+      imageTimeout: 15000,
+    });
+
+    return canvas;
   };
+
+  const downloadAsPNG = async (): Promise<void> => {
+    const canvas = await captureCanvas();
+    const link = document.createElement("a");
+    link.download = `ORIGIN-PASS-${team.id}.png`;
+    link.href = canvas.toDataURL("image/png", 1.0);
+    link.click();
+  };
+
+  const downloadAsPDF = async (): Promise<void> => {
+    const canvas = await captureCanvas();
+
+    // Build a PDF page sized to the card's own aspect ratio (in mm),
+    // instead of forcing it into a fixed A4 page — that's what was
+    // causing cropped / mostly-blank PDF pages before.
+    const pxToMm = (px: number) => px * 0.264583;
+    const widthMm = pxToMm(canvas.width / 2.5); // divide back out the scale factor
+    const heightMm = pxToMm(canvas.height / 2.5);
+
+    const pdf = new jsPDF({
+      orientation: widthMm > heightMm ? "landscape" : "portrait",
+      unit: "mm",
+      format: [widthMm, heightMm],
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.98);
+    pdf.addImage(imgData, "JPEG", 0, 0, widthMm, heightMm, undefined, "FAST");
+    pdf.save(`ORIGIN-PASS-${team.id}.pdf`);
+  };
+
+  // Master download: try PNG, then PDF, surface a real error instead of
+  // a confirm()/print() dead end.
+  const downloadPass = async (format: "png" | "pdf" = "png") => {
+    setDownloadError(null);
+    setDownloadState(format);
+    try {
+      if (format === "png") {
+        await downloadAsPNG();
+      } else {
+        await downloadAsPDF();
+      }
+      setDownloadState("idle");
+    } catch (error) {
+      console.error(`Pass download (${format}) failed:`, error);
+      setDownloadState("error");
+      setDownloadError(
+        error instanceof Error ? error.message : "Something went wrong generating the pass."
+      );
+    }
+  };
+
+  const isDownloading = downloadState === "png" || downloadState === "pdf";
 
   return (
     <div className="max-w-5xl mx-auto px-4 pt-24 sm:pt-28 pb-16 space-y-8">
@@ -122,18 +219,12 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
               {team.teamName}
             </h1>
             <p className="text-xs text-neutral-400 font-mono mt-1">
-              Track: <span className="text-orange-400 font-semibold">{team.track}</span> • Registered: {team.registeredAt}
+                Registered: {team.registeredAt}
             </p>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <button
-              onClick={handleLoginClick}
-              className="px-3.5 py-2.5 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white font-mono text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Switch Team</span>
-            </button>
+            
           </div>
         </div>
 
@@ -191,18 +282,48 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
               </div>
             )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={handlePrintPass}
-                className="px-4 py-2 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-colors print:hidden"
-              >
-                <Download className="w-3.5 h-3.5 text-orange-500" />
-                <span>Print / Save Pass (PDF)</span>
-              </button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <button
+                  onClick={() => downloadPass("png")}
+                  disabled={isDownloading}
+                  className="px-4 py-2 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {downloadState === "png" ? (
+                    <Loader2 className="w-3.5 h-3.5 text-orange-500 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5 text-orange-500" />
+                  )}
+                  <span>{downloadState === "png" ? "Generating PNG…" : "Download PNG"}</span>
+                </button>
+
+                <button
+                  onClick={() => downloadPass("pdf")}
+                  disabled={isDownloading}
+                  className="px-4 py-2 bg-black hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {downloadState === "pdf" ? (
+                    <Loader2 className="w-3.5 h-3.5 text-orange-500 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5 text-orange-500" />
+                  )}
+                  <span>{downloadState === "pdf" ? "Generating PDF…" : "Download PDF"}</span>
+                </button>
+              </div>
+
+              {downloadState === "error" && downloadError && (
+                <div className="flex items-center gap-2 text-[11px] font-mono text-red-400 bg-red-950/30 border border-red-900/60 px-3 py-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{downloadError} — try again, or use your browser's Print → Save as PDF.</span>
+                </div>
+              )}
             </div>
 
             {/* Digital Pass Card */}
-            <div className="border border-neutral-700 bg-black text-white shadow-2xl relative print:border print:shadow-none">
+            <div
+              ref={passCardRef}
+              className="border border-neutral-700 bg-black text-white shadow-2xl relative print:border print:shadow-none"
+            >
               <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950 print:bg-black">
                 <div className="flex items-center gap-3">
                   <span
@@ -231,15 +352,10 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                     >
                       {team.teamName}
                     </h3>
-                    <span className="text-xs font-mono text-neutral-400 mt-1 block">
-                      Team ID: <span className="text-white font-semibold">{team.id}</span>
-                    </span>
+                    
                   </div>
 
-                  <div className="text-right font-mono">
-                    <span className="text-[10px] text-neutral-500 uppercase block">TRACK</span>
-                    <span className="text-xs font-bold text-orange-400">{team.track}</span>
-                  </div>
+                 
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-800 font-mono text-xs">
@@ -276,6 +392,27 @@ export const TeamPassTicket: React.FC<TeamPassTicketProps> = ({
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* QR Code Section */}
+                <div className="flex items-center justify-between pt-4 border-t border-neutral-800 mt-4">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white p-1.5">
+                      <QRCodeSVG
+                        value={publicUrl}
+                        size={80}
+                        bgColor="#ffffff"
+                        fgColor="#000000"
+                        level="H"
+                        includeMargin={false}
+                      />
+                    </div>
+                    <div className="text-[10px] font-mono text-neutral-400">
+                      <span className="block text-neutral-300 font-semibold">SCAN TO VIEW</span>
+                      <span className="block">team details & check‑in status</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-neutral-500 uppercase">QR • ORIGIN '26</span>
                 </div>
               </div>
 
