@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.BACKEND_URL ||
-  "https://your-backend-url.com";
+  "http://localhost:4000";
 
 const nextConfig: NextConfig = {
   rewrites: async () => [
@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
           : "http://localhost:4000/api/:path*",
     },
   ],
+   experimental: {
+    proxyTimeout: 30000, // 30 seconds
+  },
 };
 
 export default nextConfig;

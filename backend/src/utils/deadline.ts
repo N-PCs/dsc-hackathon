@@ -1,4 +1,4 @@
-export const DEFAULT_SUBMISSION_DEADLINE = '2026-09-02T12:00:00+05:30';
+export const DEFAULT_SUBMISSION_DEADLINE = '2026-09-05T12:00:00+05:30';
 
 export function getSubmissionDeadline(): string {
   return process.env.SUBMISSION_DEADLINE || DEFAULT_SUBMISSION_DEADLINE;

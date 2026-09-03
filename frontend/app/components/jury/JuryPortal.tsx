@@ -117,6 +117,13 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
 
   const JURY_PASSCODE = "JURY2026";
 
+  // Clamp helper for score inputs
+  const clampScore = (value: string) => {
+    const num = Number(value);
+    if (isNaN(num)) return 0;
+    return Math.min(20, Math.max(0, num));
+  };
+
   // Skip initial fetch on first render (parent already fetches)
   const isFirstRender = useRef(true);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -151,7 +158,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
       return;
     }
 
-    // Clear any pending timeout
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
     searchTimeout.current = setTimeout(() => {
@@ -159,7 +165,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
         page: currentPage,
         limit: pageSize,
         search: searchTerm,
-        track: "all", // always pass "all" – track filter removed from UI
+        track: "all",
         status: statusFilter,
       });
     }, 300);
@@ -185,26 +191,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
       setAuthError("Invalid Jury Access Code. Please check with the lead organiser.");
       return;
     }
-
-    // Optional: validate email against backend allowed list
-    // For now, we accept any email after the passcode is correct.
-    // To enable backend validation, uncomment the following and add a POST /api/jury/validate endpoint.
-    /*
-    try {
-      const res = await fetch("/api/jury/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmedEmail }),
-      });
-      if (!res.ok) {
-        setAuthError("Your email is not authorised for jury evaluation. Please contact the lead organiser.");
-        return;
-      }
-    } catch (_) {
-      setAuthError("Network error while validating your email. Please try again.");
-      return;
-    }
-    */
 
     // Success
     setIsAuthenticated(true);
@@ -250,6 +236,17 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
   const handleSaveScore = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedScoringTeam) return;
+
+    // Validate all scores are within 0-20
+    const { innovation, technicalComplexity, uiUx, presentation, impact } = scores;
+    const allValid = [innovation, technicalComplexity, uiUx, presentation, impact].every(
+      (v) => v >= 0 && v <= 20
+    );
+    if (!allValid) {
+      alert("All scores must be between 0 and 20.");
+      return;
+    }
+
     onScoreProject(selectedScoringTeam.id, scores);
     setSelectedScoringTeam(null);
   };
@@ -388,7 +385,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
         </div>
       </div>
 
-      {/* Metrics Banner – counts are now filter‑aware (from backend) */}
+      {/* Metrics Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-neutral-800 border border-neutral-800">
         <div className="bg-black p-6 flex items-center justify-between">
           <div>
@@ -457,7 +454,6 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             ))}
           </div>
         </div>
-        {/* Track filter buttons removed */}
       </div>
 
       {/* Submissions List Grid */}
@@ -852,7 +848,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     min="0"
                     max="20"
                     value={scores.innovation}
-                    onChange={(e) => setScores({ ...scores, innovation: Number(e.target.value) })}
+                    onChange={(e) => setScores({ ...scores, innovation: clampScore(e.target.value) })}
                     className="w-full bg-black border border-neutral-800 focus:border-orange-500 p-2.5 text-white font-mono outline-none"
                   />
                 </div>
@@ -866,7 +862,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     min="0"
                     max="20"
                     value={scores.technicalComplexity}
-                    onChange={(e) => setScores({ ...scores, technicalComplexity: Number(e.target.value) })}
+                    onChange={(e) => setScores({ ...scores, technicalComplexity: clampScore(e.target.value) })}
                     className="w-full bg-black border border-neutral-800 focus:border-orange-500 p-2.5 text-white font-mono outline-none"
                   />
                 </div>
@@ -880,7 +876,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     min="0"
                     max="20"
                     value={scores.uiUx}
-                    onChange={(e) => setScores({ ...scores, uiUx: Number(e.target.value) })}
+                    onChange={(e) => setScores({ ...scores, uiUx: clampScore(e.target.value) })}
                     className="w-full bg-black border border-neutral-800 focus:border-orange-500 p-2.5 text-white font-mono outline-none"
                   />
                 </div>
@@ -894,7 +890,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                     min="0"
                     max="20"
                     value={scores.presentation}
-                    onChange={(e) => setScores({ ...scores, presentation: Number(e.target.value) })}
+                    onChange={(e) => setScores({ ...scores, presentation: clampScore(e.target.value) })}
                     className="w-full bg-black border border-neutral-800 focus:border-orange-500 p-2.5 text-white font-mono outline-none"
                   />
                 </div>
@@ -909,7 +905,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
                   min="0"
                   max="20"
                   value={scores.impact}
-                  onChange={(e) => setScores({ ...scores, impact: Number(e.target.value) })}
+                  onChange={(e) => setScores({ ...scores, impact: clampScore(e.target.value) })}
                   className="w-full bg-black border border-neutral-800 focus:border-orange-500 p-2.5 text-white font-mono outline-none"
                 />
               </div>
