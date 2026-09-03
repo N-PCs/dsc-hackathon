@@ -329,10 +329,29 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
 
-            {/* Submit Project Button - Hidden for Admin/Jury users or on /jury /admin */}
+            {/* Digital Pass & Submit Project Buttons - Hidden for Admin/Jury users or on /jury /admin */}
             {!shouldHideSubmit && (
-              isSubmissionsOpen ? (
-                <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  id="nav-btn-digital-pass"
+                  onClick={() => {
+                    if (!user && !hasActiveTeam) {
+                      setAuthModalOpen(true);
+                    } else {
+                      router.push("/team");
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer border ${
+                    pathname === "/team"
+                      ? "bg-amber-500 text-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                      : "bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border-amber-500/40 hover:border-amber-500"
+                  }`}
+                >
+                  <UserIcon className="w-3.5 h-3.5" />
+                  <span>DIGITAL PASS</span>
+                </button>
+
+                {isSubmissionsOpen ? (
                   <button
                     id="nav-btn-submit-project"
                     onClick={handleSubmitClick}
@@ -345,17 +364,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <Send className="w-3.5 h-3.5" />
                     <span>SUBMIT PROJECT &gt;</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => router.push("/submit")}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 cursor-pointer hover:border-neutral-700"
-                  title="Submissions currently closed by Admin"
-                >
-                  <Lock className="w-3 h-3 text-neutral-500" />
-                  <span>SUBMISSION CLOSED</span>
-                </button>
-              )
+                ) : (
+                  <button
+                    onClick={() => router.push("/submit")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 cursor-pointer hover:border-neutral-700"
+                    title="Submissions currently closed by Admin"
+                  >
+                    <Lock className="w-3 h-3 text-neutral-500" />
+                    <span>SUBMISSION CLOSED</span>
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Auth Button / Profile Dropdown */}
