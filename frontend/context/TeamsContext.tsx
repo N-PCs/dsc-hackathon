@@ -1,9 +1,27 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { Team, Announcement, HackathonStats, TrackType } from "@/types";
-import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS } from "@/data/mockData";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
+import { Team, Announcement, HackathonStats } from "@/types";
+import { INITIAL_ANNOUNCEMENTS } from "@/data/mockData";
+import { DEFAULT_SUBMISSION_DEADLINE } from "@/lib/deadline";
 import { useAuth } from "@/lib/authContext";
+
+interface PaginationState {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  evaluatedCount: number;
+  pendingCount: number;
+}
+
+export type LiveStatusPatch = {
+  submissionsOpen?: boolean;
+  registrationsOpen?: boolean;
+  announcements?: Announcement[];
+  deadline?: string;
+  isDeadlinePassed?: boolean;
+};
 
 interface TeamsContextType {
   teams: Team[];
@@ -13,58 +31,99 @@ interface TeamsContextType {
   setActiveTeam: (team: Team | null) => void;
   clearActiveTeam: () => void;
   refreshData: () => void;
+  submissionsOpen: boolean;
+  registrationsOpen: boolean;
+  submissionDeadline: string;
+  isDeadlinePassed: boolean;
+  applyLiveStatus: (patch: LiveStatusPatch) => void;
+  refreshLiveStatus: () => void;
   paginatedTeams: Team[];
-  pagination: { page: number; limit: number; total: number; totalPages: number };
+  pagination: PaginationState;
   isLoadingPaginated: boolean;
-  fetchPaginated: (options: any) => void;
+  fetchPaginated: (options: {
+    page: number;
+    limit: number;
+    search: string;
+    status: string;
+    track: string;
+    hasProject?: boolean;
+    scored?: "all" | "true" | "false";
+  }) => void;
 }
 
 const TeamsContext = createContext<TeamsContextType | undefined>(undefined);
 
+const FETCH_TIMEOUT_MS = 15000;
+const DATA_POLL_MS = 30000;
+const LIVE_POLL_MS = 2000;
+const LIVE_CHANNEL = "origin-live-status";
+
+const emptyStats: HackathonStats = {
+  totalTeams: 0,
+  verifiedTeams: 0,
+  pendingTeams: 0,
+  totalParticipants: 0,
+  submittedProjects: 0,
+  checkedInTeams: 0,
+  trackCounts: {
+    "AI & Machine Learning": 0,
+    "Web3 & Blockchain": 0,
+    "FinTech & Cybersecurity": 0,
+    "HealthTech & BioInformatics": 0,
+    "Smart City & IoT": 0,
+    "Open Innovation & Social Impact": 0,
+  },
+};
+
 const safeFetchJson = async (url: string, options?: RequestInit) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, options);
+    const res = await fetch(url, { ...options, signal: controller.signal, cache: "no-store" });
     if (!res.ok) return null;
     return await res.json();
   } catch (_e) {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 };
 
 export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
 
-  // State
-  const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
   const [activeTeam, setActiveTeam] = useState<Team | null>(null);
-  const [stats, setStats] = useState<HackathonStats>({
-    totalTeams: 0,
-    verifiedTeams: 0,
-    pendingTeams: 0,
-    totalParticipants: 0,
-    submittedProjects: 0,
-    checkedInTeams: 0,
-    trackCounts: {
-      "AI & Machine Learning": 0,
-      "Web3 & Blockchain": 0,
-      "FinTech & Cybersecurity": 0,
-      "HealthTech & BioInformatics": 0,
-      "Smart City & IoT": 0,
-      "Open Innovation & Social Impact": 0,
-    },
-  });
-
-  // Pagination state
+  const [stats, setStats] = useState<HackathonStats>(emptyStats);
+  const [submissionsOpen, setSubmissionsOpen] = useState(true);
+  const [registrationsOpen, setRegistrationsOpen] = useState(true);
+  const [submissionDeadline, setSubmissionDeadline] = useState(DEFAULT_SUBMISSION_DEADLINE);
+  const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
   const [paginatedTeams, setPaginatedTeams] = useState<Team[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    evaluatedCount: 0,
+    pendingCount: 0,
+  });
   const [isLoadingPaginated, setIsLoadingPaginated] = useState(false);
+  const dataInFlightRef = useRef(false);
+  const liveInFlightRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
 
-  // Polling backoff state
-  const [fetchFailureCount, setFetchFailureCount] = useState(0);
-  const MAX_FAILURES = 5; // stop polling after 5 consecutive failures
-  const BASE_INTERVAL = 5000; // 5 seconds
-  const MAX_BACKOFF = 60000; // 1 minute max
+  const applyLiveStatus = useCallback((patch: LiveStatusPatch, broadcast = true) => {
+    if (typeof patch.submissionsOpen === "boolean") setSubmissionsOpen(patch.submissionsOpen);
+    if (typeof patch.registrationsOpen === "boolean") setRegistrationsOpen(patch.registrationsOpen);
+    if (typeof patch.isDeadlinePassed === "boolean") setIsDeadlinePassed(patch.isDeadlinePassed);
+    if (typeof patch.deadline === "string" && patch.deadline) setSubmissionDeadline(patch.deadline);
+    if (Array.isArray(patch.announcements)) setAnnouncements(patch.announcements);
+    if (broadcast && channelRef.current) {
+      channelRef.current.postMessage(patch);
+    }
+  }, []);
 
   const getAdminHeaders = (): Record<string, string> => {
     try {
@@ -80,29 +139,40 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const fetchPaginated = useCallback(
-    async (options: { page: number; limit: number; search: string; status: string; track: string }) => {
+    async (options: {
+      page: number;
+      limit: number;
+      search: string;
+      status: string;
+      track: string;
+      hasProject?: boolean;
+      scored?: "all" | "true" | "false";
+    }) => {
       setIsLoadingPaginated(true);
       try {
-        const { page, limit, search, status, track } = options;
+        const { page, limit, search, status, track, hasProject, scored } = options;
         const query = new URLSearchParams({
           page: String(page),
           limit: String(limit),
           search,
           status,
           track,
+          ...(hasProject !== undefined && { hasProject: String(hasProject) }),
+          ...(scored && scored !== "all" && { scored }),
         }).toString();
 
-        const res = await fetch(`/api/teams?${query}`, {
+        const data = await safeFetchJson(`/api/teams?${query}`, {
           headers: { ...getAdminHeaders() },
         });
-        const data = await res.json();
-        if (data.success) {
+        if (data?.success) {
           setPaginatedTeams(data.teams);
           setPagination({
             page: data.pagination.page,
             limit: data.pagination.limit,
             total: data.pagination.total,
             totalPages: data.pagination.totalPages,
+            evaluatedCount: data.pagination.evaluatedCount || 0,
+            pendingCount: data.pagination.pendingCount || 0,
           });
         }
       } catch (err) {
@@ -114,111 +184,112 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     []
   );
 
-  // Main data fetch with backoff
-  const fetchData = useCallback(async () => {
-    try {
-      const [teamsRes, annRes, statsRes] = await Promise.all([
-        safeFetchJson("/api/teams"),
-        safeFetchJson("/api/announcements"),
-        safeFetchJson("/api/stats"),
-      ]);
+  const resolveActiveTeam = useCallback(async (email?: string | null) => {
+    const savedId = typeof window !== "undefined" ? localStorage.getItem("origin_active_team_id") : null;
+    const identifier = email?.trim().toLowerCase() || savedId;
+    if (!identifier) return;
 
-      // If any of the calls failed (returned null), treat as failure
-      if (!teamsRes || !annRes || !statsRes) {
-        throw new Error("One or more API calls failed");
-      }
+    const data = await safeFetchJson("/api/teams/auth/team-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier }),
+    });
 
-      // Success: reset failure count and update state
-      setFetchFailureCount(0);
-
-      if (teamsRes.success && Array.isArray(teamsRes.teams)) {
-        setTeams(teamsRes.teams);
-        const savedId = localStorage.getItem("origin_active_team_id");
-        if (savedId) {
-          const found = teamsRes.teams.find(
-            (t: Team) => t.id.toUpperCase() === savedId.toUpperCase()
-          );
-          if (found) {
-            setActiveTeam(found);
-            localStorage.setItem("origin_active_team_data", JSON.stringify(found));
-          }
-        }
-      }
-
-      if (annRes.success && Array.isArray(annRes.announcements)) {
-        setAnnouncements(annRes.announcements);
-      }
-
-      if (statsRes.success && statsRes.stats) {
-        setStats(statsRes.stats);
-      }
-    } catch (_err) {
-      // Increment failure count
-      setFetchFailureCount((prev) => prev + 1);
+    if (data?.success && data.team) {
+      setActiveTeam(data.team);
+      setTeams((prev) => {
+        const others = prev.filter((t) => t.id !== data.team.id);
+        return [data.team, ...others];
+      });
+      localStorage.setItem("origin_active_team_id", data.team.id);
+      localStorage.setItem("origin_active_team_data", JSON.stringify(data.team));
     }
   }, []);
 
-  // Auto‑match team when Firebase user logs in
+  const fetchLiveStatus = useCallback(async () => {
+    if (liveInFlightRef.current) return;
+    if (typeof document !== "undefined" && document.hidden) return;
+    liveInFlightRef.current = true;
+    try {
+      const data = await safeFetchJson("/api/live-status");
+      if (data?.success) {
+        applyLiveStatus(
+          {
+            submissionsOpen: data.submissionsOpen,
+            registrationsOpen: data.registrationsOpen,
+            announcements: data.announcements,
+            deadline: data.deadline,
+            isDeadlinePassed: data.isDeadlinePassed,
+          },
+          false
+        );
+      }
+    } finally {
+      liveInFlightRef.current = false;
+    }
+  }, [applyLiveStatus]);
+
+  const fetchData = useCallback(async () => {
+    if (dataInFlightRef.current) return;
+    dataInFlightRef.current = true;
+    try {
+      const statsRes = await safeFetchJson("/api/stats");
+      if (statsRes?.success && statsRes.stats) {
+        setStats(statsRes.stats);
+      }
+
+      const savedId = localStorage.getItem("origin_active_team_id");
+      if (savedId) {
+        const teamRes = await safeFetchJson(`/api/teams/${encodeURIComponent(savedId)}`);
+        if (teamRes?.success && teamRes.team) {
+          setActiveTeam(teamRes.team);
+          localStorage.setItem("origin_active_team_data", JSON.stringify(teamRes.team));
+        }
+      }
+    } finally {
+      dataInFlightRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(LIVE_CHANNEL);
+    channelRef.current = channel;
+    channel.onmessage = (event: MessageEvent<LiveStatusPatch>) => {
+      if (event.data) applyLiveStatus(event.data, false);
+    };
+    return () => {
+      channel.close();
+      channelRef.current = null;
+    };
+  }, [applyLiveStatus]);
+
   useEffect(() => {
     if (user?.email) {
-      const cleanEmail = user.email.toLowerCase().trim();
-      const matched = teams.find(
-        (t) =>
-          t.leader.email.toLowerCase() === cleanEmail ||
-          t.member2?.email?.toLowerCase() === cleanEmail ||
-          t.member3?.email?.toLowerCase() === cleanEmail ||
-          t.member4?.email?.toLowerCase() === cleanEmail ||
-          t.member5?.email?.toLowerCase() === cleanEmail
-      );
-      if (matched) {
-        setActiveTeam(matched);
-        localStorage.setItem("origin_active_team_id", matched.id);
-        localStorage.setItem("origin_active_team_data", JSON.stringify(matched));
-      }
+      resolveActiveTeam(user.email);
     }
-  }, [user, teams]);
+  }, [user?.email, resolveActiveTeam]);
 
-  // Initial fetch + polling with backoff
   useEffect(() => {
-    // Immediately fetch once
+    fetchLiveStatus();
     fetchData();
-
-    // Determine dynamic interval based on failure count
-    const getInterval = () => {
-      if (fetchFailureCount === 0) return BASE_INTERVAL;
-      // Exponential backoff: 5s, 10s, 20s, 40s, 60s
-      const backoff = Math.min(BASE_INTERVAL * Math.pow(2, fetchFailureCount - 1), MAX_BACKOFF);
-      return backoff;
+    const liveId = setInterval(fetchLiveStatus, LIVE_POLL_MS);
+    const dataId = setInterval(fetchData, DATA_POLL_MS);
+    const onVisible = () => {
+      if (!document.hidden) fetchLiveStatus();
     };
-
-    let intervalId: NodeJS.Timeout | null = null;
-
-    const startPolling = () => {
-      if (intervalId) clearInterval(intervalId);
-      const delay = getInterval();
-      intervalId = setInterval(() => {
-        // Only fetch if we haven't reached max failures
-        if (fetchFailureCount < MAX_FAILURES) {
-          fetchData();
-        } else {
-          // Stop polling after max failures; optionally log a warning
-          console.warn("Polling stopped due to too many consecutive API failures.");
-          if (intervalId) clearInterval(intervalId);
-        }
-      }, delay);
-    };
-
-    startPolling();
-
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      clearInterval(liveId);
+      clearInterval(dataId);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [fetchData, fetchFailureCount]);
+  }, [fetchLiveStatus, fetchData]);
 
   const refreshData = useCallback(() => {
-    setFetchFailureCount(0); // reset failure count on manual refresh
+    fetchLiveStatus();
     fetchData();
-  }, [fetchData]);
+  }, [fetchLiveStatus, fetchData]);
 
   const clearActiveTeam = useCallback(() => {
     setActiveTeam(null);
@@ -226,14 +297,10 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.removeItem("origin_active_team_data");
   }, []);
 
-  // Persist active team changes
   useEffect(() => {
     if (activeTeam) {
       localStorage.setItem("origin_active_team_id", activeTeam.id);
       localStorage.setItem("origin_active_team_data", JSON.stringify(activeTeam));
-    } else {
-      localStorage.removeItem("origin_active_team_id");
-      localStorage.removeItem("origin_active_team_data");
     }
   }, [activeTeam]);
 
@@ -245,6 +312,12 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setActiveTeam,
     clearActiveTeam,
     refreshData,
+    submissionsOpen,
+    registrationsOpen,
+    submissionDeadline,
+    isDeadlinePassed,
+    applyLiveStatus,
+    refreshLiveStatus: fetchLiveStatus,
     paginatedTeams,
     pagination,
     isLoadingPaginated,

@@ -31,6 +31,7 @@ export const CACHE_KEYS = {
   SUBMISSION_STATUS: 'origin:submission_status',
   REGISTRATION_STATUS: 'origin:registration_status',
   SUBMISSION_DEADLINE: 'origin:submission_deadline',
+  STATS: 'origin:stats',
 };
 
 export const DEFAULT_TTL = 3600;

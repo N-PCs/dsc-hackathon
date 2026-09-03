@@ -3,7 +3,7 @@
 import { HeroSection } from "@/components/sections/HeroSection";
 import { HackathonScheduleRules } from "@/components/sections/HackathonScheduleRules";
 import { FAQSection } from "@/components/sections/FAQSection";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/context/TeamsContext";
 import { useRouter } from "next/navigation";
 
 export default function HomePage() {

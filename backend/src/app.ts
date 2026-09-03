@@ -28,9 +28,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging
+// Request logging (skip noisy health probes)
 app.use((req, res, next) => {
-  logger.info({ method: req.method, url: req.url, ip: req.ip }, 'Incoming request');
+  if (req.url === '/health' || req.url === '/api/health' || req.url === '/' || req.url.startsWith('/api/live-status')) {
+    return next();
+  }
+  logger.info({ method: req.method, url: req.url }, 'Incoming request');
   next();
 });
 

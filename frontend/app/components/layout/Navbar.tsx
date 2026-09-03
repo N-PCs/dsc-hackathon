@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { Menu, X, LogOut, User as UserIcon, Shield, ChevronDown, Lock, Send } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { AuthModal } from "@/components/auth/AuthModal";
-import { EXTERNAL_REGISTRATION_URL } from "@/data/mockData";
 import { useTeams } from "@/context/TeamsContext";
 
 interface NavbarProps {
@@ -26,14 +25,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading, signOut } = useAuth();
-  const { activeTeam, clearActiveTeam } = useTeams();
+  const { activeTeam, clearActiveTeam, submissionsOpen: isSubmissionsOpen } = useTeams();
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("hero");
-  const [isSubmissionsOpen, setIsSubmissionsOpen] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isJury, setIsJury] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -54,23 +52,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Check submissions status
-  useEffect(() => {
-    const checkSubmissions = () => {
-      fetch("/api/admin/submissions-status")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.success && typeof data.submissionsOpen === "boolean") {
-            setIsSubmissionsOpen(data.submissionsOpen);
-          }
-        })
-        .catch(() => {});
-    };
-    checkSubmissions();
-    const interval = setInterval(checkSubmissions, 8000);
-    return () => clearInterval(interval);
   }, []);
 
   // Check user roles (admin / jury)
@@ -216,9 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     return "U";
   };
 
-  // Hide submit and team links for admin/jury
   const isAdminOrJury = isAdmin || isJury;
-  const shouldHideSubmit = isAdminOrJury || pathname === "/jury" || pathname === "/admin";
 
   return (
     <>
@@ -329,53 +308,51 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
 
-            {/* Digital Pass & Submit Project Buttons - Hidden for Admin/Jury users or on /jury /admin */}
-            {!shouldHideSubmit && (
-              <div className="hidden sm:flex items-center gap-2">
+            {/* Digital Pass & Submit Project — always visible in the navbar */}
+            <div className="flex items-center gap-2">
+              <button
+                id="nav-btn-digital-pass"
+                onClick={() => {
+                  if (!user && !hasActiveTeam) {
+                    setAuthModalOpen(true);
+                  } else {
+                    router.push("/team");
+                  }
+                }}
+                className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 font-mono text-[10px] sm:text-xs uppercase tracking-wider font-bold transition-all cursor-pointer border ${
+                  pathname === "/team"
+                    ? "bg-amber-500 text-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                    : "bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border-amber-500/40 hover:border-amber-500"
+                }`}
+              >
+                <UserIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">DIGITAL PASS</span>
+              </button>
+
+              {isSubmissionsOpen ? (
                 <button
-                  id="nav-btn-digital-pass"
-                  onClick={() => {
-                    if (!user && !hasActiveTeam) {
-                      setAuthModalOpen(true);
-                    } else {
-                      router.push("/team");
-                    }
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer border ${
-                    pathname === "/team"
-                      ? "bg-amber-500 text-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
-                      : "bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border-amber-500/40 hover:border-amber-500"
+                  id="nav-btn-submit-project"
+                  onClick={handleSubmitClick}
+                  className={`inline-flex items-center gap-1.5 px-2 sm:px-3.5 py-2 font-mono text-[10px] sm:text-xs uppercase tracking-wider font-bold transition-all cursor-pointer border ${
+                    pathname === "/submit"
+                      ? "bg-[#FF3B00] text-white border-[#FF3B00] shadow-[0_0_15px_rgba(255,59,0,0.5)]"
+                      : "bg-[#FF3B00]/10 hover:bg-[#FF3B00] text-[#FF3B00] hover:text-white border-[#FF3B00]/40 hover:border-[#FF3B00]"
                   }`}
                 >
-                  <UserIcon className="w-3.5 h-3.5" />
-                  <span>DIGITAL PASS</span>
+                  <Send className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">SUBMIT PROJECT &gt;</span>
                 </button>
-
-                {isSubmissionsOpen ? (
-                  <button
-                    id="nav-btn-submit-project"
-                    onClick={handleSubmitClick}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer border ${
-                      pathname === "/submit"
-                        ? "bg-[#FF3B00] text-white border-[#FF3B00] shadow-[0_0_15px_rgba(255,59,0,0.5)]"
-                        : "bg-[#FF3B00]/10 hover:bg-[#FF3B00] text-[#FF3B00] hover:text-white border-[#FF3B00]/40 hover:border-[#FF3B00]"
-                    }`}
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>SUBMIT PROJECT &gt;</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => router.push("/submit")}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 cursor-pointer hover:border-neutral-700"
-                    title="Submissions currently closed by Admin"
-                  >
-                    <Lock className="w-3 h-3 text-neutral-500" />
-                    <span>SUBMISSION CLOSED</span>
-                  </button>
-                )}
-              </div>
-            )}
+              ) : (
+                <button
+                  onClick={() => router.push("/submit")}
+                  className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 font-mono text-[10px] sm:text-[11px] uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 cursor-pointer hover:border-neutral-700"
+                  title="Submissions currently closed by Admin"
+                >
+                  <Lock className="w-3 h-3 text-neutral-500" />
+                  <span className="hidden sm:inline">SUBMISSION CLOSED</span>
+                </button>
+              )}
+            </div>
 
             {/* Auth Button / Profile Dropdown */}
             {!loading && !user && (
@@ -454,31 +431,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </button>
                       )}
 
-                      {/* Team links – only for normal users (not admin/jury) */}
-                      {!isAdmin && !isJury && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setUserDropdownOpen(false);
-                              router.push("/team");
-                            }}
-                            className="w-full text-left px-2.5 py-2 hover:bg-[#171717] hover:text-[#FF3B00] transition-colors flex items-center gap-2 cursor-pointer"
-                          >
-                            <UserIcon className="w-3.5 h-3.5" />
-                            <span>My Digital Pass</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setUserDropdownOpen(false);
-                              router.push("/submit");
-                            }}
-                            className="w-full text-left px-2.5 py-2 hover:bg-[#171717] hover:text-[#FF3B00] transition-colors flex items-center gap-2 cursor-pointer text-[#FF3B00]"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                            <span>Project Submission</span>
-                          </button>
-                        </>
-                      )}
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          router.push("/team");
+                        }}
+                        className="w-full text-left px-2.5 py-2 hover:bg-[#171717] hover:text-[#FF3B00] transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <UserIcon className="w-3.5 h-3.5" />
+                        <span>My Digital Pass</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          router.push("/submit");
+                        }}
+                        className="w-full text-left px-2.5 py-2 hover:bg-[#171717] hover:text-[#FF3B00] transition-colors flex items-center gap-2 cursor-pointer text-[#FF3B00]"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Project Submission</span>
+                      </button>
                     </div>
 
                     <div className="border-t border-[#222222] pt-2">
@@ -548,42 +520,40 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
 
-            {!shouldHideSubmit && (
-              isSubmissionsOpen ? (
-                <div className="py-3 border-b border-[#222222]">
-                  <button
-                    onClick={handleSubmitClick}
-                    className="text-left font-display text-3xl text-orange-400 cursor-pointer"
-                  >
-                    SUBMIT PROJECT &gt;
-                  </button>
-                </div>
-              ) : (
+            {isSubmissionsOpen ? (
+              <div className="py-3 border-b border-[#222222]">
                 <button
-                  onClick={() => {
-                    router.push("/submit");
-                    setMobileOpen(false);
-                  }}
-                  className="text-left font-display text-3xl text-neutral-500 py-3 border-b border-[#222222] cursor-pointer"
+                  onClick={handleSubmitClick}
+                  className="text-left font-display text-3xl text-orange-400 cursor-pointer"
                 >
-                  SUBMISSION CLOSED 🔒
+                  SUBMIT PROJECT &gt;
                 </button>
-              )
-            )}
-
-            {/* "Register" completely removed – no mobile register button */}
-
-            {hasActiveTeam && !isAdminOrJury && (
+              </div>
+            ) : (
               <button
                 onClick={() => {
-                  router.push("/team");
+                  router.push("/submit");
                   setMobileOpen(false);
                 }}
-                className="text-left font-display text-3xl text-neutral-400 py-3 border-b border-[#222222] cursor-pointer"
+                className="text-left font-display text-3xl text-neutral-500 py-3 border-b border-[#222222] cursor-pointer"
               >
-                MY DIGITAL PASS
+                SUBMISSION CLOSED 🔒
               </button>
             )}
+
+            <button
+              onClick={() => {
+                if (!user && !hasActiveTeam) {
+                  setAuthModalOpen(true);
+                } else {
+                  router.push("/team");
+                }
+                setMobileOpen(false);
+              }}
+              className="text-left font-display text-3xl text-amber-400 py-3 border-b border-[#222222] cursor-pointer"
+            >
+              DIGITAL PASS
+            </button>
 
             {!user ? (
               <button

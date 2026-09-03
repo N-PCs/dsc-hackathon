@@ -6,7 +6,8 @@ import { Team, Announcement, PaymentStatus, HackathonStats } from "@/types";
 import { useAdminAuth } from "./hooks/useAdminAuth";
 import { useSubmissions } from "./hooks/useSubmissions";
 import { calcTeamFee } from "./utils";
-import { ScorePayload } from "./ScoringModal"; 
+import { ScorePayload } from "./ScoringModal";
+import { useTeams } from "@/context/TeamsContext";
 
 import { AdminLogin } from "./AdminLogin";
 import { AdminHeader } from "./AdminHeader";
@@ -107,33 +108,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const [selectedProofTeam, setSelectedProofTeam] = useState<Team | null>(null);
 
-  const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(false);
-  const [isRegistrationsOpen, setIsRegistrationsOpen] = useState(true);
-  const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
+  // ✅ Read live status from TeamsContext — single source of truth
+  const {
+    submissionsOpen: isSubmissionsOpen,
+    registrationsOpen: isRegistrationsOpen,
+    isDeadlinePassed,
+    applyLiveStatus,
+    refreshLiveStatus,
+  } = useTeams();
+
   const [isTogglingSubmissions, setIsTogglingSubmissions] = useState(false);
   const [isTogglingRegistrations, setIsTogglingRegistrations] = useState(false);
-
-  // --- Fetch statuses (public endpoints) ---
-  useEffect(() => {
-    fetch("/api/admin/submissions-status")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setIsSubmissionsOpen(data.submissionsOpen);
-          if (typeof data.isDeadlinePassed === "boolean") setIsDeadlinePassed(data.isDeadlinePassed);
-        }
-      })
-      .catch(() => {});
-
-    fetch("/api/admin/registrations-status")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && typeof data.registrationsOpen === "boolean") {
-          setIsRegistrationsOpen(data.registrationsOpen);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const handleToggleSubmissions = async () => {
     if (!currentAdmin) return;
@@ -146,7 +131,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         body: JSON.stringify({ submissionsOpen: nextState }),
       });
       const data = await res.json();
-      if (res.ok && data.success) setIsSubmissionsOpen(data.submissionsOpen);
+      if (res.ok && data.success) {
+        // ✅ Push new state to TeamsContext — updates Navbar, Submit page, all tabs instantly
+        applyLiveStatus({ submissionsOpen: data.submissionsOpen });
+        refreshLiveStatus();
+      }
     } catch (err) {
       alert("Failed to toggle submission status.");
     } finally {
@@ -166,7 +155,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setIsRegistrationsOpen(data.registrationsOpen);
+        // ✅ Push new state to TeamsContext — updates all consumers instantly
+        applyLiveStatus({ registrationsOpen: data.registrationsOpen });
+        refreshLiveStatus();
       } else {
         alert(data.message || "Failed to toggle registration status.");
       }

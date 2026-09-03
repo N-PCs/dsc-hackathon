@@ -1,8 +1,30 @@
 import { getAllTeams } from './teamService.js';
-import { TrackType } from '../utils/types.js';
+import { Team, TrackType } from '../utils/types.js';
+import { CACHE_KEYS, getCachedData, setCachedData } from '../config/redis.js';
 
-export async function getHackathonStats() {
+type HackathonStats = {
+  totalTeams: number;
+  verifiedTeams: number;
+  pendingTeams: number;
+  totalParticipants: number;
+  submittedProjects: number;
+  checkedInTeams: number;
+  trackCounts: Record<TrackType, number>;
+};
+
+export async function getHackathonStats(): Promise<HackathonStats> {
+  const cached = await getCachedData<HackathonStats>(CACHE_KEYS.STATS);
+  if (cached && typeof cached.totalTeams === 'number') {
+    return cached;
+  }
+
   const teams = await getAllTeams();
+  const stats = buildStats(teams);
+  await setCachedData(CACHE_KEYS.STATS, stats, 30);
+  return stats;
+}
+
+function buildStats(teams: Team[]): HackathonStats {
   const totalTeams = teams.length;
   const verifiedTeams = teams.filter((t) => t.paymentStatus === 'verified').length;
   const pendingTeams = teams.filter((t) => t.paymentStatus === 'pending').length;

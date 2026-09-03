@@ -7,6 +7,7 @@ import juryRoutes from './juryRoutes.js';
 import { uploadFile } from '../controllers/uploadController.js';
 import { exportCsv, exportExcel } from '../controllers/exportController.js';
 import { requireAdminAuth } from '../middleware/auth.js';
+import { teamLogin } from '../controllers/teamController.js';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use(publicRoutes);
 
 // Teams
 router.use('/teams', teamRoutes);
+router.post('/auth/team-login', teamLogin);
 
 // Announcements
 router.use('/announcements', announcementRoutes);

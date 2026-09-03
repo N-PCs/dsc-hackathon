@@ -1,6 +1,7 @@
 import {
   getAllTeams as getStoredTeams,
   findTeamById as findStoredTeamById,
+  findTeamByIdentifier as findStoredTeamByIdentifier,
   saveTeam as saveTeamRecord,
   updateTeam as updateTeamRecord,
   deleteTeam as deleteTeamRecord,
@@ -41,17 +42,7 @@ export async function getAllTeams(): Promise<Team[]> {
 }
 
 export async function findTeamByIdentifier(identifier: string): Promise<Team | null> {
-  const clean = identifier.trim().toLowerCase();
-  const teams = await getAllTeams();
-  return teams.find(
-    (t) =>
-      t.id.toLowerCase() === clean ||
-      t.leader.email.toLowerCase() === clean ||
-      t.member2?.email?.toLowerCase() === clean ||
-      t.member3?.email?.toLowerCase() === clean ||
-      t.member4?.email?.toLowerCase() === clean ||
-      t.member5?.email?.toLowerCase() === clean
-  ) || null;
+  return findStoredTeamByIdentifier(identifier);
 }
 
 export async function findTeamById(id: string): Promise<Team | null> {
@@ -61,6 +52,7 @@ export async function findTeamById(id: string): Promise<Team | null> {
 export async function saveTeam(team: Team): Promise<Team> {
   const saved = await saveTeamRecord(team);
   await invalidateCache(CACHE_KEYS.TEAMS);
+  await invalidateCache(CACHE_KEYS.STATS);
   logger.info({ teamId: team.id }, 'Team saved');
   return saved;
 }
@@ -68,12 +60,14 @@ export async function saveTeam(team: Team): Promise<Team> {
 export async function updateTeam(team: Team): Promise<Team> {
   const updated = await updateTeamRecord(team);
   await invalidateCache(CACHE_KEYS.TEAMS);
+  await invalidateCache(CACHE_KEYS.STATS);
   return updated;
 }
 
 export async function deleteTeam(id: string): Promise<void> {
   await deleteTeamRecord(id);
   await invalidateCache(CACHE_KEYS.TEAMS);
+  await invalidateCache(CACHE_KEYS.STATS);
 }
 
 export async function isTransactionRefUsed(ref: string): Promise<boolean> {

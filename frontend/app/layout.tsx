@@ -39,17 +39,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
-      <TeamsProvider> {/* ← wrap here */}
-        <html
-          lang="en"
-          className={`${bebasNeue.variable} ${oswald.variable} ${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full`}
-        >
-          <body className="min-h-full flex flex-col bg-black text-white antialiased">
+    <html
+      lang="en"
+      className={`${bebasNeue.variable} ${oswald.variable} ${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full`}
+    >
+      <body className="min-h-full flex flex-col bg-black text-white antialiased">
+        <AuthProvider>
+          <TeamsProvider>
             <AppShell>{children}</AppShell>
-          </body>
-        </html>
-      </TeamsProvider>
-    </AuthProvider>
+          </TeamsProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

@@ -3,11 +3,14 @@ dotenv.config();
 dotenv.config({ path: '../.env' });
 dotenv.config({ path: '../.env.local' });
 
-import { Pool } from '@neondatabase/serverless';
+import { neonConfig, Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../utils/types.js';
 import { getCachedData, setCachedData, invalidateCache, CACHE_KEYS } from './redis.js';
 import { logger } from '../utils/logger.js';
 import { DEFAULT_SUBMISSION_DEADLINE } from '../utils/deadline.js';
+
+// Use HTTP fetch instead of long-lived WebSockets — prevents socket hang-up on Vercel
+neonConfig.poolQueryViaFetch = true;
 
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 logger.info({ hasUrl: !!connectionString }, '[NeonDB] Connection status');
@@ -18,7 +21,12 @@ let useNeon = false;
 if (connectionString) {
   try {
     const clean = connectionString.replace(/&channel_binding=require/g, '').replace(/\?channel_binding=require/g, '');
-    pool = new Pool({ connectionString: clean });
+    pool = new Pool({
+      connectionString: clean,
+      max: 5,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 10000,
+    });
 
     pool.on('error', (err: any) => {
       logger.error({ err }, '[NeonDB] Pool error – switching to memory fallback');
@@ -466,10 +474,6 @@ export async function getPaginatedTeams(options: {
     const evaluatedCount = parseInt(evalRes.rows[0].count, 10);
     const pendingCount = parseInt(pendingRes.rows[0].count, 10);
 
-    // Update local cache
-    setCachedData(CACHE_KEYS.TEAMS, teams).catch(() => {});
-    localTeams = teams; // keep in-memory copy in sync
-
     return { teams, total, page, limit, evaluatedCount, pendingCount };
   } catch (err) {
     // ❗ Any Neon error → fall back to in‑memory
@@ -767,12 +771,22 @@ export async function deleteAnnouncement(id: string): Promise<void> {
 let localSubmissionsOpen = true;
 let localRegistrationsOpen = true;
 
+function coerceBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true' || value === 'false') return value === 'true';
+  return fallback;
+}
+
 export async function getSubmissionStatus(): Promise<boolean> {
+  const cached = await getCachedData<boolean | string>(CACHE_KEYS.SUBMISSION_STATUS);
+  if (cached !== null && cached !== undefined) return coerceBoolean(cached, localSubmissionsOpen);
+
   if (useNeon && pool) {
     try {
       const res = await pool.query("SELECT value FROM settings WHERE key = 'submissions_open'");
       if (res.rows.length > 0) {
         const val = res.rows[0].value === 'true';
+        localSubmissionsOpen = val;
         setCachedData(CACHE_KEYS.SUBMISSION_STATUS, val).catch(() => {});
         return val;
       }
@@ -780,8 +794,6 @@ export async function getSubmissionStatus(): Promise<boolean> {
       handleDBError(err, 'getSubmissionStatus');
     }
   }
-  const cached = await getCachedData<boolean>(CACHE_KEYS.SUBMISSION_STATUS);
-  if (cached !== null && cached !== undefined) return Boolean(cached);
   return localSubmissionsOpen;
 }
 
@@ -802,11 +814,15 @@ export async function setSubmissionStatus(isOpen: boolean): Promise<void> {
 }
 
 export async function getRegistrationStatus(): Promise<boolean> {
+  const cached = await getCachedData<boolean | string>(CACHE_KEYS.REGISTRATION_STATUS);
+  if (cached !== null && cached !== undefined) return coerceBoolean(cached, localRegistrationsOpen);
+
   if (useNeon && pool) {
     try {
       const res = await pool.query("SELECT value FROM settings WHERE key = 'registrations_open'");
       if (res.rows.length > 0) {
         const val = res.rows[0].value === 'true';
+        localRegistrationsOpen = val;
         setCachedData(CACHE_KEYS.REGISTRATION_STATUS, val).catch(() => {});
         return val;
       }
@@ -814,8 +830,6 @@ export async function getRegistrationStatus(): Promise<boolean> {
       handleDBError(err, 'getRegistrationStatus');
     }
   }
-  const cached = await getCachedData<boolean>(CACHE_KEYS.REGISTRATION_STATUS);
-  if (cached !== null && cached !== undefined) return Boolean(cached);
   return localRegistrationsOpen;
 }
 

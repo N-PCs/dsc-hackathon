@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { Team, TrackType } from "@/types";
 import { HACKATHON_TRACKS } from "@/data/mockData";
-import { DEFAULT_SUBMISSION_DEADLINE, isDeadlinePassed as checkDeadlinePassed } from "@/lib/deadline";
+import { isDeadlinePassed as checkDeadlinePassed } from "@/lib/deadline";
 import { useTeams } from "@/context/TeamsContext";
 import { useAuth } from "@/lib/authContext";
 
@@ -49,7 +49,16 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 }) => {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { teams, activeTeam, setActiveTeam, clearActiveTeam, refreshData } = useTeams();
+  const {
+    teams,
+    activeTeam,
+    setActiveTeam,
+    clearActiveTeam,
+    refreshData,
+    submissionsOpen: isSubmissionsOpen,
+    submissionDeadline: deadline,
+    isDeadlinePassed,
+  } = useTeams();
 
   const team = propTeam || activeTeam;
 
@@ -86,7 +95,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       setIsDirectLoginLoading(true);
       setDirectLoginError(null);
       try {
-        const res = await fetch("/api/auth/team-login", {
+        const res = await fetch("/api/teams/auth/team-login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ identifier: cleanEmail }),
@@ -121,19 +130,19 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
   const [githubUrl, setGithubUrl] = useState(existingProject?.githubUrl || "");
   const [deploymentUrl, setDeploymentUrl] = useState(existingProject?.deploymentUrl || "");
 
-  // Two separate file upload states
-  const [presentationPdfUrl, setPresentationPdfUrl] = useState(existingProject?.presentationPdfUrl || "");
-  const [presentationPptUrl, setPresentationPptUrl] = useState(existingProject?.presentationPptUrl || "");
-  const [presentationPdfFile, setPresentationPdfFile] = useState<File | null>(null);
-  const [presentationPptFile, setPresentationPptFile] = useState<File | null>(null);
-  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
-  const [isUploadingPpt, setIsUploadingPpt] = useState(false);
+  // Single presentation file upload (PDF or PPTX)
+  const [presentationUrl, setPresentationUrl] = useState(existingProject?.presentationPdfUrl || existingProject?.presentationPptUrl || "");
+  const [presentationFile, setPresentationFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
   const [videoUrl, setVideoUrl] = useState(existingProject?.videoUrl || "");
 
-  const [deadline, setDeadline] = useState<string>(DEFAULT_SUBMISSION_DEADLINE);
-  const [isDeadlinePassed, setIsDeadlinePassed] = useState<boolean>(() => checkDeadlinePassed(DEFAULT_SUBMISSION_DEADLINE));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  // Countdown timer — reads deadline from TeamsContext
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -142,7 +151,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     totalMs: number;
     isPassed: boolean;
   }>(() => {
-    const target = new Date(DEFAULT_SUBMISSION_DEADLINE).getTime();
+    const target = new Date(deadline).getTime();
     const diff = target - Date.now();
     if (isNaN(target) || diff <= 0) {
       return { days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, isPassed: true };
@@ -156,28 +165,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       isPassed: false,
     };
   });
-  const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-
-  useEffect(() => {
-    const fetchStatus = () => {
-      fetch("/api/admin/submissions-status")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setIsSubmissionsOpen(data.submissionsOpen);
-            if (data.deadline) setDeadline(data.deadline);
-            if (typeof data.isDeadlinePassed === "boolean") setIsDeadlinePassed(data.isDeadlinePassed);
-          }
-        })
-        .catch(() => {});
-    };
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -185,14 +172,12 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       const diff = target - Date.now();
       if (isNaN(target) || diff <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, isPassed: true });
-        setIsDeadlinePassed(true);
       } else {
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
         const minutes = Math.floor((diff / (1000 * 60)) % 60);
         const seconds = Math.floor((diff / 1000) % 60);
         setTimeLeft({ days, hours, minutes, seconds, totalMs: diff, isPassed: false });
-        setIsDeadlinePassed(false);
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -239,59 +224,37 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     return data.url;
   };
 
-  const handleFileUpload = async (file: File, type: "pdf" | "ppt") => {
+  const handleFileUpload = async (file: File) => {
     if (!file) return;
 
-    const maxSize = 50 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      setUploadError(`File size exceeds 50MB limit. Selected file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+      setUploadError(`File size exceeds 10MB limit. Selected file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (type === "pdf" && ext !== "pdf") {
-      setUploadError("Please select a PDF file for the PDF attachment.");
-      return;
-    }
-    if (type === "ppt" && !["ppt", "pptx"].includes(ext || "")) {
-      setUploadError("Please select a PPT or PPTX file for the presentation attachment.");
+    if (!['pdf', 'ppt', 'pptx'].includes(ext || '')) {
+      setUploadError("Please select a PDF or PPTX file.");
       return;
     }
 
     setUploadError("");
-    if (type === "pdf") {
-      setPresentationPdfFile(file);
-      setIsUploadingPdf(true);
-      try {
-        const url = await uploadFileToS3(file);
-        setPresentationPdfUrl(url);
-      } catch (err: any) {
-        setUploadError(err.message || "Failed to upload PDF file.");
-      } finally {
-        setIsUploadingPdf(false);
-      }
-    } else {
-      setPresentationPptFile(file);
-      setIsUploadingPpt(true);
-      try {
-        const url = await uploadFileToS3(file);
-        setPresentationPptUrl(url);
-      } catch (err: any) {
-        setUploadError(err.message || "Failed to upload PPT/PPTX file.");
-      } finally {
-        setIsUploadingPpt(false);
-      }
+    setPresentationFile(file);
+    setIsUploading(true);
+    try {
+      const url = await uploadFileToS3(file);
+      setPresentationUrl(url);
+    } catch (err: any) {
+      setUploadError(err.message || "Failed to upload file.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleRemoveFile = (type: "pdf" | "ppt") => {
-    if (type === "pdf") {
-      setPresentationPdfFile(null);
-      setPresentationPdfUrl("");
-    } else {
-      setPresentationPptFile(null);
-      setPresentationPptUrl("");
-    }
+  const handleRemoveFile = () => {
+    setPresentationFile(null);
+    setPresentationUrl("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -305,7 +268,6 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
     }
 
     if (isDeadlinePassed || checkDeadlinePassed(deadline)) {
-      setIsDeadlinePassed(true);
       setErrorMsg("Submission deadline has passed. Late submissions are not accepted.");
       return;
     }
@@ -320,9 +282,9 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
       return;
     }
 
-    // At least one presentation file or URL required
-    if (!presentationPdfUrl && !presentationPptUrl) {
-      setErrorMsg("Please upload at least one presentation file (PDF or PPT/PPTX) or provide a Google Slides/Canva link.");
+    // Presentation file required
+    if (!presentationUrl) {
+      setErrorMsg("Please upload a presentation file (PDF or PPTX).");
       return;
     }
 
@@ -338,8 +300,8 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         techStack,
         githubUrl: githubUrl.trim(),
         deploymentUrl: deploymentUrl.trim() || undefined,
-        presentationPdfUrl: presentationPdfUrl || undefined,
-        presentationPptUrl: presentationPptUrl || undefined,
+        presentationPdfUrl: presentationUrl || undefined,
+        presentationPptUrl: undefined,
         videoUrl: videoUrl.trim() || undefined,
       };
 
@@ -353,8 +315,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
       if (!res.ok || !data.success) {
         const errorText = data?.message || "Failed to submit project.";
-        if (errorText.toLowerCase().includes("deadline")) setIsDeadlinePassed(true);
-        if (errorText.toLowerCase().includes("closed by the admin")) setIsSubmissionsOpen(false);
+        // Status changes will be picked up by TeamsContext polling
         throw new Error(errorText);
       }
 
@@ -390,7 +351,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
             Team Authentication Required
           </h3>
           <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed font-mono">
-            To submit or edit your project and upload your presentation slides (up to 50MB limit), please sign in with your Team ID or Leader Email.
+            To submit or edit your project and upload your presentation slides (up to 10MB limit), please sign in with your Team ID or Leader Email.
           </p>
           <button
             onClick={onSwitchToTeamLogin}
@@ -784,109 +745,58 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
 
           <div className="p-5 bg-black border border-neutral-800 space-y-6 font-mono">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-300 uppercase tracking-wider font-semibold">Upload Presentation Files (Max 2 files)</span>
+              <span className="text-xs text-neutral-300 uppercase tracking-wider font-semibold">Upload Presentation File</span>
               <span className="text-[10px] text-orange-400 px-2 py-0.5 bg-orange-500/10 border border-orange-500/30 uppercase font-bold">
-                MAX SIZE: 50MB EACH
+                MAX SIZE: 10MB
               </span>
             </div>
 
-            {/* PDF Upload */}
+            {/* Single file upload: PDF or PPTX */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] text-neutral-400 font-mono flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-orange-500" />
-                  PDF Document (Optional)
+                  Presentation (PDF or PPTX) <span className="text-orange-500">*</span>
                 </label>
-                {presentationPdfUrl && (
+                {presentationUrl && (
                   <button
                     type="button"
-                    onClick={() => handleRemoveFile("pdf")}
+                    onClick={handleRemoveFile}
                     className="text-rose-400 hover:text-rose-300 text-[10px] font-mono flex items-center gap-1 cursor-pointer"
                   >
                     <X className="w-3 h-3" /> Remove
                   </button>
                 )}
               </div>
-              {!presentationPdfUrl ? (
+              {!presentationUrl ? (
                 <div className="relative border border-dashed border-neutral-800 hover:border-orange-500/60 p-4 text-center cursor-pointer transition-colors bg-black">
                   <input
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,.ppt,.pptx"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, "pdf");
+                      if (file) handleFileUpload(file);
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    disabled={isUploadingPdf}
+                    disabled={isUploading}
                   />
                   <Upload className="w-5 h-5 mx-auto text-orange-500 mb-1" />
                   <span className="text-xs text-neutral-300 font-mono block">
-                    {isUploadingPdf ? "Uploading PDF..." : "Click or drag PDF (max 50MB)"}
+                    {isUploading ? "Uploading..." : "Click or drag PDF / PPTX (max 10MB)"}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-between p-3 bg-black border border-orange-500/30 text-xs">
                   <span className="text-orange-400 font-mono flex items-center gap-1.5 font-bold">
-                    <FileCheck className="w-4 h-4" /> PDF Attached
+                    <FileCheck className="w-4 h-4" /> {presentationFile?.name || "Presentation"} Attached
                   </span>
                   <a
-                    href={presentationPdfUrl}
+                    href={presentationUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="text-orange-400 hover:underline font-semibold"
                   >
-                    Preview PDF &rarr;
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* PPT/PPTX Upload */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] text-neutral-400 font-mono flex items-center gap-1.5">
-                  <File className="w-3.5 h-3.5 text-orange-500" />
-                  PPT / PPTX Presentation (Optional)
-                </label>
-                {presentationPptUrl && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile("ppt")}
-                    className="text-rose-400 hover:text-rose-300 text-[10px] font-mono flex items-center gap-1 cursor-pointer"
-                  >
-                    <X className="w-3 h-3" /> Remove
-                  </button>
-                )}
-              </div>
-              {!presentationPptUrl ? (
-                <div className="relative border border-dashed border-neutral-800 hover:border-orange-500/60 p-4 text-center cursor-pointer transition-colors bg-black">
-                  <input
-                    type="file"
-                    accept=".ppt,.pptx"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, "ppt");
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    disabled={isUploadingPpt}
-                  />
-                  <Upload className="w-5 h-5 mx-auto text-orange-500 mb-1" />
-                  <span className="text-xs text-neutral-300 font-mono block">
-                    {isUploadingPpt ? "Uploading PPT/PPTX..." : "Click or drag PPT/PPTX (max 50MB)"}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-3 bg-black border border-orange-500/30 text-xs">
-                  <span className="text-orange-400 font-mono flex items-center gap-1.5 font-bold">
-                    <FileCheck className="w-4 h-4" /> PPT/PPTX Attached
-                  </span>
-                  <a
-                    href={presentationPptUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-orange-400 hover:underline font-semibold"
-                  >
-                    Preview PPT &rarr;
+                    Preview &rarr;
                   </a>
                 </div>
               )}
@@ -916,7 +826,7 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
           )}
           <button
             type="submit"
-            disabled={isSubmitting || isUploadingPdf || isUploadingPpt || isDeadlinePassed}
+            disabled={isSubmitting || isUploading || isDeadlinePassed}
             className={`w-full sm:w-auto min-w-[280px] px-8 py-4 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-3 transition-colors border ${
               isDeadlinePassed
                 ? "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed opacity-60"

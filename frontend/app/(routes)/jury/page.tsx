@@ -1,7 +1,7 @@
 "use client";
 
 import { JuryPortal } from "@/components/jury/JuryPortal";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/context/TeamsContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 

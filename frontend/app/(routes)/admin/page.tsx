@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminPortal } from "@/components/admin/AdminPortal";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/context/TeamsContext";
 import { useState, useEffect } from "react";
 
 export default function AdminPage() {
