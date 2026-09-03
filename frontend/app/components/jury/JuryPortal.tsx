@@ -23,6 +23,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import { Team } from "@/types";
+import { useAuth } from "@/lib/authContext";
 
 interface JuryPortalProps {
   paginatedTeams: Team[];
@@ -67,12 +68,18 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
   onRefreshData,
   onScoreProject,
 }) => {
+  // Get Firebase user
+  const { user, loading: authLoading } = useAuth();
+
   // Jury Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   const [juryEmail, setJuryEmail] = useState("");
   const [accessCodeInput, setAccessCodeInput] = useState("");
   const [authError, setAuthError] = useState("");
+
+  // Allowed emails from backend
+  const [allowedEmails, setAllowedEmails] = useState<string[]>([]);
 
   // Search & Filter State – initialised from sessionStorage
   const loadFilterState = () => {
@@ -128,12 +135,45 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
   const isFirstRender = useRef(true);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Read localStorage only on client
+  // Fetch allowed emails on mount
+  useEffect(() => {
+    const fetchAllowedEmails = async () => {
+      try {
+        const res = await fetch("/api/jury/allowed-emails");
+        const data = await res.json();
+        if (data.success) {
+          setAllowedEmails(data.allowedEmails.map((e: string) => e.toLowerCase()));
+        }
+      } catch (_) {
+        // fallback: allow empty list (no access)
+      }
+    };
+    fetchAllowedEmails();
+  }, []);
+
+  // ✅ FIX: Read localStorage and check consistency with Firebase user
   useEffect(() => {
     const auth = localStorage.getItem("origin_jury_auth") === "true";
-    setIsAuthenticated(auth);
+    const storedEmail = localStorage.getItem("origin_jury_email") || "";
+
+    // If Firebase user is logged in, ensure stored email matches
+    if (user && user.email) {
+      const firebaseEmail = user.email.toLowerCase();
+      if (auth && storedEmail.toLowerCase() !== firebaseEmail) {
+        // Mismatch: clear the stale jury session
+        localStorage.removeItem("origin_jury_auth");
+        localStorage.removeItem("origin_jury_email");
+        setIsAuthenticated(false);
+      } else {
+        setIsAuthenticated(auth);
+      }
+    } else {
+      // No Firebase user: respect stored auth (but it will be invalid anyway)
+      setIsAuthenticated(auth);
+    }
+
     setIsAuthLoading(false);
-  }, []);
+  }, [user]);
 
   // Persist filter state to sessionStorage whenever it changes
   useEffect(() => {
@@ -175,6 +215,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
     };
   }, [currentPage, pageSize, searchTerm, statusFilter, onFetchData]);
 
+  // Handle login with double security
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -192,7 +233,28 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
       return;
     }
 
-    // Success
+    // 1️⃣ Check if email is in the allowed list
+    if (!allowedEmails.includes(trimmedEmail.toLowerCase())) {
+      setAuthError(
+        `Your email "${trimmedEmail}" is not authorised for jury access. ` +
+        `Please contact the organisers to add you to the allowed list.`
+      );
+      return;
+    }
+
+    // 2️⃣ Double security: if Firebase user is logged in, ensure it matches
+    if (user && user.email) {
+      const firebaseEmail = user.email.toLowerCase();
+      if (firebaseEmail !== trimmedEmail.toLowerCase()) {
+        setAuthError(
+          `You are signed in with "${user.email}", which does not match the jury email you entered ("${trimmedEmail}").\n` +
+          `Please sign out and sign in with the correct email, or enter the same email you are signed in with.`
+        );
+        return;
+      }
+    }
+
+    // Success – both checks passed
     setIsAuthenticated(true);
     if (typeof window !== "undefined") {
       localStorage.setItem("origin_jury_auth", "true");
@@ -201,12 +263,17 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
     setAuthError("");
   };
 
+  // ✅ FIX: Clear localStorage and reset state on logout
   const handleLogout = () => {
     setIsAuthenticated(false);
     if (typeof window !== "undefined") {
       localStorage.removeItem("origin_jury_auth");
       localStorage.removeItem("origin_jury_email");
     }
+    // Optionally reset form fields
+    setJuryEmail("");
+    setAccessCodeInput("");
+    setAuthError("");
   };
 
   // Sync scores when opening scoring modal
@@ -262,8 +329,8 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
     setCurrentPage(1);
   };
 
-  // Show loading spinner while checking auth status
-  if (isAuthLoading) {
+  // Show loading spinner while checking auth status or Firebase loading
+  if (isAuthLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent" />
@@ -285,6 +352,11 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             </h2>
             <p className="text-xs text-neutral-400">
               Enter your Jury Access Code and your email address. Only authorised jury emails are allowed.
+              {user && (
+                <span className="block mt-1 text-orange-400">
+                  You are currently signed in as: <strong>{user.email}</strong>
+                </span>
+              )}
             </p>
           </div>
 
@@ -318,7 +390,7 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
             </div>
 
             {authError && (
-              <div className="p-3 bg-rose-950/40 border border-rose-800/80 text-xs font-mono text-rose-400">
+              <div className="p-3 bg-rose-950/40 border border-rose-800/80 text-xs font-mono text-rose-400 whitespace-pre-wrap">
                 {authError}
               </div>
             )}
@@ -336,7 +408,9 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
     );
   }
 
-  // Authenticated view
+  // ============================================================
+  // AUTHENTICATED VIEW (unchanged from previous version)
+  // ============================================================
   return (
     <div className="min-h-screen pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
       {/* Header Banner */}
@@ -362,6 +436,11 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
               <span className="font-bold text-white">
                 {typeof window !== "undefined" && localStorage.getItem("origin_jury_email")}
               </span>
+              {user && user.email && (
+                <span className="text-neutral-400 ml-2">
+                  ( {user.email})
+                </span>
+              )}
             </p>
           </div>
         </div>
