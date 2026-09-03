@@ -37,7 +37,6 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // State
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
-  // ✅ FIX: initialise to null, not from localStorage (hydration fix)
   const [activeTeam, setActiveTeam] = useState<Team | null>(null);
   const [stats, setStats] = useState<HackathonStats>({
     totalTeams: 0,
@@ -61,7 +60,12 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
   const [isLoadingPaginated, setIsLoadingPaginated] = useState(false);
 
-  // Helper for admin headers
+  // Polling backoff state
+  const [fetchFailureCount, setFetchFailureCount] = useState(0);
+  const MAX_FAILURES = 5; // stop polling after 5 consecutive failures
+  const BASE_INTERVAL = 5000; // 5 seconds
+  const MAX_BACKOFF = 60000; // 1 minute max
+
   const getAdminHeaders = (): Record<string, string> => {
     try {
       const saved = localStorage.getItem("origin_active_admin");
@@ -75,7 +79,6 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return {};
   };
 
-  // Fetch paginated teams (for admin)
   const fetchPaginated = useCallback(
     async (options: { page: number; limit: number; search: string; status: string; track: string }) => {
       setIsLoadingPaginated(true);
@@ -111,7 +114,7 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     []
   );
 
-  // Main data fetch
+  // Main data fetch with backoff
   const fetchData = useCallback(async () => {
     try {
       const [teamsRes, annRes, statsRes] = await Promise.all([
@@ -120,7 +123,15 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         safeFetchJson("/api/stats"),
       ]);
 
-      if (teamsRes && teamsRes.success && Array.isArray(teamsRes.teams)) {
+      // If any of the calls failed (returned null), treat as failure
+      if (!teamsRes || !annRes || !statsRes) {
+        throw new Error("One or more API calls failed");
+      }
+
+      // Success: reset failure count and update state
+      setFetchFailureCount(0);
+
+      if (teamsRes.success && Array.isArray(teamsRes.teams)) {
         setTeams(teamsRes.teams);
         const savedId = localStorage.getItem("origin_active_team_id");
         if (savedId) {
@@ -134,15 +145,16 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
       }
 
-      if (annRes && annRes.success && Array.isArray(annRes.announcements)) {
+      if (annRes.success && Array.isArray(annRes.announcements)) {
         setAnnouncements(annRes.announcements);
       }
 
-      if (statsRes && statsRes.success && statsRes.stats) {
+      if (statsRes.success && statsRes.stats) {
         setStats(statsRes.stats);
       }
     } catch (_err) {
-      // fallback
+      // Increment failure count
+      setFetchFailureCount((prev) => prev + 1);
     }
   }, []);
 
@@ -166,18 +178,48 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [user, teams]);
 
-  // Initial fetch + polling
+  // Initial fetch + polling with backoff
   useEffect(() => {
+    // Immediately fetch once
     fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
+
+    // Determine dynamic interval based on failure count
+    const getInterval = () => {
+      if (fetchFailureCount === 0) return BASE_INTERVAL;
+      // Exponential backoff: 5s, 10s, 20s, 40s, 60s
+      const backoff = Math.min(BASE_INTERVAL * Math.pow(2, fetchFailureCount - 1), MAX_BACKOFF);
+      return backoff;
+    };
+
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (intervalId) clearInterval(intervalId);
+      const delay = getInterval();
+      intervalId = setInterval(() => {
+        // Only fetch if we haven't reached max failures
+        if (fetchFailureCount < MAX_FAILURES) {
+          fetchData();
+        } else {
+          // Stop polling after max failures; optionally log a warning
+          console.warn("Polling stopped due to too many consecutive API failures.");
+          if (intervalId) clearInterval(intervalId);
+        }
+      }, delay);
+    };
+
+    startPolling();
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [fetchData, fetchFailureCount]);
 
   const refreshData = useCallback(() => {
+    setFetchFailureCount(0); // reset failure count on manual refresh
     fetchData();
   }, [fetchData]);
 
-  // Clear active team (called on sign‑out)
   const clearActiveTeam = useCallback(() => {
     setActiveTeam(null);
     localStorage.removeItem("origin_active_team_id");

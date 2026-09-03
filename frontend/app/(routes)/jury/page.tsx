@@ -53,7 +53,7 @@ export default function JuryPage() {
     status: (savedFilters?.status as "all" | "evaluated" | "pending") || "all",
   }));
 
-  // ✅ Memoize to prevent unnecessary re‑renders in child
+  // Memoize to prevent unnecessary re‑renders in child
   const handleFetchData = useCallback((newFilters: {
     page: number;
     limit: number;
@@ -82,7 +82,7 @@ export default function JuryPage() {
     });
   }, [filters, fetchPaginated]);
 
-  // ✅ Memoize refresh callback
+  // Memoize refresh callback
   const handleRefresh = useCallback(() => {
     const scoredMap: Record<string, 'all' | 'true' | 'false'> = {
       all: 'all',
@@ -130,8 +130,9 @@ export default function JuryPage() {
         body: JSON.stringify(score),
       });
       if (res.ok) {
+        // ✅ Refresh the list using the current filters – no need to parse sessionStorage again
         handleRefresh();
-        alert("✅ Score saved successfully!");
+        alert(" Score saved successfully!");
       } else {
         const err = await res.json();
         console.error("Scoring failed:", err);

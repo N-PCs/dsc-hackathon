@@ -3,17 +3,19 @@ import { getAuthorizedAdmins } from '../services/adminService.js';
 import { logger } from '../utils/logger.js';
 
 export async function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
-  const adminEmail = (
+  // Try header first, then query param, then Authorization header
+  let adminEmail = (
     (req.headers['x-admin-email'] as string) ||
+    (req.query.adminEmail as string) ||
     (req.headers['authorization']?.replace('Bearer ', '') as string) ||
     ''
   ).trim().toLowerCase();
 
   if (!adminEmail) {
-    logger.warn({ ip: req.ip }, 'Admin auth missing header');
+    logger.warn({ ip: req.ip }, 'Admin auth missing');
     return res.status(401).json({
       success: false,
-      message: 'Unauthorized: x-admin-email header required',
+      message: 'Unauthorized: x-admin-email header or adminEmail query param required',
     });
   }
 
@@ -31,7 +33,6 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
   (req as any).adminUser = admin;
   next();
 }
-
 
 export async function requireJuryAuth(req: Request, res: Response, next: NextFunction) {
   const juryEmail = (req.headers['x-jury-email'] as string || '').trim().toLowerCase();

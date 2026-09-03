@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { clearAllData } from '../config/database.js';
+import { clearAllData, getDeadline as getDbDeadline, setDeadline as setDbDeadline } from '../config/database.js';
 import { CACHE_KEYS, invalidateCache } from '../config/redis.js';
 import * as adminService from '../services/adminService.js';
 import * as teamService from '../services/teamService.js';
 import { logger } from '../utils/logger.js';
-
+import { isDeadlinePassed } from '../utils/deadline.js';
 
 const adminOtps = new Map<string, { otp: string; expiresAt: number }>();
 
@@ -87,7 +87,9 @@ export const toggleRegistrations = async (req: Request, res: Response) => {
 
 export const getSubmissionStatus = async (req: Request, res: Response) => {
   const isOpen = await teamService.getSubmissionStatus();
-  res.json({ success: true, submissionsOpen: isOpen });
+  const deadline = await getDbDeadline();
+  const isPassed = isDeadlinePassed(deadline);
+  res.json({ success: true, submissionsOpen: isOpen, deadline, isDeadlinePassed: isPassed });
 };
 
 export const getRegistrationStatus = async (req: Request, res: Response) => {
@@ -138,4 +140,24 @@ export const scoreProject = async (req: Request, res: Response) => {
   };
   await teamService.updateTeam(team);
   res.json({ success: true, message: 'Score saved', team });
+};
+
+// ---- Deadline endpoints ----
+export const getDeadline = async (req: Request, res: Response) => {
+  const deadline = await getDbDeadline();
+  res.json({ success: true, deadline });
+};
+
+export const setDeadline = async (req: Request, res: Response) => {
+  const { deadline } = req.body;
+  if (!deadline) {
+    return res.status(400).json({ success: false, message: 'Deadline required' });
+  }
+  if (isNaN(Date.parse(deadline))) {
+    return res.status(400).json({ success: false, message: 'Invalid date format' });
+  }
+  await setDbDeadline(deadline);
+  // Invalidate cache so subsequent GET /submission-status picks up new deadline
+  await invalidateCache(CACHE_KEYS.SUBMISSION_DEADLINE);
+  res.json({ success: true, message: 'Deadline updated', deadline });
 };

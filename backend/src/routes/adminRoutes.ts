@@ -7,11 +7,13 @@ import {
   removeWhitelist,
   toggleSubmissions,
   toggleRegistrations,
-  getSubmissionStatus,    
-  getRegistrationStatus,   
+  getSubmissionStatus,
+  getRegistrationStatus,
   clearDatabase,
   updateTeamStatus,
   scoreProject,
+  getDeadline,
+  setDeadline,
 } from '../controllers/adminController.js';
 import {
   validate,
@@ -22,6 +24,7 @@ import {
   scoreSubmissionValidation,
 } from '../validators/index.js';
 import { requireAdminAuth } from '../middleware/auth.js';
+import * as adminService from '../services/adminService.js';
 
 const router = Router();
 
@@ -29,7 +32,19 @@ const router = Router();
 router.post('/auth/request-otp', adminOtpRequestValidation, validate, requestOtp);
 router.post('/auth/verify-otp', adminOtpVerifyValidation, validate, verifyOtp);
 
-// ✅ These two endpoints are now public (no admin auth required)
+// ✅ Public email verification
+router.post('/verify-email', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+  const admins = await adminService.getAuthorizedAdmins();
+  const admin = admins.find(a => a.email.toLowerCase() === email.trim().toLowerCase());
+  if (!admin) {
+    return res.status(403).json({ success: false, message: 'Not authorized' });
+  }
+  res.json({ success: true, admin });
+});
+
+// Public status endpoints
 router.get('/submissions-status', getSubmissionStatus);
 router.get('/registrations-status', getRegistrationStatus);
 
@@ -41,9 +56,13 @@ router.get('/whitelist', getWhitelist);
 router.post('/whitelist', whitelistAddValidation, validate, addWhitelist);
 router.delete('/whitelist/:email', removeWhitelist);
 
-// Submission & registration toggles (admin only)
+// Submission & registration toggles
 router.post('/submissions-toggle', toggleSubmissions);
 router.post('/registrations-toggle', toggleRegistrations);
+
+// Deadline management
+router.get('/deadline', getDeadline);
+router.post('/deadline', setDeadline);
 
 // Database
 router.post('/clear-database', clearDatabase);

@@ -12,9 +12,10 @@ export default function AdminPage() {
     fetchPaginated,
     refreshData,
     announcements,
+    stats,
   } = useTeams();
 
-  // Local state for filters (mirroring the AdminPortal's internal state)
+  // Local state for filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "verified" | "rejected">("all");
   const [trackFilter, setTrackFilter] = useState("all");
@@ -33,17 +34,23 @@ export default function AdminPage() {
   }, [currentPage, pageSize, search, statusFilter, trackFilter, fetchPaginated]);
 
   // Helper to get admin email from localStorage
-  const getAdminHeaders = (): Record<string, string> => {
+  const getAdminEmail = (): string => {
     try {
       const saved = localStorage.getItem("origin_active_admin");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.email) {
-          return { "x-admin-email": String(parsed.email) };
+          return String(parsed.email);
         }
       }
     } catch (_e) {}
-    return {};
+    return "";
+  };
+
+  // Helper to get admin headers
+  const getAdminHeaders = (): Record<string, string> => {
+    const email = getAdminEmail();
+    return email ? { "x-admin-email": email } : {};
   };
 
   const handleUpdateTeamStatus = async (
@@ -64,7 +71,6 @@ export default function AdminPage() {
         },
         body: JSON.stringify(status),
       });
-      // Refetch paginated data
       fetchPaginated({
         page: currentPage,
         limit: pageSize,
@@ -72,6 +78,7 @@ export default function AdminPage() {
         status: statusFilter,
         track: trackFilter,
       });
+      refreshData();
     } catch (err) {
       console.error("Failed to update team status:", err);
     }
@@ -104,6 +111,7 @@ export default function AdminPage() {
         status: statusFilter,
         track: trackFilter,
       });
+      refreshData();
     } catch (err) {
       console.error("Failed to score project:", err);
     }
@@ -124,6 +132,7 @@ export default function AdminPage() {
         status: statusFilter,
         track: trackFilter,
       });
+      refreshData();
     } catch (err) {
       console.error("Failed to delete team:", err);
     }
@@ -143,13 +152,12 @@ export default function AdminPage() {
         },
         body: JSON.stringify({ title, message, category }),
       });
-      refreshData(); // refresh announcements
+      refreshData();
     } catch (err) {
       console.error("Failed to send announcement:", err);
     }
   };
 
-  // ✅ NEW: Delete announcement handler
   const handleDeleteAnnouncement = async (announcementId: string) => {
     try {
       const res = await fetch(`/api/announcements/${announcementId}`, {
@@ -159,12 +167,63 @@ export default function AdminPage() {
         },
       });
       if (res.ok) {
-        refreshData(); // refresh announcements and other data
+        refreshData();
       } else {
         console.error("Failed to delete announcement");
       }
     } catch (err) {
       console.error("Failed to delete announcement:", err);
+    }
+  };
+
+  // Export handlers
+  const handleExportExcel = async () => {
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) {
+      alert("Admin email not found. Please log in again.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/export-excel?adminEmail=${encodeURIComponent(adminEmail)}`, {
+        headers: { 'x-admin-email': adminEmail },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `origin-teams-${Date.now()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to export Excel. Please try again.');
+    }
+  };
+
+  const handleExportCsv = async () => {
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) {
+      alert("Admin email not found. Please log in again.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/export-csv?adminEmail=${encodeURIComponent(adminEmail)}`, {
+        headers: { 'x-admin-email': adminEmail },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `origin-teams-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to export CSV. Please try again.');
     }
   };
 
@@ -174,6 +233,7 @@ export default function AdminPage() {
       pagination={pagination}
       isLoading={isLoadingPaginated}
       announcements={announcements}
+      stats={stats}
       search={search}
       setSearch={setSearch}
       statusFilter={statusFilter}
@@ -188,8 +248,10 @@ export default function AdminPage() {
       onScoreProject={handleScoreProject}
       onDeleteTeam={handleDeleteTeam}
       onSendAnnouncement={handleSendAnnouncement}
-      onDeleteAnnouncement={handleDeleteAnnouncement} // ← pass the new handler
+      onDeleteAnnouncement={handleDeleteAnnouncement}
       onRefreshData={refreshData}
+      onExportExcel={handleExportExcel}
+      onExportCsv={handleExportCsv}
     />
   );
 }

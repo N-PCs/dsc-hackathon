@@ -7,6 +7,7 @@ import { Pool } from '@neondatabase/serverless';
 import { Team, Announcement, AdminUser } from '../utils/types.js';
 import { getCachedData, setCachedData, invalidateCache, CACHE_KEYS } from './redis.js';
 import { logger } from '../utils/logger.js';
+import { DEFAULT_SUBMISSION_DEADLINE } from '../utils/deadline.js';
 
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 logger.info({ hasUrl: !!connectionString }, '[NeonDB] Connection status');
@@ -79,7 +80,6 @@ const DUMMY_LEAD_TEAM: Team = {
   notes: 'Verified Lead Team - Ready for Project Submission',
 };
 
-// 🔬 Test team
 const TEST_TEAM: Team = {
   id: 'ORIGIN-TEST-999',
   teamName: 'Test Team Varun',
@@ -260,7 +260,6 @@ export async function getAllTeams(): Promise<Team[]> {
   return localTeams;
 }
 
-// Helper to build WHERE clauses and parameters
 function buildWhereClauses(options: {
   search: string;
   status: string;
@@ -312,6 +311,76 @@ function buildWhereClauses(options: {
   return { whereClauses, params, paramIndex };
 }
 
+/**
+ * Shared in-memory filter & pagination logic (used as fallback and when Neon is off)
+ */
+function runMemoryFallback(
+  page: number,
+  limit: number,
+  search: string,
+  status: string,
+  track: string,
+  hasProject?: boolean,
+  scored?: 'all' | 'true' | 'false'
+) {
+  const offset = (page - 1) * limit;
+  let allTeams = localTeams.slice(); // use current in-memory snapshot
+
+  if (search) {
+    const s = search.toLowerCase();
+    allTeams = allTeams.filter(t =>
+      t.teamName.toLowerCase().includes(s) ||
+      t.leader.name.toLowerCase().includes(s) ||
+      t.leader.email.toLowerCase().includes(s) ||
+      t.id.toLowerCase().includes(s) ||
+      t.transactionRef?.toLowerCase().includes(s)
+    );
+  }
+  if (status !== 'all') {
+    allTeams = allTeams.filter(t => t.paymentStatus === status);
+  }
+  if (track !== 'all') {
+    allTeams = allTeams.filter(t => t.track === track);
+  }
+  if (hasProject) {
+    allTeams = allTeams.filter(t => !!t.project);
+  }
+  if (scored && scored !== 'all') {
+    const hasScore = scored === 'true';
+    allTeams = allTeams.filter(t => hasScore ? !!t.project?.score : !t.project?.score);
+  }
+
+  const total = allTeams.length;
+  const paginated = allTeams.slice(offset, offset + limit);
+
+  // Count evaluated/pending (ignoring the scored filter)
+  let baseTeams = localTeams.slice();
+  if (search) {
+    const s = search.toLowerCase();
+    baseTeams = baseTeams.filter(t =>
+      t.teamName.toLowerCase().includes(s) ||
+      t.leader.name.toLowerCase().includes(s) ||
+      t.leader.email.toLowerCase().includes(s) ||
+      t.id.toLowerCase().includes(s) ||
+      t.transactionRef?.toLowerCase().includes(s)
+    );
+  }
+  if (status !== 'all') {
+    baseTeams = baseTeams.filter(t => t.paymentStatus === status);
+  }
+  if (track !== 'all') {
+    baseTeams = baseTeams.filter(t => t.track === track);
+  }
+  if (hasProject) {
+    baseTeams = baseTeams.filter(t => !!t.project);
+  }
+  const projectTeams = baseTeams.filter(t => !!t.project);
+  const evaluatedCount = projectTeams.filter(t => !!t.project?.score).length;
+  const pendingCount = projectTeams.length - evaluatedCount;
+
+  return { teams: paginated, total, page, limit, evaluatedCount, pendingCount };
+}
+
 export async function getPaginatedTeams(options: {
   page: number;
   limit: number;
@@ -322,9 +391,13 @@ export async function getPaginatedTeams(options: {
   scored?: 'all' | 'true' | 'false';
 }) {
   const { page, limit, search, status, track, hasProject, scored } = options;
-  const offset = (page - 1) * limit;
 
-  // Build WHERE clauses once
+  // If Neon is not available, use in‑memory directly
+  if (!useNeon || !pool) {
+    return runMemoryFallback(page, limit, search, status, track, hasProject, scored);
+  }
+
+  // Build WHERE clauses
   const { whereClauses, params, paramIndex } = buildWhereClauses({
     search,
     status,
@@ -333,121 +406,77 @@ export async function getPaginatedTeams(options: {
     scored,
   });
   const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const offset = (page - 1) * limit;
 
-  // --- In‑memory fallback (if not using Neon) ---
-  if (!useNeon || !pool) {
-    let allTeams = await getAllTeams();
-    // Apply filters
-    if (search) {
-      const s = search.toLowerCase();
-      allTeams = allTeams.filter(t =>
-        t.teamName.toLowerCase().includes(s) ||
-        t.leader.name.toLowerCase().includes(s) ||
-        t.leader.email.toLowerCase().includes(s) ||
-        t.id.toLowerCase().includes(s) ||
-        t.transactionRef?.toLowerCase().includes(s)
-      );
-    }
-    if (status !== 'all') {
-      allTeams = allTeams.filter(t => t.paymentStatus === status);
-    }
-    if (track !== 'all') {
-      allTeams = allTeams.filter(t => t.track === track);
-    }
-    if (hasProject) {
-      allTeams = allTeams.filter(t => !!t.project);
-    }
-    if (scored && scored !== 'all') {
-      const hasScore = scored === 'true';
-      allTeams = allTeams.filter(t => hasScore ? !!t.project?.score : !t.project?.score);
-    }
-    const total = allTeams.length;
-    const paginated = allTeams.slice(offset, offset + limit);
+  try {
+    // 1. Count total (with all filters including scored)
+    const countQuery = `SELECT COUNT(*) FROM teams ${whereSql}`;
+    const countRes = await pool.query(countQuery, params);
+    const total = parseInt(countRes.rows[0].count, 10);
 
-    // Count evaluated/pending based on the same filters, but ignoring scored
-    // We need to re‑apply filters without the scored condition
-    let filteredTeams = allTeams;
-    // Remove the scored filter by re‑filtering from the start (or copy allTeams before applying scored)
-    // Since we already have allTeams after all filters, we can't easily remove scored.
-    // Better: apply all filters except scored to a fresh list.
-    let baseTeams = await getAllTeams();
-    if (search) {
-      const s = search.toLowerCase();
-      baseTeams = baseTeams.filter(t =>
-        t.teamName.toLowerCase().includes(s) ||
-        t.leader.name.toLowerCase().includes(s) ||
-        t.leader.email.toLowerCase().includes(s) ||
-        t.id.toLowerCase().includes(s) ||
-        t.transactionRef?.toLowerCase().includes(s)
-      );
+    // 2. Get paginated teams – try to order by registered_at, fallback to id if that fails
+    let dataQuery = `
+      SELECT data FROM teams
+      ${whereSql}
+      ORDER BY registered_at DESC NULLS LAST
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    let dataParams = [...params, limit, offset];
+    let dataRes;
+    try {
+      dataRes = await pool.query(dataQuery, dataParams);
+    } catch (orderErr) {
+      // If ordering by registered_at fails (e.g. column missing), fallback to order by id
+      logger.warn({ err: orderErr }, '[NeonDB] Order by registered_at failed, falling back to id');
+      dataQuery = `
+        SELECT data FROM teams
+        ${whereSql}
+        ORDER BY id DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+      dataRes = await pool.query(dataQuery, dataParams);
     }
-    if (status !== 'all') {
-      baseTeams = baseTeams.filter(t => t.paymentStatus === status);
-    }
-    if (track !== 'all') {
-      baseTeams = baseTeams.filter(t => t.track === track);
-    }
-    if (hasProject) {
-      baseTeams = baseTeams.filter(t => !!t.project);
-    }
-    // Now count evaluated/pending among baseTeams (which have a project)
-    const projectTeams = baseTeams.filter(t => !!t.project);
-    const evaluatedCount = projectTeams.filter(t => !!t.project?.score).length;
-    const pendingCount = projectTeams.length - evaluatedCount;
+    const teams = dataRes.rows.map(r => r.data as Team);
 
-    return { teams: paginated, total, page, limit, evaluatedCount, pendingCount };
+    // 3. Count evaluated/pending (without the scored condition)
+    const { whereClauses: countWhereClauses, params: countParams } = buildWhereClauses({
+      search,
+      status,
+      track,
+      hasProject,
+      // scored: undefined → excludes scored condition
+    });
+    const countWhereSql = countWhereClauses.length ? `WHERE ${countWhereClauses.join(' AND ')}` : '';
+
+    const evalCountQuery = `
+      SELECT COUNT(*) FROM teams
+      ${countWhereSql ? countWhereSql + ' AND' : 'WHERE'}
+      data->'project' IS NOT NULL
+      AND data->'project'->'score' IS NOT NULL
+    `;
+    const pendingCountQuery = `
+      SELECT COUNT(*) FROM teams
+      ${countWhereSql ? countWhereSql + ' AND' : 'WHERE'}
+      data->'project' IS NOT NULL
+      AND data->'project'->'score' IS NULL
+    `;
+
+    const evalRes = await pool.query(evalCountQuery, countParams);
+    const pendingRes = await pool.query(pendingCountQuery, countParams);
+    const evaluatedCount = parseInt(evalRes.rows[0].count, 10);
+    const pendingCount = parseInt(pendingRes.rows[0].count, 10);
+
+    // Update local cache
+    setCachedData(CACHE_KEYS.TEAMS, teams).catch(() => {});
+    localTeams = teams; // keep in-memory copy in sync
+
+    return { teams, total, page, limit, evaluatedCount, pendingCount };
+  } catch (err) {
+    // ❗ Any Neon error → fall back to in‑memory
+    handleDBError(err, 'getPaginatedTeams');
+    logger.warn({ err }, '[NeonDB] Falling back to in‑memory pagination');
+    return runMemoryFallback(page, limit, search, status, track, hasProject, scored);
   }
-
-  // --- Neon DB path ---
-
-  // 1. Count total (with all filters including scored)
-  const countQuery = `SELECT COUNT(*) FROM teams ${whereSql}`;
-  const countRes = await pool.query(countQuery, params);
-  const total = parseInt(countRes.rows[0].count, 10);
-
-  // 2. Get paginated teams
-  const dataQuery = `
-    SELECT data FROM teams
-    ${whereSql}
-    ORDER BY registered_at DESC NULLS LAST
-    LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-  `;
-  const dataParams = [...params, limit, offset];
-  const dataRes = await pool.query(dataQuery, dataParams);
-  const teams = dataRes.rows.map(r => r.data as Team);
-
-  // 3. Build WHERE clauses without the scored condition for counts
-  const { whereClauses: countWhereClauses, params: countParams, paramIndex: countParamIndex } = buildWhereClauses({
-    search,
-    status,
-    track,
-    hasProject,
-    // scored: undefined → excludes scored condition
-  });
-  const countWhereSql = countWhereClauses.length ? `WHERE ${countWhereClauses.join(' AND ')}` : '';
-
-  // Count evaluated (score exists) among teams that have a project
-  const evalCountQuery = `
-    SELECT COUNT(*) FROM teams
-    ${countWhereSql}
-    AND data->'project' IS NOT NULL
-    AND data->'project'->'score' IS NOT NULL
-  `;
-  // Count pending (score is null) among teams that have a project
-  const pendingCountQuery = `
-    SELECT COUNT(*) FROM teams
-    ${countWhereSql}
-    AND data->'project' IS NOT NULL
-    AND data->'project'->'score' IS NULL
-  `;
-
-  const evalRes = await pool.query(evalCountQuery, countParams);
-  const pendingRes = await pool.query(pendingCountQuery, countParams);
-  const evaluatedCount = parseInt(evalRes.rows[0].count, 10);
-  const pendingCount = parseInt(pendingRes.rows[0].count, 10);
-
-  setCachedData(CACHE_KEYS.TEAMS, teams).catch(() => {});
-  return { teams, total, page, limit, evaluatedCount, pendingCount };
 }
 
 export async function findTeamByIdentifier(identifier: string): Promise<Team | null> {
@@ -547,8 +576,8 @@ export async function saveTeam(team: Team): Promise<Team> {
 }
 
 /**
- * ✅ FIXED: `track` and `team_name` are now included in the UPDATE statement.
- * This keeps the SQL column in sync with the JSONB data.
+ * `track` and `team_name` are included in the UPDATE statement to keep the
+ * SQL column in sync with the JSONB data.
  */
 export async function updateTeam(team: Team): Promise<Team> {
   if (useNeon && pool) {
@@ -788,6 +817,32 @@ export async function getRegistrationStatus(): Promise<boolean> {
   const cached = await getCachedData<boolean>(CACHE_KEYS.REGISTRATION_STATUS);
   if (cached !== null && cached !== undefined) return Boolean(cached);
   return localRegistrationsOpen;
+}
+
+
+export async function getDeadline(): Promise<string> {
+  if (useNeon && pool) {
+    try {
+      const res = await pool.query("SELECT value FROM settings WHERE key = 'submission_deadline'");
+      if (res.rows.length > 0) return res.rows[0].value;
+    } catch (err) { handleDBError(err, 'getDeadline'); }
+  }
+  // fallback to env or default
+  return process.env.SUBMISSION_DEADLINE || DEFAULT_SUBMISSION_DEADLINE;
+}
+
+export async function setDeadline(deadline: string): Promise<void> {
+  if (useNeon && pool) {
+    try {
+      await pool.query(
+        `INSERT INTO settings (key, value) VALUES ('submission_deadline', $1)
+         ON CONFLICT (key) DO UPDATE SET value = $1`,
+        [deadline]
+      );
+    } catch (err) { handleDBError(err, 'setDeadline'); }
+  }
+  // invalidate cache
+  await invalidateCache(CACHE_KEYS.SUBMISSION_DEADLINE);
 }
 
 export async function setRegistrationStatus(isOpen: boolean): Promise<void> {

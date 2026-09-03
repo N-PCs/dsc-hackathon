@@ -55,32 +55,48 @@ async function importTeams() {
   console.log(`📂 Reading CSV file: ${csvFilePath}`);
   const fileContent = fs.readFileSync(csvFilePath, 'utf-8');
   
-  // Parse with relaxed column count to handle rows with missing columns
   const records = parse(fileContent, {
     columns: true,
     skip_empty_lines: true,
     trim: true,
-    relax_column_count: true,        // allow rows with fewer columns
-    relax_column_count_less: true,   // allow rows with fewer columns
+    relax_column_count: true,
+    relax_column_count_less: true,
   });
 
   console.log(`📊 Total rows found: ${records.length}`);
 
   // ---- DEDUPLICATION: Keep the latest row per leader email ----
   const latestMap = new Map<string, any>();
+  let duplicateCount = 0;
+
   for (const row of records) {
     const leaderEmail = row['Team Lead: Email ID']?.trim()?.toLowerCase();
     if (!leaderEmail) continue;
     const timestamp = row['Timestamp'] ? new Date(row['Timestamp']).getTime() : 0;
     const existing = latestMap.get(leaderEmail);
-    if (!existing || timestamp > existing._timestamp) {
+    if (existing) {
+      duplicateCount++;
+      const oldTimestamp = existing._timestamp || 0;
+      if (timestamp > oldTimestamp) {
+        // Newer entry replaces older one
+        console.log(`   🔄 Duplicate found for ${leaderEmail}:`);
+        console.log(`      ❌ Old: ${existing['Team Name']} (${existing['Timestamp']})`);
+        console.log(`      ✅ New: ${row['Team Name']} (${row['Timestamp']}) → KEPT`);
+        row._timestamp = timestamp;
+        latestMap.set(leaderEmail, row);
+      } else {
+        console.log(`   ⏭️ Duplicate found for ${leaderEmail}:`);
+        console.log(`      ✅ Old: ${existing['Team Name']} (${existing['Timestamp']}) → KEPT`);
+        console.log(`      ❌ New: ${row['Team Name']} (${row['Timestamp']}) → DISCARDED`);
+      }
+    } else {
       row._timestamp = timestamp;
       latestMap.set(leaderEmail, row);
     }
   }
 
   const uniqueRows = Array.from(latestMap.values());
-  console.log(`✅ Found ${uniqueRows.length} unique leader emails (latest submissions).`);
+  console.log(`✅ Found ${uniqueRows.length} unique leader emails (${duplicateCount} duplicates removed).`);
 
   // ---- Import the deduplicated rows ----
   let successful = 0;
@@ -172,8 +188,11 @@ async function importTeams() {
       const paymentColumn = row['Registration Fees - Payment Amount & Account Details (see note)'] || '';
       const transactionRef = extractUTR(paymentColumn, teamId);
 
-      // --- Payment Proof URL ---
-      const paymentProofUrl = row['Please Upload the Screenshot of your payment']?.trim() || '';
+      // --- 🔥 FIXED: Payment Proof URL (flexible key matching) ---
+      const paymentProofKey = Object.keys(row).find(key =>
+        key.startsWith('Please Upload the Screenshot')
+      );
+      const paymentProofUrl = paymentProofKey ? row[paymentProofKey]?.trim() || '' : '';
       console.log(`   📎 Payment Proof: ${paymentProofUrl ? 'Yes' : 'No'}`);
 
       // --- Registered At ---
@@ -232,6 +251,8 @@ async function importTeams() {
   console.log(`📊 IMPORT SUMMARY:`);
   console.log(`   ✅ Successful imports: ${successful}`);
   console.log(`   ❌ Failed imports: ${failed}`);
+  console.log(`   🔄 Duplicates removed: ${duplicateCount}`);
+  console.log(`   📦 Unique teams: ${successful}`);
 
   if (failedRows.length > 0) {
     console.log('\n❌ Failed rows (with errors):');
