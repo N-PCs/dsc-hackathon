@@ -424,8 +424,6 @@ We welcome contributions! Please feel free to open Issues or pull requests.
     <img src="https://contrib.rocks/image?repo=N-PCs/dsc-hackathon" />
 </a>
 
-Made with [contrib.rocks](https://contrib.rocks).
-
 </div>
 
 ---
