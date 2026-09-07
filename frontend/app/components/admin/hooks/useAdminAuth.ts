@@ -53,9 +53,10 @@ export function useAdminAuth() {
   // Helper to fetch whitelist from backend (requires admin auth)
   const fetchWhitelist = async (adminEmail: string) => {
     try {
-      const res = await fetch("/api/admin/whitelist", {
-        headers: { "x-admin-email": adminEmail },
-      });
+      const token = typeof window !== "undefined" ? localStorage.getItem("origin_admin_token") : null;
+      const headers: Record<string, string> = { "x-admin-email": adminEmail };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch("/api/admin/whitelist", { headers });
       const data = await res.json();
       if (data.success && Array.isArray(data.authorizedAdmins)) {
         setAdminWhitelist(data.authorizedAdmins);
@@ -85,15 +86,20 @@ export function useAdminAuth() {
         if (data.success && data.admin) {
           setCurrentAdmin(data.admin);
           localStorage.setItem("origin_active_admin", JSON.stringify(data.admin));
+          if (data.token) {
+            localStorage.setItem("origin_admin_token", data.token);
+          }
           // Now fetch whitelist
           await fetchWhitelist(data.admin.email);
         } else {
           setCurrentAdmin(null);
           localStorage.removeItem("origin_active_admin");
+          localStorage.removeItem("origin_admin_token");
         }
       } catch (_e) {
         setCurrentAdmin(null);
         localStorage.removeItem("origin_active_admin");
+        localStorage.removeItem("origin_admin_token");
       }
     };
 
@@ -121,9 +127,15 @@ export function useAdminAuth() {
     };
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("origin_admin_token") : null;
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "x-admin-email": currentAdmin.email,
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       await fetch("/api/admin/whitelist", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-email": currentAdmin.email },
+        headers,
         body: JSON.stringify(newAdminObj),
       });
     } catch (_e) {}
@@ -149,9 +161,12 @@ export function useAdminAuth() {
     if (!confirm(`Revoke admin privileges for ${emailToRemove}?`)) return;
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("origin_admin_token") : null;
+      const headers: Record<string, string> = { "x-admin-email": currentAdmin?.email || "" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       await fetch(`/api/admin/whitelist/${encodeURIComponent(emailToRemove)}`, {
         method: "DELETE",
-        headers: { "x-admin-email": currentAdmin?.email || "" },
+        headers,
       });
     } catch (_e) {}
 
@@ -162,6 +177,7 @@ export function useAdminAuth() {
   async function handleSignOut() {
     setCurrentAdmin(null);
     localStorage.removeItem("origin_active_admin");
+    localStorage.removeItem("origin_admin_token");
     setOtpInput("");
     setAuthError("");
     try {

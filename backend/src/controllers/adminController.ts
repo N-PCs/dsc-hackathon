@@ -5,6 +5,7 @@ import * as adminService from '../services/adminService.js';
 import * as teamService from '../services/teamService.js';
 import { logger } from '../utils/logger.js';
 import { isDeadlinePassed } from '../utils/deadline.js';
+import { signAdminToken, timingSafeEqual } from '../utils/security.js';
 
 const adminOtps = new Map<string, { otp: string; expiresAt: number }>();
 
@@ -19,13 +20,20 @@ export const requestOtp = async (req: Request, res: Response) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000;
   adminOtps.set(cleanEmail, { otp, expiresAt });
-  logger.info({ email: cleanEmail, otp }, 'Admin OTP generated');
-  res.json({
+  logger.info({ email: cleanEmail }, 'Admin OTP generated');
+
+  const responsePayload: Record<string, any> = {
     success: true,
-    message: 'OTP sent',
+    message: 'OTP sent to authorized administrator.',
     admin: { name: admin.name, email: admin.email, role: admin.role },
-    demoOtp: otp,
-  });
+  };
+
+  // Only expose demoOtp if explicitly in local development environment
+  if (process.env.NODE_ENV === 'development') {
+    responsePayload.demoOtp = otp;
+  }
+
+  res.json(responsePayload);
 };
 
 export const verifyOtp = async (req: Request, res: Response) => {
@@ -36,11 +44,12 @@ export const verifyOtp = async (req: Request, res: Response) => {
   if (!admin) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
   const stored = adminOtps.get(cleanEmail);
-  if (!stored || stored.otp !== otp || Date.now() > stored.expiresAt) {
+  if (!stored || !timingSafeEqual(stored.otp, String(otp).trim()) || Date.now() > stored.expiresAt) {
     return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
   }
   adminOtps.delete(cleanEmail);
-  res.json({ success: true, message: 'Admin verified', admin });
+  const token = signAdminToken(admin.email, admin.role);
+  res.json({ success: true, message: 'Admin verified', admin, token });
 };
 
 export const getWhitelist = async (req: Request, res: Response) => {
@@ -98,6 +107,14 @@ export const getRegistrationStatus = async (req: Request, res: Response) => {
 };
 
 export const clearDatabase = async (req: Request, res: Response) => {
+  const { confirmation } = req.body || {};
+  if (confirmation !== 'CLEAR_ALL_DATA_CONFIRMED') {
+    return res.status(400).json({
+      success: false,
+      message: 'Destructive operation denied: Explicit confirmation "CLEAR_ALL_DATA_CONFIRMED" required.',
+    });
+  }
+
   await clearAllData();
   await invalidateCache(CACHE_KEYS.TEAMS);
   await invalidateCache(CACHE_KEYS.ANNOUNCEMENTS);
@@ -157,7 +174,6 @@ export const setDeadline = async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, message: 'Invalid date format' });
   }
   await setDbDeadline(deadline);
-  // Invalidate cache so subsequent GET /submission-status picks up new deadline
   await invalidateCache(CACHE_KEYS.SUBMISSION_DEADLINE);
   res.json({ success: true, message: 'Deadline updated', deadline });
 };

@@ -47,6 +47,9 @@ export const TeamLoginModal: React.FC<TeamLoginModalProps> = ({
         throw new Error(data.message || "No registered team found with this email or ID.");
       }
 
+      if (data.token && typeof window !== "undefined") {
+        localStorage.setItem("origin_team_token", data.token);
+      }
       onLoginSuccess(data.team);
       onClose();
     } catch (err: any) {

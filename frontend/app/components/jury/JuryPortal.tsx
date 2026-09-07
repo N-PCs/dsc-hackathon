@@ -254,23 +254,40 @@ export const JuryPortal: React.FC<JuryPortalProps> = ({
       }
     }
 
-    // Success – both checks passed
-    setIsAuthenticated(true);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("origin_jury_auth", "true");
-      localStorage.setItem("origin_jury_email", trimmedEmail.toLowerCase());
+    try {
+      const loginRes = await fetch("/api/jury/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail, passcode: accessCodeInput.trim() }),
+      });
+      const loginData = await loginRes.json();
+      if (!loginRes.ok || !loginData.success) {
+        setAuthError(loginData.message || "Invalid Jury credentials. Please check with the lead organiser.");
+        return;
+      }
+
+      setIsAuthenticated(true);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("origin_jury_auth", "true");
+        localStorage.setItem("origin_jury_email", trimmedEmail.toLowerCase());
+        if (loginData.token) {
+          localStorage.setItem("origin_jury_token", loginData.token);
+        }
+      }
+      setAuthError("");
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to authenticate jury.");
     }
-    setAuthError("");
   };
 
-  // ✅ FIX: Clear localStorage and reset state on logout
+  // ✅ Clear localStorage and reset state on logout
   const handleLogout = () => {
     setIsAuthenticated(false);
     if (typeof window !== "undefined") {
       localStorage.removeItem("origin_jury_auth");
       localStorage.removeItem("origin_jury_email");
+      localStorage.removeItem("origin_jury_token");
     }
-    // Optionally reset form fields
     setJuryEmail("");
     setAccessCodeInput("");
     setAuthError("");

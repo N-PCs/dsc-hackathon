@@ -4,9 +4,17 @@ import * as statsService from '../services/statsService.js';
 import { getSubmissionDeadline, isDeadlinePassed } from '../utils/deadline.js';
 import { Team } from '../utils/types.js';
 import { logger } from '../utils/logger.js';
+import {
+  signTeamToken,
+  verifyToken,
+  sanitizeTeamPublic,
+  sanitizeTeamForJury,
+  timingSafeEqual,
+} from '../utils/security.js';
 
 export const listTeams = async (req: Request, res: Response) => {
   try {
+    const isJury = !!(req as any).juryUser && !(req as any).adminUser;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || '';
@@ -16,10 +24,11 @@ export const listTeams = async (req: Request, res: Response) => {
     const scoredParam = req.query.scored;
     const scored: 'all' | 'true' | 'false' = scoredParam === 'true' || scoredParam === 'false' ? scoredParam : 'all';
 
-    // If no pagination params, return all teams (backward compatibility)
+    // If no pagination params, return all teams (sanitized if jury)
     if (!req.query.page && !req.query.limit) {
       const teams = await teamService.getAllTeams();
-      return res.json({ success: true, teams });
+      const resultTeams = isJury ? teams.map((t) => sanitizeTeamForJury(t)) : teams;
+      return res.json({ success: true, teams: resultTeams });
     }
 
     const result = await teamService.getTeamsPaginated({
@@ -32,9 +41,11 @@ export const listTeams = async (req: Request, res: Response) => {
       scored,
     });
 
+    const resultTeams = isJury ? result.teams.map((t) => sanitizeTeamForJury(t)) : result.teams;
+
     res.json({
       success: true,
-      teams: result.teams,
+      teams: resultTeams,
       pagination: {
         page: result.page,
         limit: result.limit,
@@ -46,27 +57,70 @@ export const listTeams = async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     logger.error({ err }, 'listTeams error');
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Failed to retrieve team data' });
   }
 };
 
 export const getTeam = async (req: Request, res: Response) => {
-  const team = await teamService.findTeamById(req.params.id);
-  if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
-  res.json({ success: true, team });
+  try {
+    const team = await teamService.findTeamById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
+
+    // Check if requester has authenticated team or admin credentials
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader?.trim();
+    let isPrivileged = false;
+
+    if (token) {
+      const payload = verifyToken(token);
+      if (payload) {
+        if (payload.role === 'admin') {
+          isPrivileged = true;
+        } else if (payload.role === 'team' && payload.teamId?.toUpperCase() === team.id.toUpperCase()) {
+          isPrivileged = true;
+        }
+      }
+    }
+
+    const accessCode = (req.headers['x-access-code'] as string || (req.query.accessCode as string) || '').trim();
+    if (accessCode && timingSafeEqual(team.accessCode, accessCode)) {
+      isPrivileged = true;
+    }
+
+    if (isPrivileged) {
+      return res.json({ success: true, team });
+    }
+
+    // Return sanitized public profile for event ticket badge scanning
+    res.json({ success: true, team: sanitizeTeamPublic(team) });
+  } catch (err: any) {
+    logger.error({ err }, 'getTeam error');
+    res.status(500).json({ success: false, message: 'Failed to retrieve team' });
+  }
 };
 
 export const teamLogin = async (req: Request, res: Response) => {
-  const { identifier } = req.body; // accessCode removed
-  if (!identifier) {
-    return res.status(400).json({ success: false, message: 'Team ID or Leader Email required' });
+  try {
+    const { identifier, accessCode } = req.body;
+    if (!identifier) {
+      return res.status(400).json({ success: false, message: 'Team ID or Leader Email required' });
+    }
+    const team = await teamService.findTeamByIdentifier(identifier);
+    if (!team) {
+      return res.status(404).json({ success: false, message: 'No registered team found' });
+    }
+
+    // If access code was supplied, verify it
+    if (accessCode && !timingSafeEqual(team.accessCode, String(accessCode).trim())) {
+      return res.status(401).json({ success: false, message: 'Invalid access code' });
+    }
+
+    const token = signTeamToken(team.id, team.leader.email);
+    res.json({ success: true, team, token });
+  } catch (err: any) {
+    logger.error({ err }, 'teamLogin error');
+    res.status(500).json({ success: false, message: 'Authentication error' });
   }
-  const team = await teamService.findTeamByIdentifier(identifier);
-  if (!team) {
-    return res.status(404).json({ success: false, message: 'No registered team found' });
-  }
-  // access code check removed – any valid identifier logs the team in
-  res.json({ success: true, team });
 };
 
 export const registerTeam = async (req: Request, res: Response) => {
@@ -95,7 +149,8 @@ export const registerTeam = async (req: Request, res: Response) => {
     const leaderEmailClean = leader.email.trim().toLowerCase();
     const existing = await teamService.findTeamByIdentifier(leaderEmailClean);
     if (existing) {
-      return res.status(200).json({ success: true, message: 'Team already registered', team: existing });
+      const token = signTeamToken(existing.id, existing.leader.email);
+      return res.status(200).json({ success: true, message: 'Team already registered', team: existing, token });
     }
 
     if (transactionRef && transactionRef.trim() !== '') {
@@ -144,80 +199,89 @@ export const registerTeam = async (req: Request, res: Response) => {
     };
 
     await teamService.saveTeam(newTeam);
+    const token = signTeamToken(newTeam.id, newTeam.leader.email);
     logger.info({ teamId }, 'Team registered');
-    res.status(201).json({ success: true, message: 'Team registered! Awaiting admin verification.', team: newTeam });
+    res.status(201).json({
+      success: true,
+      message: 'Team registered! Awaiting admin verification.',
+      team: newTeam,
+      token,
+    });
   } catch (err: any) {
     logger.error({ err }, 'Registration error');
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Registration failed' });
   }
 };
 
 export const submitProject = async (req: Request, res: Response) => {
-  const deadline = getSubmissionDeadline();
-  if (isDeadlinePassed(deadline)) {
-    return res.status(403).json({ success: false, message: 'Submission deadline passed.' });
+  try {
+    const deadline = getSubmissionDeadline();
+    if (isDeadlinePassed(deadline)) {
+      return res.status(403).json({ success: false, message: 'Submission deadline passed.' });
+    }
+
+    const isOpen = await teamService.getSubmissionStatus();
+    if (!isOpen) {
+      return res.status(403).json({ success: false, message: 'Project submissions closed by admin.' });
+    }
+
+    const team = await teamService.findTeamById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
+
+    const {
+      title,
+      tagline,
+      problemStatement,
+      solutionDescription,
+      track,
+      techStack,
+      githubUrl,
+      deploymentUrl,
+      presentationUrl,
+      presentationPdfUrl,
+      presentationPptUrl,
+      videoUrl,
+    } = req.body;
+
+    if (!title || !problemStatement || !solutionDescription || !githubUrl) {
+      return res.status(400).json({ success: false, message: 'Missing required project fields' });
+    }
+
+    if (track) {
+      team.track = track;
+    }
+
+    team.project = {
+      title: title.trim(),
+      tagline: tagline ? tagline.trim() : '',
+      problemStatement: problemStatement.trim(),
+      solutionDescription: solutionDescription.trim(),
+      track: track || team.track,
+      techStack: Array.isArray(techStack) ? techStack : [techStack].filter(Boolean),
+      githubUrl: githubUrl.trim(),
+      deploymentUrl: deploymentUrl ? deploymentUrl.trim() : undefined,
+      presentationUrl: presentationUrl ? presentationUrl.trim() : undefined,
+      presentationPdfUrl: presentationPdfUrl ? presentationPdfUrl.trim() : undefined,
+      presentationPptUrl: presentationPptUrl ? presentationPptUrl.trim() : undefined,
+      videoUrl: videoUrl ? videoUrl.trim() : undefined,
+      submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+      score: team.project?.score,
+    };
+
+    await teamService.updateTeam(team);
+    res.json({ success: true, message: 'Project submitted', team });
+  } catch (err: any) {
+    logger.error({ err }, 'submitProject error');
+    res.status(500).json({ success: false, message: 'Failed to submit project' });
   }
-
-  const isOpen = await teamService.getSubmissionStatus();
-  if (!isOpen) {
-    return res.status(403).json({ success: false, message: 'Project submissions closed by admin.' });
-  }
-
-  const team = await teamService.findTeamById(req.params.id);
-  if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
-
-  const {
-    title,
-    tagline,
-    problemStatement,
-    solutionDescription,
-    track,
-    techStack,
-    githubUrl,
-    deploymentUrl,
-    presentationUrl,
-    presentationPdfUrl,
-    presentationPptUrl,
-    videoUrl,
-  } = req.body;
-
-  if (!title || !problemStatement || !solutionDescription || !githubUrl) {
-    return res.status(400).json({ success: false, message: 'Missing required project fields' });
-  }
-
-  // ✅ FIX: Keep the team's top-level `track` (registration-time field, used by
-  // SQL filtering / the jury "track" filter buttons) in sync with whatever track
-  // is chosen at project-submission time. Without this, `team.track` stays frozen
-  // at whatever was picked (or defaulted) during registration, while the badge
-  // shown on cards displays `project.track` — causing the mismatch where a team
-  // submits under "Web3 & Blockchain" but still only appears under the
-  // "AI & Machine Learning" filter.
-  if (track) {
-    team.track = track;
-  }
-
-  team.project = {
-    title: title.trim(),
-    tagline: tagline ? tagline.trim() : '',
-    problemStatement: problemStatement.trim(),
-    solutionDescription: solutionDescription.trim(),
-    track: track || team.track,
-    techStack: Array.isArray(techStack) ? techStack : [techStack].filter(Boolean),
-    githubUrl: githubUrl.trim(),
-    deploymentUrl: deploymentUrl ? deploymentUrl.trim() : undefined,
-    presentationUrl: presentationUrl ? presentationUrl.trim() : undefined,
-    presentationPdfUrl: presentationPdfUrl ? presentationPdfUrl.trim() : undefined,
-    presentationPptUrl: presentationPptUrl ? presentationPptUrl.trim() : undefined,
-    videoUrl: videoUrl ? videoUrl.trim() : undefined,
-    submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-    score: team.project?.score,
-  };
-
-  await teamService.updateTeam(team);
-  res.json({ success: true, message: 'Project submitted', team });
 };
 
 export const deleteTeam = async (req: Request, res: Response) => {
-  await teamService.deleteTeam(req.params.id);
-  res.json({ success: true, message: 'Team removed' });
+  try {
+    await teamService.deleteTeam(req.params.id);
+    res.json({ success: true, message: 'Team removed' });
+  } catch (err: any) {
+    logger.error({ err }, 'deleteTeam error');
+    res.status(500).json({ success: false, message: 'Failed to delete team' });
+  }
 };

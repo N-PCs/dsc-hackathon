@@ -285,6 +285,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         // silent
       }
 
+      if (data.token && typeof window !== "undefined") {
+        localStorage.setItem("origin_team_token", data.token);
+      }
       onRegisteredSuccess(data.team);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred during registration. Please try again.");

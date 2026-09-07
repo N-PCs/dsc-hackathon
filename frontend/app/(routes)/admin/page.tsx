@@ -50,7 +50,11 @@ export default function AdminPage() {
   // Helper to get admin headers
   const getAdminHeaders = (): Record<string, string> => {
     const email = getAdminEmail();
-    return email ? { "x-admin-email": email } : {};
+    const token = typeof window !== "undefined" ? localStorage.getItem("origin_admin_token") : null;
+    const headers: Record<string, string> = {};
+    if (email) headers["x-admin-email"] = email;
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return headers;
   };
 
   const handleUpdateTeamStatus = async (
@@ -185,7 +189,7 @@ export default function AdminPage() {
     }
     try {
       const res = await fetch(`/api/export-excel?adminEmail=${encodeURIComponent(adminEmail)}`, {
-        headers: { 'x-admin-email': adminEmail },
+        headers: getAdminHeaders(),
       });
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
@@ -210,7 +214,7 @@ export default function AdminPage() {
     }
     try {
       const res = await fetch(`/api/export-csv?adminEmail=${encodeURIComponent(adminEmail)}`, {
-        headers: { 'x-admin-email': adminEmail },
+        headers: getAdminHeaders(),
       });
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();

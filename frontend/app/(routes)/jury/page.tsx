@@ -121,11 +121,13 @@ export default function JuryPage() {
     }
 
     try {
+      const juryToken = typeof window !== "undefined" ? localStorage.getItem("origin_jury_token") : null;
       const res = await fetch(`/api/jury/teams/${teamId}/score`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-jury-email": juryEmail,
+          ...(juryToken ? { "Authorization": `Bearer ${juryToken}` } : {}),
         },
         body: JSON.stringify(score),
       });

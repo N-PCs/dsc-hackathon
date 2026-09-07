@@ -103,6 +103,9 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         const data = await res.json();
 
         if (res.ok && data.success && data.team) {
+          if (data.token && typeof window !== "undefined") {
+            localStorage.setItem("origin_team_token", data.token);
+          }
           setActiveTeam(data.team);
           refreshData();
         } else {
@@ -305,9 +308,14 @@ export const ProjectSubmissionModal: React.FC<ProjectSubmissionModalProps> = ({
         videoUrl: videoUrl.trim() || undefined,
       };
 
+      const teamToken = typeof window !== "undefined" ? localStorage.getItem("origin_team_token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (teamToken) headers["Authorization"] = `Bearer ${teamToken}`;
+      if (team.accessCode) headers["x-access-code"] = team.accessCode;
+
       const res = await fetch(`/api/teams/${team.id}/project`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
 

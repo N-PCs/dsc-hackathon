@@ -25,6 +25,7 @@ import {
 } from '../validators/index.js';
 import { requireAdminAuth } from '../middleware/auth.js';
 import * as adminService from '../services/adminService.js';
+import { signAdminToken } from '../utils/security.js';
 
 const router = Router();
 
@@ -32,7 +33,7 @@ const router = Router();
 router.post('/auth/request-otp', adminOtpRequestValidation, validate, requestOtp);
 router.post('/auth/verify-otp', adminOtpVerifyValidation, validate, verifyOtp);
 
-// ✅ Public email verification
+// Admin email verification (issues cryptographically signed JWT token)
 router.post('/verify-email', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, message: 'Email required' });
@@ -41,7 +42,8 @@ router.post('/verify-email', async (req, res) => {
   if (!admin) {
     return res.status(403).json({ success: false, message: 'Not authorized' });
   }
-  res.json({ success: true, admin });
+  const token = signAdminToken(admin.email, admin.role);
+  res.json({ success: true, admin, token });
 });
 
 // Public status endpoints

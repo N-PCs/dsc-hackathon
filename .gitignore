@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 
-
 # Build outputs & cache
 dist/
 .next/
@@ -12,9 +11,24 @@ build/
 
 # Local environment & secrets
 .env
-.env*.local
+.env*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Database exports, spreadsheets & PII
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.sql
+*.dump
+backend/scripts/*.csv
+backend/scripts/*.xlsx
 
 # IDE & system logs
 .DS_Store
 *.log
 .vercel
+

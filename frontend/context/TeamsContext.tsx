@@ -127,13 +127,22 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const getAdminHeaders = (): Record<string, string> => {
     try {
+      const headers: Record<string, string> = {};
+      const adminToken = localStorage.getItem("origin_admin_token");
+      const juryToken = localStorage.getItem("origin_jury_token");
+      if (adminToken) {
+        headers["Authorization"] = `Bearer ${adminToken}`;
+      } else if (juryToken) {
+        headers["Authorization"] = `Bearer ${juryToken}`;
+      }
       const saved = localStorage.getItem("origin_active_admin");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.email) {
-          return { "x-admin-email": String(parsed.email) };
+          headers["x-admin-email"] = String(parsed.email);
         }
       }
+      return headers;
     } catch (_e) {}
     return {};
   };
